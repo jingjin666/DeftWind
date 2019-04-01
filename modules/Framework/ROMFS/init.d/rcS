@@ -1,0 +1,21 @@
+#!nsh
+#
+# Try to mount the microSD card.
+#
+echo "[init] looking for microSD..."
+if mount -t vfat /dev/mmcsd0 /fs/microsd
+then
+    echo "[init] card mounted at /fs/microsd"
+    set HAVE_MICROSD 1
+else
+    echo "failed mount micro sdcard"
+    set HAVE_MICROSD 0
+fi
+
+echo Starting DeftWind
+if DeftWind start
+then
+    echo DeftWind started OK
+else
+    echo DeftWind started Failed
+fi
