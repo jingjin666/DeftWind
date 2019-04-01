@@ -96,9 +96,9 @@ $(ARCHIVE_DIR)%.export:	configuration = nsh
 $(NUTTX_ARCHIVES): $(ARCHIVE_DIR)%.export: $(NUTTX_SRC)
 	@echo Configuring NuttX for $(board)
 	cd $(NUTTX_SRC) && $(RMDIR) nuttx-export
-#ifneq (, $(wildcard $(NUTTX_SRC)/.config))
+ifneq (, $(wildcard $(NUTTX_SRC)/.config))
 	$(MAKE) -C $(NUTTX_SRC) -r $(MQUIET) distclean
-#endif
+endif
 	cd $(NUTTX_SRC)/configs && $(COPYDIR) $(DP_BASE)/nuttx-configs/$(board) .
 	cd $(NUTTX_SRC)/tools && ./configure.sh $(board)/$(configuration)
 	@echo Exporting NuttX for $(board)
