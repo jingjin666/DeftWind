@@ -1220,6 +1220,7 @@ static void imxrt_reset(FAR struct sdio_dev_s *dev)
 
   putreg32(USDHC_INT_ALL, IMXRT_USDHC1_IRQSTATEN);
 
+  up_udelay(10000);
   mcinfo("SYSCTL: %08x PRSSTAT: %08x IRQSTATEN: %08x\n",
          getreg32(IMXRT_USDHC1_SYSCTL), getreg32(IMXRT_USDHC1_PRSSTAT),
          getreg32(IMXRT_USDHC1_IRQSTATEN));
@@ -1308,6 +1309,7 @@ static sdio_statset_t imxrt_status(FAR struct sdio_dev_s *dev)
       priv->cdstatus &= ~SDIO_STATUS_PRESENT;
     }
 
+  priv->cdstatus |= SDIO_STATUS_PRESENT;
   mcinfo("cdstatus=%02x\n", priv->cdstatus);
 
   return priv->cdstatus;
