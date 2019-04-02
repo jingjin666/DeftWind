@@ -36,10 +36,15 @@ EXTRAFLAGS += -DHAVE_BYTESWAP_H=0
 EXTRAFLAGS += -DHAVE_OCLOEXEC=0
 
 EXTRAFLAGS += -I$(BUILDROOT)/libraries/GCS_MAVLink/include/mavlink
+# Add missing parts from libc and libstdc++ for all boards
+EXTRAFLAGS += -I$(SKETCHBOOK)/libraries/AP_Common/missing
+
+
+DEFINES        +=   -DCONFIG_HAL_BOARD=$(HAL_BOARD) -DCONFIG_HAL_BOARD_SUBTYPE=$(HAL_BOARD_SUBTYPE)
 
 CCACHE = /usr/bin/ccache
 SKETCHFLAGS = $(SKETCHLIBINCLUDES) -DCONFIG_HAL_BOARD=HAL_BOARD_UAVRS -DSKETCHNAME="\\\"$(SKETCH)\\\"" -DSKETCH_MAIN=DeftWind_main
-WARNFLAGS = -Wall -Wextra -Wlogical-op -Werror -Wno-unknown-pragmas -Wno-redundant-decls -Wno-psabi -Wno-packed -Wno-error=double-promotion -Wno-error=unused-variable -Wno-error=reorder -Wno-error=float-equal -Wno-error=pmf-conversions -Wno-error=missing-declarations -Wno-error=unused-function
+WARNFLAGS = -Wall -Wextra -Wlogical-op -Werror -Wno-unknown-pragmas -Wno-redundant-decls -Wno-psabi -Wno-packed -Wno-error=double-promotion -Wno-error=unused-variable -Wno-error=reorder -Wno-error=float-equal -Wno-error=pmf-conversions -Wno-error=missing-declarations -Wno-error=unused-function 
 OPTFLAGS = -fsingle-precision-constant
 
 #####################
