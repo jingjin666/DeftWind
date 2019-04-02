@@ -7,7 +7,8 @@ SRCS		 = imxrt_boot.c \
 		   imxrt_flexspi_nor_flash.c \
 		   imxrt_bringup.c \
 		   imxrt_appinit.c \
-		   imxrt_autoleds.c
+		   imxrt_autoleds.c \
+		   uavrs2_led.c
 		   
 
 MAXOPTIMIZATION	 = -Os
