@@ -17,9 +17,11 @@
 #pragma once
 
 #include "HAL.h"
+#include <apps/platform/cxxinitialize.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-#define AP_MAIN __EXPORT ArduPilot_main
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
+#define AP_MAIN __EXPORT DeftWind_main
 #endif
 
 #ifndef AP_MAIN
@@ -31,6 +33,7 @@
     extern "C" {                               \
     int AP_MAIN(int argc, char* const argv[]); \
     int AP_MAIN(int argc, char* const argv[]) { \
+        up_cxxinitialize(); \
         hal.run(argc, argv, &callbacks); \
         return 0; \
     } \
