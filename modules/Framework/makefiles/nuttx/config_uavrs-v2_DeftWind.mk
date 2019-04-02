@@ -11,10 +11,10 @@ MODULES			+= $(DEFTWIND_MODULE_DIR)
 # Board drivers
 #
 MODULES			+= drivers/boards/uavrs-v2
-#MODULES			+= drivers/device
+MODULES			+= drivers/device
 #MODULES			+= drivers/imxrt105x
 #MODULES			+= drivers/imxrt105x/adc
-#MODULES			+= drivers/led
+MODULES			+= drivers/led
 #MODULES			+= drivers/dpfmu
 
 #

@@ -274,6 +274,8 @@ static int imxrt_lpi2c_init(FAR struct imxrt_lpi2c_priv_s *priv);
 static int imxrt_lpi2c_deinit(FAR struct imxrt_lpi2c_priv_s *priv);
 static int imxrt_lpi2c_transfer(FAR struct i2c_master_s *dev,
                                 FAR struct i2c_msg_s *msgs, int count);
+static int imxrt_lpi2c_setfrequency(FAR struct i2c_master_s *dev, uint32_t frequency);
+static int imxrt_lpi2c_setaddress(FAR struct i2c_master_s *dev, int addr, int nbits);
 #ifdef CONFIG_I2C_RESET
 static int imxrt_lpi2c_reset(FAR struct i2c_master_s *dev);
 #endif
@@ -306,6 +308,8 @@ static const struct i2c_ops_s imxrt_lpi2c_ops =
 #ifdef CONFIG_I2C_RESET
   , .reset  = imxrt_lpi2c_reset
 #endif
+  ,.setfrequency = imxrt_lpi2c_setfrequency
+  ,.setaddress = imxrt_lpi2c_setaddress
 };
 
 /* I2C device structures */
@@ -1683,6 +1687,55 @@ static int imxrt_lpi2c_transfer(FAR struct i2c_master_s *dev, FAR struct i2c_msg
   imxrt_lpi2c_sem_post(priv);
   return ret;
 }
+
+/************************************************************************************
+ * Name: imxrt_lpi2c_setfrequency
+ *
+ * Description:
+ *   Perform an I2C bus reset in an attempt to break loose stuck I2C devices.
+ *
+ * Input Parameters:
+ *   dev   - Device-specific state data
+ *
+ * Returned Value:
+ *   Zero (OK) on success; a negated errno value on failure.
+ *
+ ************************************************************************************/
+
+static int imxrt_lpi2c_setfrequency(FAR struct i2c_master_s *dev, uint32_t frequency)
+{
+	FAR struct imxrt_lpi2c_priv_s *priv = (struct imxrt_lpi2c_priv_s *)dev;
+	
+	imxrt_lpi2c_setclock(priv, frequency);
+	
+	return OK;
+}
+
+/************************************************************************************
+ * Name: imxrt_lpi2c_setaddress
+ *
+ * Description:
+ *   Perform an I2C bus reset in an attempt to break loose stuck I2C devices.
+ *
+ * Input Parameters:
+ *   dev   - Device-specific state data
+ *
+ * Returned Value:
+ *   Zero (OK) on success; a negated errno value on failure.
+ *
+ ************************************************************************************/
+
+static int imxrt_lpi2c_setaddress(FAR struct i2c_master_s *dev, int addr, int nbits)
+{
+	FAR struct imxrt_lpi2c_priv_s *priv = (struct imxrt_lpi2c_priv_s *)dev;
+
+	imxrt_lpi2c_sem_wait(priv);
+	priv->msgv->addr= addr;
+	priv->msgv->flags = (nbits == 10) ? I2C_M_TEN : 0;
+	imxrt_lpi2c_sem_post(priv);
+	return OK;
+}
+
 
 /************************************************************************************
  * Name: imxrt_lpi2c_reset

@@ -5,7 +5,7 @@
  ****************************************************************************/
 
 /**
- * @file test_usart.c
+ * @file test_led.c
  * Tests main file, loads individual tests.
  *
  * @author User <mail@example.com>
@@ -28,46 +28,50 @@
 #include <string.h>
 #include <arch/board/board.h>
 
-#include "tests.h"
+#include <drivers/drv_led.h>
 
-#include <math.h>
-#include <float.h>
+#include "tests.h"
 
 /****************************************************************************
  * Name: test_usart
  ****************************************************************************/
 
-int test_usart(int argc, char *argv[])
+int test_led(int argc, char *argv[])
 {
-	/* input handling */
-	char *uart_name = "/dev/ttyS1";
+	int fd;
+	
+	printf("Test led driver.\n");
+	
+	drv_led_start();
 
-	if (argc > 1) { uart_name = argv[1]; }
+	fd = open(LED0_DEVICE_PATH, 0);
+	if(fd == -1) {
+		printf("Failed to Open device[%s]\n", LED0_DEVICE_PATH);
+		return -1;
+	}
 
-	/* assuming NuttShell is on UART5 (/dev/ttyS1) */
-	int test_uart = open(uart_name, O_RDWR | O_NONBLOCK | O_NOCTTY); //
+	if(argc < 2) {
+		printf("Invalid Param::Please tests led on |off.\n");
+		return -1;
+	}
 
-	if (test_uart < 0) {
-		printf("ERROR opening UART %s, aborting..\n", uart_name);
-		return test_uart;
-
+	if(argv[1] != NULL) {
+		if(strcmp(argv[1], "on") == 0) {
+			ioctl(fd, LED_ON, 1);
+			printf("Led on.\n");
+		} else if(strcmp(argv[1], "off") == 0) {
+			ioctl(fd, LED_OFF, 1);
+			printf("Led off.\n");
+		} else {
+			printf("Invalid Param::Please tests led on |off.\n");
+			return -1;
+		}
 	} else {
-		printf("Writing to UART %s\n", uart_name);
+		printf("Param error.\n");
+		return -1;
 	}
 
-	char sample_test_uart[100] = {0};
-
-	int i,nbytes;
-
-	for (i = 0; i < 5; i++) {
-		nbytes = sprintf(sample_test_uart, "This is a usart test smaple. #%d\n", i);
-		write(test_uart, sample_test_uart, nbytes);
-		sleep(1);
-	}
-
-	printf("Wrote %d bytes on UART %s\n", nbytes*i, uart_name);
-
-	close(test_uart);
-
+	close(fd);
+	
 	return 0;
 }
