@@ -21,6 +21,12 @@ public:
 
     /* return true if USB cable is connected */
     bool    usb_connected(void);
+
+    /* return true if imu data ready */
+	bool imu_data_ready(void);
+
+	/* reset imu by hardware io */
+	void imu_reset(bool);
 };
 
 class UAVRS::DigitalSource : public AP_HAL::DigitalSource {

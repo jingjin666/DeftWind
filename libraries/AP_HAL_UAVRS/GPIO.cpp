@@ -28,6 +28,16 @@ void GPIO::write(uint8_t pin, uint8_t value)
 void GPIO::toggle(uint8_t pin)
 {}
 
+
+bool GPIO::imu_data_ready(void)
+{
+    return false;
+}
+
+void GPIO::imu_reset(bool)
+{}
+
+
 /* Alternative interface: */
 AP_HAL::DigitalSource* GPIO::channel(uint16_t n) {
     return new DigitalSource(0);

@@ -22,7 +22,7 @@ static Scheduler schedulerInstance;
 static Util utilInstance;
 static OpticalFlow opticalFlowDriver;
 
-HAL_UAVRS::HAL_Empty() :
+HAL_UAVRS::HAL_UAVRS() :
     AP_HAL::HAL(
         &uartADriver,
         &uartBDriver,
@@ -30,6 +30,7 @@ HAL_UAVRS::HAL_Empty() :
         nullptr,            /* no uartD */
         nullptr,            /* no uartE */
         nullptr,            /* no uartF */
+        nullptr,            /*i2c*/
         &spiDeviceManager,
         &analogIn,
         &storageDriver,
@@ -39,8 +40,8 @@ HAL_UAVRS::HAL_Empty() :
         &rcoutDriver,
         &schedulerInstance,
         &utilInstance,
-        &opticalFlowDriver),
-    _member(new UAVRSPrivateMember(123))
+        &opticalFlowDriver,
+        nullptr)
 {}
 
 void HAL_UAVRS::run(int argc, char* const argv[], Callbacks* callbacks) const

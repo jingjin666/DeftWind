@@ -48,3 +48,9 @@ void Scheduler::system_initialized()
 void Scheduler::reboot(bool hold_in_bootloader) {
     for(;;);
 }
+
+bool Scheduler::in_main_thread() const
+{
+    return false;
+}
+

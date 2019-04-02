@@ -23,5 +23,7 @@ public:
     void     system_initialized();
 
     void     reboot(bool hold_in_bootloader);
+    
+    bool     in_main_thread() const;
 
 };
