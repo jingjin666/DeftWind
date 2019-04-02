@@ -251,7 +251,9 @@ void AP_Airspeed::init()
 		case TYPE_UAVCAN_MS4525:
 			sensor[i] = new AP_Airspeed_UAVCAN_MS4525(*this, i);
 			break;
-#endif			
+#endif		
+        default:
+            break;
         }
         if (sensor[i] && !sensor[i]->init()) {
             gcs().send_text(MAV_SEVERITY_INFO, "Airspeed[%u] init failed", i);
