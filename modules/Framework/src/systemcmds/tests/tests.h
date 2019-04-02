@@ -57,6 +57,7 @@
 
 __BEGIN_DECLS
 
+extern int test_usdhc(int argc, char *argv[]);
 extern int test_usart(int argc, char *argv[]);
 extern int test_led(int argc, char *argv[]);
 

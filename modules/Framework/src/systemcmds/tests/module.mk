@@ -7,8 +7,9 @@ MODULE_STACKSIZE	 = 60000
 MAXOPTIMIZATION		 = -O0
 
 SRCS			 =	tests_main.c \
-				test_usart.c \
-				test_led.c
+                    test_usdhc.c \
+                    test_usart.c \
+					test_led.c
 
 EXTRACXXFLAGS = -Wframe-larger-than=6000
 EXTRACXXFLAGS += -Wno-float-equal

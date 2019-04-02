@@ -45,6 +45,7 @@ const struct {
 #define OPT_NOALLTEST	(1<<1)
 #define OPT_NOJIGTEST	(1<<2)
 } tests[] = {
+    {"usdhc",       test_usdhc, OPT_NOJIGTEST | OPT_NOALLTEST},
 	{"led",		test_led,	OPT_NOJIGTEST | OPT_NOALLTEST},
 	{"usart",		test_usart,	OPT_NOJIGTEST | OPT_NOALLTEST},
 	{"help",		test_help,	OPT_NOALLTEST | OPT_NOHELP | OPT_NOJIGTEST},
