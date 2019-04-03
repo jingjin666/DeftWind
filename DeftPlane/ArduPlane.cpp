@@ -386,6 +386,10 @@ void Plane::raw_data_update(void)
 
 void Plane::setup() 
 {
+    printf("setup--------\r\n");
+    sleep(2);
+
+#if 0
     cliSerial = hal.console;
 
     // load the default values of variables listed in var_info[]
@@ -399,10 +403,14 @@ void Plane::setup()
 
     // initialise the main loop scheduler
     scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks));
+#endif
 }
 
 void Plane::loop()
 {
+    printf("loop ------------\r\n");
+    sleep(2);
+#if 0
     uint32_t loop_us = 1000000UL / scheduler.get_loop_rate_hz();
 
     // wait for an INS sample
@@ -437,6 +445,7 @@ void Plane::loop()
     // the first call to the scheduler they won't run on a later
     // call until scheduler.tick() is called again
     scheduler.run(loop_us);
+#endif
 }
 
 void Plane::update_soft_armed()
