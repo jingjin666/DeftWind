@@ -42,6 +42,7 @@
 #define AP_HAL_MAIN_CALLBACKS(CALLBACKS) extern "C" { \
     int AP_MAIN(int argc, char* const argv[]); \
     int AP_MAIN(int argc, char* const argv[]) { \
+        up_cxxinitialize(); \
         hal.run(argc, argv, CALLBACKS); \
         return 0; \
     } \
