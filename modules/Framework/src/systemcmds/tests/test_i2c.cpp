@@ -75,17 +75,25 @@ DP_I2C::DP_I2C(uint8_t bus) : I2C(devname, devpath, map_bus_number(bus), 0, 4000
  */    
 uint8_t DP_I2C::map_bus_number(uint8_t bus) const
 {
-    switch (bus) {
-    case 0:
-        // map to internal bus
-        return 0;
+	switch (bus) {
+	case 1:
+		// map to expansion bus
+		return 1;
 
-    case 1:
-        // map to expansion bus
-        return 1;
-    }
-    // default to bus 1
-    return 1;
+	case 2:
+		// map to expansion bus
+		return 2;
+
+	case 3:
+		// map to expansion bus
+		return 3;
+		
+	case 4:
+		// map to expansion bus
+	return 4;
+	}
+	// default to bus 1
+	return 1;
 }
 
 /*
@@ -183,13 +191,30 @@ int test_i2c(int argc, char *argv[])
 	const uint8_t send[2] = {1, 2};
 	uint8_t recv[2] = {0};
 	bool ret;
+	uint8_t bus = 0;
 	
 	printf("Test i2c driver.\n");
 
-	if(i2c_dev == nullptr) {
-		i2c_dev = new I2CDevice(1, 0x50, false);
+	if(argc < 2) {
+		printf("Invalid Param::Please tests spi 1|2|3|4.\n");
+		return -1;
 	}
-
+	if(argv[1] != NULL) {
+		if((!strcmp(argv[1], "1")) ||(!strcmp(argv[1], "2")) ||(!strcmp(argv[1], "3")) || (!strcmp(argv[1], "4"))) {
+			bus = atoi(argv[1]);
+		} else {
+			printf("Invalid Param::Please tests i2c 1|2|3|4.\n");
+			return -1;
+		}
+	}else {
+		printf("Invalid Param::Please tests i2c 1|2|3|4\n");
+		return -1;
+	}
+	
+	if(i2c_dev == nullptr) {
+		i2c_dev = new I2CDevice(bus, 0x50, false);
+	}
+	
 	for(uint8_t i=0; i < 5; i++) {
 		ret = i2c_dev->transfer(send, sizeof(send), recv, sizeof(recv));
 		if(ret) {
@@ -200,7 +225,6 @@ int test_i2c(int argc, char *argv[])
 		}
 		sleep(1);
 	}
-	
 	return 0;
 }
 __END_DECLS
