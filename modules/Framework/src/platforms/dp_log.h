@@ -34,6 +34,7 @@ static inline void do_nothing(int level, ...)
 #include <sys/cdefs.h>
 #include <stdio.h>
 #include <dp_defines.h>
+#if 0
 
 __BEGIN_DECLS
 __EXPORT extern uint64_t hrt_absolute_time(void);
@@ -290,3 +291,13 @@ __END_DECLS
 #endif
 #define DP_LOG_NAMED(name, FMT, ...) 	__dp_log_named_cond(name, true, FMT, ##__VA_ARGS__)
 #define DP_LOG_NAMED_COND(name, cond, FMT, ...) __dp_log_named_cond(name, cond, FMT, ##__VA_ARGS__)
+#else
+#define DP_PANIC printf
+#define DP_ERR printf
+#define DP_WARN printf
+#define DP_DEBUG printf
+#define DP_LOG printf
+#define DP_INFO printf
+#define DP_LOG_NAMED(name, FMT, ...) 
+#define DP_LOG_NAMED_COND(name, cond, FMT, ...)
+#endif

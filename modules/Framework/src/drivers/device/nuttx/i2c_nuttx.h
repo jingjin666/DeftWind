@@ -15,7 +15,10 @@
 
 #include "../device.h"
 
+__BEGIN_DECLS
 #include <dp_i2c.h>
+__END_DECLS
+
 
 namespace device __EXPORT
 {

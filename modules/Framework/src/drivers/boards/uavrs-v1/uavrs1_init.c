@@ -45,7 +45,7 @@
  * Included Files
  ****************************************************************************/
 
-#include <px4_config.h>
+#include <dp_config.h>
 
 #include <stdbool.h>
 #include <stdio.h>

@@ -43,7 +43,7 @@
  * Included Files
  ****************************************************************************************************/
 
-#include <px4_config.h>
+#include <dp_config.h>
 #include <nuttx/compiler.h>
 #include <stdint.h>
 

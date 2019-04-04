@@ -41,7 +41,7 @@
  * Included Files
  ************************************************************************************/
 
-#include <px4_config.h>
+#include <dp_config.h>
 
 #include <sys/types.h>
 #include <stdint.h>

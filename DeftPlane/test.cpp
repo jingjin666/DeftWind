@@ -24,7 +24,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 
 void setup(void) {
-    printf("setup-----------\r\n");
+    //printf("setup-----------\r\n");
     sleep(2);
 
 }
@@ -32,7 +32,7 @@ void setup(void) {
 
 void loop(void)
 {
-    printf("loop-----------\r\n");
+    //printf("loop-----------\r\n");
     sleep(2);
 }
 
