@@ -15,7 +15,9 @@
 
 #include "../device.h"
 
+__BEGIN_DECLS
 #include <dp_spi.h>
+__END_DECLS
 
 namespace device __EXPORT
 {

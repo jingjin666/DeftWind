@@ -10,7 +10,8 @@ SRCS			 =	tests_main.c \
 					test_usdhc.c \
 					test_usart.c \
 					test_led.c \
-					test_i2c.cpp
+					test_i2c.cpp \
+					test_spi.cpp
 
 EXTRACXXFLAGS = -Wframe-larger-than=6000
 EXTRACXXFLAGS += -Wno-float-equal

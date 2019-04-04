@@ -249,15 +249,15 @@
 /* LPSPI
  *
  * Arduino Connector
- *
+ *	 		 GPIO_AD_B0_03  LPSPI3_CS
  *   J24 D09   GPIO_AD_B0_02  LPSPI3_SDI
  *   J24 D14   GPIO_AD_B0_01  LPSPI3_SDO
  *   J24 D15   GPIO_AD_B0_00  LPSPI3_SCK
  */
 
-#define GPIO_LPSPI3_SCK   GPIO_LPSPI3_SCK_2 /* GPIO_AD_B0_00 */
+#define GPIO_LPSPI3_SCK   GPIO_LPSPI3_SCK_2 /* GPIO_AD_B0_00 USB_OTG1_ID */
 #define GPIO_LPSPI3_MISO  GPIO_LPSPI3_SDI_2 /* GPIO_AD_B0_02 */
-#define GPIO_LPSPI3_MOSI  GPIO_LPSPI3_SDO_2 /* GPIO_AD_B0_01 */
+#define GPIO_LPSPI3_MOSI  GPIO_LPSPI3_SDO_2 /* GPIO_AD_B0_01 USB_OTG2_ID*/
 
 /************************************************************************************
  * Public Types
