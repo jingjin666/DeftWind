@@ -2,14 +2,12 @@
 # Board-specific startup code for the UAVRSv2
 #
 
-SRCS		 = imxrt_boot.c \
-		   imxrt_flexspi_nor_boot.c \
-		   imxrt_flexspi_nor_flash.c \
-		   imxrt_bringup.c \
-		   imxrt_appinit.c \
-		   imxrt_autoleds.c \
-		   uavrs2_led.c \
-		   uavrs2_spi.c
+SRCS		 = uavrs_v2_init.c \
+			 uavrs_v2_sdhc.c \
+		   uavrs_v2_flexspi_nor_boot.c \
+		   uavrs_v2_flexspi_nor_flash.c \
+		   uavrs_v2_led.c \
+		   uavrs_v2_spi.c
 		   
 
 MAXOPTIMIZATION	 = -Os

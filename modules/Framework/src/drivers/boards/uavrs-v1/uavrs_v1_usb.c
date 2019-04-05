@@ -32,128 +32,93 @@
  ****************************************************************************/
 
 /**
- * @file uavrs_spi.c
+ * @file uavrs_usb.c
  *
- * Board-specific SPI functions.
+ * Board-specific USB functions.
  */
 
 /************************************************************************************
  * Included Files
  ************************************************************************************/
 
-#include <px4_config.h>
+#include <dp_config.h>
 
+#include <sys/types.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <debug.h>
 
-#include <nuttx/spi/spi.h>
-#include <arch/board/board.h>
+#include <nuttx/usb/usbdev.h>
+#include <nuttx/usb/usbdev_trace.h>
 
 #include <up_arch.h>
-#include <chip.h>
 #include <stm32.h>
 #include "board_config.h"
+
+#ifdef CONFIG_STM32_OTGHS
+
+/************************************************************************************
+ * Pre-processor Definitions
+ ************************************************************************************/
+
+#if defined(CONFIG_USBDEV) || defined(CONFIG_USBHOST)
+#  define HAVE_USB 1
+#else
+#  warning "CONFIG_STM32_OTGHS is enabled but neither CONFIG_USBDEV nor CONFIG_USBHOST"
+#  undef HAVE_USB
+#endif
+
+/************************************************************************************
+ * Definitions
+ ************************************************************************************/
+
+/************************************************************************************
+ * Private Functions
+ ************************************************************************************/
 
 /************************************************************************************
  * Public Functions
  ************************************************************************************/
 
 /************************************************************************************
- * Name: stm32_spiinitialize
+ * Name: stm32_usbinitialize
  *
  * Description:
- *   Called to configure SPI chip select GPIO pins for the PX4FMU board.
+ *   Called to setup USB-related GPIO pins for the PX4FMU board.
  *
  ************************************************************************************/
 
-__EXPORT void stm32_spiinitialize(void)
+__EXPORT void stm32_usbinitialize(void)
 {
-/* SPI4 Main imu[ADIS16375] */
-#ifdef CONFIG_STM32_SPI4
-	// adis port configure
-	stm32_configgpio(GPIO_SPI_CS_ADIS);
+	/* The OTG FS has an internal soft pull-up */
 
-	stm32_gpiowrite(GPIO_SPI_CS_ADIS, 1);
-#endif
+	/* Configure the OTG FS VBUS sensing GPIO, Power On, and Overcurrent GPIOs */
 
-/* SPI3 Baro[MS5611], Backup imu[MPU9250] */
-#ifdef CONFIG_STM32_SPI3
-	stm32_configgpio(GPIO_SPI_CS_BARO);
-	stm32_configgpio(GPIO_SPI_CS_MPU);
-
-	stm32_gpiowrite(GPIO_SPI_CS_BARO, 1);
-	stm32_gpiowrite(GPIO_SPI_CS_MPU, 1);
-#endif
-
-/* SPI2 FRAM */
-#ifdef CONFIG_STM32_SPI2
-	stm32_configgpio(GPIO_SPI_CS_FRAM);
-	stm32_gpiowrite(GPIO_SPI_CS_FRAM, 1);
+#ifdef CONFIG_STM32_OTGFS
+	stm32_configgpio(GPIO_OTGFS_VBUS);
+	/* XXX We only support device mode
+	stm32_configgpio(GPIO_OTGFS_PWRON);
+	stm32_configgpio(GPIO_OTGFS_OVER);
+	*/
 #endif
 }
 
-#ifdef CONFIG_STM32_SPI2
-__EXPORT void stm32_spi2select(FAR struct spi_dev_s *dev, uint32_t devid, bool selected)
+/************************************************************************************
+ * Name:  stm32_usbsuspend
+ *
+ * Description:
+ *   Board logic must provide the stm32_usbsuspend logic if the USBDEV driver is
+ *   used.  This function is called whenever the USB enters or leaves suspend mode.
+ *   This is an opportunity for the board logic to shutdown clocks, power, etc.
+ *   while the USB is suspended.
+ *
+ ************************************************************************************/
+
+#ifdef CONFIG_USBDEV
+__EXPORT void stm32_usbsuspend(FAR struct usbdev_s *dev, bool resume)
 {
-	/* there can only be one device on this bus, so always select it */
-	stm32_gpiowrite(GPIO_SPI_CS_FRAM, !selected);
-}
-
-__EXPORT uint8_t stm32_spi2status(FAR struct spi_dev_s *dev, uint32_t devid)
-{
-	/* FRAM is always present */
-	return SPI_STATUS_PRESENT;
-}
-#endif
-
-#ifdef CONFIG_STM32_SPI3
-__EXPORT void stm32_spi3select(FAR struct spi_dev_s *dev, uint32_t devid, bool selected)
-{
-	/* SPI select is active low, so write !selected to select the device */
-
-	switch (devid) {
-	case PX4_SPIDEV_BARO_MS5611:
-		/* Making sure the other peripherals are not selected */
-		stm32_gpiowrite(GPIO_SPI_CS_BARO, !selected);
-		stm32_gpiowrite(GPIO_SPI_CS_MPU, 1);
-		break;
-
-	case PX4_SPIDEV_MPU_9250:
-		/* Making sure the other peripherals are not selected */
-		stm32_gpiowrite(GPIO_SPI_CS_MPU, !selected);
-		stm32_gpiowrite(GPIO_SPI_CS_BARO, 1);
-		break;
-		
-	default:
-		break;
-	}
-}
-
-__EXPORT uint8_t stm32_spi3status(FAR struct spi_dev_s *dev, uint32_t devid)
-{
-	return SPI_STATUS_PRESENT;
+	uinfo("resume: %d\n", resume);
 }
 #endif
 
-#ifdef CONFIG_STM32_SPI4
-__EXPORT void stm32_spi4select(FAR struct spi_dev_s *dev, uint32_t devid, bool selected)
-{
-	/* SPI select is active low, so write !selected to select the device */
-
-	switch (devid) {
-	case PX4_SPIDEV_ADIS:
-		/* Making sure the other peripherals are not selected */
-		stm32_gpiowrite(GPIO_SPI_CS_ADIS, !selected);
-		break;
-
-	default:
-		break;
-	}
-}
-
-__EXPORT uint8_t stm32_spi4status(FAR struct spi_dev_s *dev, uint32_t devid)
-{
-	return SPI_STATUS_PRESENT;
-}
-#endif
+#endif /* CONFIG_STM32_OTGHS */

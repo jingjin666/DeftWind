@@ -76,8 +76,6 @@
 /* Debug ********************************************************************/
 #define message(format, ...)    syslog(LOG_INFO, format, ##__VA_ARGS__)
 
-
-
 #if defined(CONFIG_FAT_DMAMEMORY)
 # if !defined(CONFIG_GRAN) || !defined(CONFIG_FAT_DMAMEMORY)
 #  error microSD DMA support requires CONFIG_GRAN
@@ -159,7 +157,7 @@ stm32_boardinitialize(void)
 {
     message("stm32_boardinitialize\n");
     /* configure SPI interfaces */
-    //stm32_spiinitialize();
+    stm32_spiinitialize();
 }
 
 /****************************************************************************
