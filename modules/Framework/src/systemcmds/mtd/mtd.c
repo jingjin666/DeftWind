@@ -108,21 +108,15 @@ mtd_status(void)
 
 static void	print_usage(void)
 {
-#if 0
-	PRINT_MODULE_DESCRIPTION("Utility to mount and test partitions (based on FRAM/EEPROM storage as defined by the board)");
+	printf("Utility to mount and test partitions (based on FRAM/EEPROM storage as defined by the board)");
 
-	PRINT_MODULE_USAGE_NAME("mtd", "command");
-	PRINT_MODULE_USAGE_COMMAND_DESCR("status", "Print status information");
+	printf("mtd::command");
+	printf("status::Print status information");
 
-	PRINT_MODULE_USAGE_COMMAND_DESCR("start", "Mount partitions");
-	PRINT_MODULE_USAGE_COMMAND_DESCR("readtest", "Perform read test");
-	PRINT_MODULE_USAGE_COMMAND_DESCR("rwtest", "Perform read-write test");
-	PRINT_MODULE_USAGE_COMMAND_DESCR("erase", "Erase partition(s)");
-
-	PRINT_MODULE_USAGE_PARAM_COMMENT("The commands 'start', 'readtest', 'rwtest' and 'erase' have an optional parameter:");
-	PRINT_MODULE_USAGE_ARG("<partition_name1> [<partition_name2> ...]",
-			       "Partition names (eg. /fs/mtd_params), use system default if not provided", true);
-#endif
+	printf("start::Mount partitions");
+	printf("readtest::Perform read test");
+	printf("rwtest::Perform read-write test");
+	printf("erase::Erase partition(s)");
 }
 
 int mtd_main(int argc, char *argv[])
