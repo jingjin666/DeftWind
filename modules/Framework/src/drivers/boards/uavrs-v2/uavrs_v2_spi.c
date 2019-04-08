@@ -104,7 +104,6 @@ __EXPORT uint8_t imxrt_lpspi2status(FAR struct spi_dev_s *dev, uint32_t devid)
   return 0;
 }
 #endif
-#define message(format, ...)    syslog(LOG_INFO, format, ##__VA_ARGS__)
 
 #ifdef CONFIG_IMXRT_LPSPI3
 __EXPORT void imxrt_lpspi3select(FAR struct spi_dev_s *dev, uint32_t devid, bool selected)

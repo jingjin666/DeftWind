@@ -153,5 +153,7 @@ int uavrs_v2_usdhc_initialize(void);
 void imxrt_spidev_initialize(void);
 #endif
 
+int imxrt_usb_initialize(void);
+
 #endif /* __ASSEMBLY__ */
 #endif /* __CONFIGS_BOARD_CONFIG */

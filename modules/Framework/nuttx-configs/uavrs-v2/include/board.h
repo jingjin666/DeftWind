@@ -234,30 +234,19 @@
 
 /* LPI2Cs
  *
- * Arduino Connector
- *
- *   J23 A4 A4/ADC4/SDA  GPIO_AD_B1_01  LPI2C1_SDA
- *   J23 A5 A5/ADC5/SCL  GPIO_AD_B1_00  LPI2C1_SCL
  */
 
 #define GPIO_LPI2C1_SDA   GPIO_LPI2C1_SDA_2  /* GPIO_AD_B1_01 */
 #define GPIO_LPI2C1_SCL   GPIO_LPI2C1_SCL_2  /* GPIO_AD_B1_00 */
 
-#define GPIO_LPI2C3_SDA   GPIO_LPI2C3_SDA_2  /* GPIO_AD_B1_01 */
-#define GPIO_LPI2C3_SCL   GPIO_LPI2C3_SCL_2  /* GPIO_AD_B1_00 */
-
 /* LPSPI
  *
- * Arduino Connector
- *	 		 GPIO_AD_B0_03  LPSPI3_CS
- *   J24 D09   GPIO_AD_B0_02  LPSPI3_SDI
- *   J24 D14   GPIO_AD_B0_01  LPSPI3_SDO
- *   J24 D15   GPIO_AD_B0_00  LPSPI3_SCK
  */
 
-#define GPIO_LPSPI3_SCK   GPIO_LPSPI3_SCK_2 /* GPIO_AD_B0_00 USB_OTG1_ID */
-#define GPIO_LPSPI3_MISO  GPIO_LPSPI3_SDI_2 /* GPIO_AD_B0_02 */
-#define GPIO_LPSPI3_MOSI  GPIO_LPSPI3_SDO_2 /* GPIO_AD_B0_01 USB_OTG2_ID*/
+#define GPIO_LPSPI3_SCK   GPIO_LPSPI3_SCK_1  /* GPIO_AD_B1_15 */
+#define GPIO_LPSPI3_MISO  GPIO_LPSPI3_SDI_1  /* GPIO_AD_B1_13 */
+#define GPIO_LPSPI3_MOSI  GPIO_LPSPI3_SDO_1  /* GPIO_AD_B1_14 */
+
 
 /************************************************************************************
  * Public Types

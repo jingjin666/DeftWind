@@ -119,7 +119,6 @@ static int nsh_archinitialize(void)
 	dma_alloc_init();
 
 	/* Initialize SDHC-base MMC/SD card support */
-	message("[boot] start sdmmc init\n");
 	ret = uavrs_v2_usdhc_initialize();
 	if (ret < 0)
     {
@@ -148,9 +147,11 @@ static int nsh_archinitialize(void)
 
 __EXPORT void imxrt_boardinitialize(void)
 {
-	imxrt_spidev_initialize();
-	
 	led_init();
+
+	//imxrt_spidev_initialize();
+
+	imxrt_usb_initialize();
 }
 
 #ifdef CONFIG_LIB_BOARDCTL
