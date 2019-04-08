@@ -149,7 +149,7 @@ __EXPORT void imxrt_boardinitialize(void)
 {
 	led_init();
 
-	//imxrt_spidev_initialize();
+	imxrt_spidev_initialize();
 
 	imxrt_usb_initialize();
 }
