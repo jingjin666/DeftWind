@@ -57,4 +57,6 @@ define _B
 endef
 
 #                  command                 priority                   stack  entrypoint
-BUILTIN_COMMANDS := 
+BUILTIN_COMMANDS := \
+	$(call _B, sercon,                 ,                          2048,  sercon_main                ) \
+	$(call _B, serdis,                 ,                          2048,  serdis_main                )

@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <debug.h>
+#include <errno.h>
 
 #include <nuttx/usb/usbdev.h>
 #include <nuttx/usb/usbdev_trace.h>
@@ -28,6 +29,7 @@
 #include <chip.h>
 //#include <imxrt_usbotg.h>
 #include "board_config.h"
+#include "imxrt_periphclks.h"
 
 /************************************************************************************
  * Definitions
@@ -40,6 +42,11 @@
 /************************************************************************************
  * Public Functions
  ************************************************************************************/
+int imxrt_usb_initialize(void)
+{
+	imxrt_clockall_usboh3();
+	return 0;
+}
 
 /************************************************************************************
  * Name:  imxrt_usbpullup
@@ -101,4 +108,18 @@ __EXPORT
 void up_usbinitialize(void)
 {
 	uinfo("initialize: %d");
-} 
+}
+
+int usbdev_register(struct usbdevclass_driver_s *driver);
+__EXPORT
+int usbdev_register(struct usbdevclass_driver_s *driver)
+{
+	return OK;
+}
+
+int usbdev_unregister(struct usbdevclass_driver_s *driver);
+__EXPORT
+int usbdev_unregister(struct usbdevclass_driver_s *driver)
+{
+	return OK;
+}

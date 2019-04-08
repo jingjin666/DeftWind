@@ -1,4 +1,7 @@
 #!nsh
+
+set USB autoconnect
+
 #
 # Try to mount the microSD card.
 #
@@ -10,6 +13,32 @@ then
 else
     echo "failed mount micro sdcard"
     set HAVE_MICROSD 0
+fi
+
+#
+# Check for USB host
+#
+if [ $USB != autoconnect ]
+then
+    echo "[init] not connecting USB"
+else
+    if sercon
+    then
+        echo "[init] USB interface connected"
+    else
+        echo "[init] No USB connected"
+    fi
+fi
+
+if [ $HAVE_MICROSD == 0 ]
+then
+    if usb_connected
+    then
+        echo "Opening USB nsh"
+    else
+        echo "booting with no microSD"
+        set HAVE_MICROSD 1
+    fi
 fi
 
 echo Starting DeftWind
