@@ -15,6 +15,7 @@
 
 #include <nuttx/config.h>
 #include <board_config.h>
+#include "dp_micro_hal.h"
 
 #elif defined (__DP_POSIX)
 

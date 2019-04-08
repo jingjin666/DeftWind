@@ -14,13 +14,6 @@
 
 #ifdef __DP_NUTTX
 #include <nuttx/spi/spi.h>
-#if defined(CONFIG_ARCH_BOARD_UAVRS_V1)
-	#include <stm32_spi.h>
-	#define dp_spibus_initialize(bus_num_1based)		stm32_spibus_initialize(bus_num_1based)
-#elif defined(CONFIG_ARCH_BOARD_UAVRS_V2)
-	#include <imxrt_lpspi.h>
-	#define dp_spibus_initialize(bus_num_1based)		imxrt_lpspibus_initialize(bus_num_1based)
-#endif
 #elif defined(__DP_POSIX)
 enum spi_dev_e {
 	SPIDEV_NONE = 0,    /* Not a valid value */
