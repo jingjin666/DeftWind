@@ -23,8 +23,13 @@
 #include "imxrt_start.h"
 #include "board_config.h"
 
+#include <drivers/drv_hrt.h>
+#include <drivers/drv_led.h>
+
 __BEGIN_DECLS
 extern void led_init(void);
+extern void led_on(int led);
+extern void led_off(int led);
 __END_DECLS
 
 /****************************************************************************
@@ -111,22 +116,24 @@ static int nsh_archinitialize(void)
 {
 	int ret;
 	
-#if defined(CONFIG_I2C_DRIVER) && defined(CONFIG_IMXRT_LPI2C1)
-	imxrt_i2c_register(1);
-#endif
+	hrt_init();
 
-#ifdef CONFIG_IMXRT_USDHC
+	/* configure the DMA allocator */
 	dma_alloc_init();
 
+	/* initial LED state */
+	drv_led_start();
+	led_off(LED_AMBER);
+
+#ifdef CONFIG_IMXRT_USDHC
 	/* Initialize SDHC-base MMC/SD card support */
 	ret = uavrs_v2_usdhc_initialize();
 	if (ret < 0)
-    {
-      syslog(LOG_ERR, "Failed to initialize sdmmc Driver: %d\n", ret);
-      return ret;
-    }
+	{
+		syslog(LOG_ERR, "Failed to initialize sdmmc Driver: %d\n", ret);
+		return ret;
+	}
 #endif
-
 	return OK;
 }
 
@@ -184,7 +191,7 @@ __EXPORT void imxrt_boardinitialize(void)
 
 __EXPORT int board_app_initialize(uintptr_t arg)
 {
-  return nsh_archinitialize();
+	return nsh_archinitialize();
 }
 
 #endif /* CONFIG_LIB_BOARDCTL */

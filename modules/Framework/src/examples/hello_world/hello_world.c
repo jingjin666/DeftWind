@@ -21,6 +21,7 @@
 
 //#include <systemlib/systemlib.h>
 //#include <systemlib/err.h>
+#include <dp_defines.h>
 #include <dp_task.h>
 #define warnx printf
 
@@ -115,7 +116,8 @@ int hello_world(int argc, char *argv[])
 
 	while (!thread_should_exit) {
 		warnx("Hello World!\n");
-		sleep(10);
+		sleep(1);
+		hrt_absolute_time();
 	}
 
 	warnx("[hello_world] exiting.\n");

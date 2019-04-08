@@ -21,6 +21,7 @@
 
 #include "imxrt_gpio.h"
 #include "imxrt_iomuxc.h"
+#include "chip/imxrt_pinmux.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -114,6 +115,12 @@
 #define GPIO_LPSPI3_CS  (GPIO_OUTPUT | GPIO_OUTPUT_ONE | \
                          GPIO_PORT1 | GPIO_PIN3 | IOMUX_LPSPI3_CS)
 
+/* High-resolution timer */
+#define HRT_TIMER               1  /* use GPT1 for the HRT */
+#define HRT_TIMER_CHANNEL       1  /* use capture/compare channel 1 */
+
+#define HRT_PPM_CHANNEL         /* GPT1_CAPTURE2 */  2  /* use capture/compare channel 2 */
+#define GPIO_PPM_IN             /* GPT1_CAPTURE2 */ GPIO_GPT1_CAPTURE2
 
 /****************************************************************************
  * Public Types

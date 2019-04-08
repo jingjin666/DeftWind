@@ -35,16 +35,6 @@
 
 typedef struct i2c_master_s dp_i2c_dev_t;
 
-#if defined(CONFIG_ARCH_BOARD_UAVRS_V1)
-	#include <stm32_i2c.h>
-	#define dp_i2cbus_initialize(bus_num_1based)		stm32_i2cbus_initialize(bus_num_1based)
-	#define dp_i2cbus_uninitialize(pdev)				stm32_i2cbus_uninitialize(pdev)
-#elif defined(CONFIG_ARCH_BOARD_UAVRS_V2)
-	#include <imxrt_lpi2c.h>
-	#define dp_i2cbus_initialize(bus_num_1based)   	imxrt_i2cbus_initialize(bus_num_1based)
-	#define dp_i2cbus_uninitialize(pdev)           			imxrt_i2cbus_uninitialize(pdev)
-#endif
-
 #elif defined(__DP_POSIX)
 #include <stdint.h>
 

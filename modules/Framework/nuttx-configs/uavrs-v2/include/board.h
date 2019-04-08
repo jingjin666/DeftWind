@@ -55,31 +55,31 @@
 #define IMXRT_VDD_SOC (0x12)
 
 /* Set Arm PLL (PLL1) to  fOut    = (24Mhz * ARM_PLL_DIV_SELECT/2) / ARM_PODF_DIVISOR
- *                        600Mhz  = (24Mhz * ARM_PLL_DIV_SELECT/2) / ARM_PODF_DIVISOR
- *                        ARM_PLL_DIV_SELECT = 100
+ *                        576Mhz  = (24Mhz * ARM_PLL_DIV_SELECT/2) / ARM_PODF_DIVISOR
+ *                        ARM_PLL_DIV_SELECT = 96
  *                        ARM_PODF_DIVISOR   = 2
- *                        600Mhz  = (24Mhz * 100/2) / 2
+ *                        576Mhz  = (24Mhz * 96/2) / 2
  *
  *     AHB_CLOCK_ROOT             = PLL1fOut / IMXRT_AHB_PODF_DIVIDER
- *     1Hz to 600 Mhz             = 600Mhz / IMXRT_ARM_CLOCK_DIVIDER
+ *     1Hz to 576 Mhz             = 576Mhz / IMXRT_ARM_CLOCK_DIVIDER
  *                        IMXRT_ARM_CLOCK_DIVIDER = 1
- *                        600Mhz  = 600Mhz / 1
+ *                        576Mhz  = 576Mhz / 1
  *
  *     PRE_PERIPH_CLK_SEL         = PRE_PERIPH_CLK_SEL_PLL1
  *     PERIPH_CLK_SEL             = 1 (0 select PERIPH_CLK2_PODF, 1 select PRE_PERIPH_CLK_SEL_PLL1)
- *     PERIPH_CLK                 = 600Mhz
+ *     PERIPH_CLK                 = 576Mhz
  *
  *     IPG_CLOCK_ROOT             = AHB_CLOCK_ROOT / IMXRT_IPG_PODF_DIVIDER
  *                       IMXRT_IPG_PODF_DIVIDER = 4
- *                       150Mhz = 600Mhz / 4
+ *                       144Mhz = 576Mhz / 4
  *
  *     PRECLK_CLOCK_ROOT          = IPG_CLOCK_ROOT / IMXRT_PERCLK_PODF_DIVIDER
- *                       IMXRT_PERCLK_PODF_DIVIDER = 1
- *                       150Mhz = 150Mhz / 1
+ *                       IMXRT_PERCLK_PODF_DIVIDER = 9
+ *                       16Mhz = 144Mhz / 9
  *
- *     SEMC_CLK_ROOT              = 600Mhz / IMXRT_SEMC_PODF_DIVIDER (labeled AIX_PODF in 18.2)
+ *     SEMC_CLK_ROOT              = 576Mhz / IMXRT_SEMC_PODF_DIVIDER (labeled AIX_PODF in 18.2)
  *                       IMXRT_SEMC_PODF_DIVIDER = 8
- *                       75Mhz    = 600Mhz / 8
+ *                       72Mhz    = 576Mhz / 8
  *
  * Set Sys PLL (PLL2) to  fOut    = (24Mhz * (20+(2*(DIV_SELECT)))
  *                        528Mhz  = (24Mhz * (20+(2*(1)))
@@ -91,7 +91,7 @@
 #define BOARD_XTAL_FREQUENCY      24000000
 #define IMXRT_PRE_PERIPH_CLK_SEL  CCM_CBCMR_PRE_PERIPH_CLK_SEL_PLL1
 #define IMXRT_PERIPH_CLK_SEL      CCM_CBCDR_PERIPH_CLK_SEL_PRE_PERIPH
-#define IMXRT_ARM_PLL_DIV_SELECT  100
+#define IMXRT_ARM_PLL_DIV_SELECT  96
 #define IMXRT_ARM_PODF_DIVIDER    2
 #define IMXRT_AHB_PODF_DIVIDER    1
 #define IMXRT_IPG_PODF_DIVIDER    4
@@ -107,6 +107,9 @@
 
 #define BOARD_CPU_FREQUENCY \
   (BOARD_XTAL_FREQUENCY * (IMXRT_ARM_PLL_DIV_SELECT / 2)) / IMXRT_ARM_PODF_DIVIDER
+
+#define BOARD_GPT_FREQUENCY \
+	(BOARD_CPU_FREQUENCY / IMXRT_IPG_PODF_DIVIDER) / IMXRT_PERCLK_PODF_DIVIDER
 
 /* LED definitions ******************************************************************/
 
