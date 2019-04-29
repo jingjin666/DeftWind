@@ -3,6 +3,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/system.h>
+#include <drivers/drv_hrt.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -36,7 +37,7 @@ uint32_t millis()
 
 uint64_t micros64()
 {
-    return 0;
+    return hrt_absolute_time();
 }
 
 uint64_t millis64()

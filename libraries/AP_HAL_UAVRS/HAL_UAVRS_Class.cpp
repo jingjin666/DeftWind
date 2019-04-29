@@ -9,9 +9,24 @@
 
 using namespace UAVRS;
 
-static UARTDriver uartADriver;
-static UARTDriver uartBDriver;
-static UARTDriver uartCDriver;
+#define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"	// Usb Mavlink
+#define UARTC_DEFAULT_DEVICE "/dev/ttyS2"	// Telecom MicroHard P900
+#define UARTD_DEFAULT_DEVICE "/dev/ttyS6"	// Rtk com1 ouput position data
+#define UARTB_DEFAULT_DEVICE "/dev/ttyS1"	// Rtk com2 input rtcm data and output raw position data
+#define UARTE_DEFAULT_DEVICE "/dev/ttyS0"	// Backup Gps Ublox M8N
+#define UARTF_DEFAULT_DEVICE "/dev/null"
+
+static UARTDriver uartADriver(UARTA_DEFAULT_DEVICE, "APM_uartA");
+static UARTDriver uartBDriver(UARTB_DEFAULT_DEVICE, "APM_uartB");
+static UARTDriver uartCDriver(UARTC_DEFAULT_DEVICE, "APM_uartC");
+static UARTDriver uartDDriver(UARTD_DEFAULT_DEVICE, "APM_uartD");
+static UARTDriver uartEDriver(UARTE_DEFAULT_DEVICE, "APM_uartE");
+static UARTDriver uartFDriver(UARTF_DEFAULT_DEVICE, "APM_uartF");
+
+
+//static UARTDriver uartADriver;
+//static UARTDriver uartBDriver;
+//static UARTDriver uartCDriver;
 static SPIDeviceManager spiDeviceManager;
 static AnalogIn analogIn;
 static Storage storageDriver;
@@ -43,6 +58,12 @@ HAL_UAVRS::HAL_UAVRS() :
         &opticalFlowDriver,
         nullptr)
 {}
+
+bool _uavrs_thread_should_exit = false;        /**< Daemon exit flag */
+static bool thread_running = false;        /**< Daemon status flag */
+static int daemon_task;                /**< Handle of daemon task / thread */
+bool uavrs_ran_overtime;
+
 
 void HAL_UAVRS::run(int argc, char* const argv[], Callbacks* callbacks) const
 {

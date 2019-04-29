@@ -27,6 +27,11 @@ public:
 
 	/* reset imu by hardware io */
 	void imu_reset(bool);
+
+    void set_usb_connected(void) { _usb_connected = true; }
+
+private:
+    bool _usb_connected = false;
 };
 
 class UAVRS::DigitalSource : public AP_HAL::DigitalSource {
