@@ -17,3 +17,6 @@ void Storage::read_block(void* dst, uint16_t src, size_t n) {
 void Storage::write_block(uint16_t loc, const void* src, size_t n)
 {}
 
+void Storage::_timer_tick(void)
+{}
+

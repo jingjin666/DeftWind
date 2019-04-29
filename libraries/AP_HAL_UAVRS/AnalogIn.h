@@ -21,6 +21,7 @@ class UAVRS::AnalogIn : public AP_HAL::AnalogIn {
 public:
     AnalogIn();
     void init();
+    void _timer_tick(void);
     AP_HAL::AnalogSource* channel(int16_t n);
     float board_voltage(void);
 };

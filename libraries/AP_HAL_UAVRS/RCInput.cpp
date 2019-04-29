@@ -40,3 +40,5 @@ bool RCInput::set_override(uint8_t channel, int16_t override) {
 void RCInput::clear_overrides()
 {}
 
+void RCInput::_timer_tick(void)
+{}

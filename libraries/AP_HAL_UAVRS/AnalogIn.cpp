@@ -45,3 +45,8 @@ float AnalogIn::board_voltage(void)
 {
     return 5.0f;
 }
+
+void AnalogIn::_timer_tick(void)
+{
+}
+

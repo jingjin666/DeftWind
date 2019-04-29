@@ -20,8 +20,6 @@
 
 using namespace UAVRS;
 
-UARTDriver::UARTDriver() {}
-
 extern const AP_HAL::HAL& hal;
 
 UARTDriver::UARTDriver(const char *devpath, const char *perf_name) :

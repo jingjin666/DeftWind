@@ -8,7 +8,6 @@
 
 class UAVRS::UARTDriver : public AP_HAL::UARTDriver {
 public:
-    UARTDriver();
     UARTDriver(const char *devpath, const char *perf_name);
     /* UAVRS implementations of UARTDriver virtual methods */
     void begin(uint32_t b);

@@ -7,6 +7,9 @@
 
 extern const AP_HAL::HAL& hal;
 
+extern bool _uavrs_thread_should_exit;
+
+
 
 namespace AP_HAL {
 
@@ -16,12 +19,15 @@ void init()
 
 void panic(const char *errormsg, ...)
 {
-    va_list ap;
+   va_list ap;
 
     va_start(ap, errormsg);
     vdprintf(1, errormsg, ap);
     va_end(ap);
     write(1, "\n", 1);
+
+    hal.scheduler->delay_microseconds(10000);
+    _uavrs_thread_should_exit = true;
     exit(1);
 }
 

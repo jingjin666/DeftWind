@@ -16,12 +16,12 @@ using namespace UAVRS;
 #define UARTE_DEFAULT_DEVICE "/dev/ttyS0"	// Backup Gps Ublox M8N
 #define UARTF_DEFAULT_DEVICE "/dev/null"
 
-static UARTDriver uartADriver(UARTA_DEFAULT_DEVICE, "APM_uartA");
-static UARTDriver uartBDriver(UARTB_DEFAULT_DEVICE, "APM_uartB");
-static UARTDriver uartCDriver(UARTC_DEFAULT_DEVICE, "APM_uartC");
-static UARTDriver uartDDriver(UARTD_DEFAULT_DEVICE, "APM_uartD");
-static UARTDriver uartEDriver(UARTE_DEFAULT_DEVICE, "APM_uartE");
-static UARTDriver uartFDriver(UARTF_DEFAULT_DEVICE, "APM_uartF");
+static UARTDriver uartADriver(UARTA_DEFAULT_DEVICE, "UAVRS_uartA");
+static UARTDriver uartBDriver(UARTB_DEFAULT_DEVICE, "UAVRS_uartB");
+static UARTDriver uartCDriver(UARTC_DEFAULT_DEVICE, "UAVRS_uartC");
+static UARTDriver uartDDriver(UARTD_DEFAULT_DEVICE, "UAVRS_uartD");
+static UARTDriver uartEDriver(UARTE_DEFAULT_DEVICE, "UAVRS_uartE");
+static UARTDriver uartFDriver(UARTF_DEFAULT_DEVICE, "UAVRS_uartF");
 
 
 //static UARTDriver uartADriver;
