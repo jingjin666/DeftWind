@@ -119,8 +119,8 @@
 #define HRT_TIMER               1  /* use GPT1 for the HRT */
 #define HRT_TIMER_CHANNEL       1  /* use capture/compare channel 1 */
 
-#define HRT_PPM_CHANNEL         /* GPT1_CAPTURE2 */  2  /* use capture/compare channel 2 */
-#define GPIO_PPM_IN             /* GPT1_CAPTURE2 */ GPIO_GPT1_CAPTURE2
+//#define HRT_PPM_CHANNEL         /* GPT1_CAPTURE2 */  2  /* use capture/compare channel 2 */
+//#define GPIO_PPM_IN             /* GPT1_CAPTURE2 */ GPIO_GPT1_CAPTURE2
 
 /****************************************************************************
  * Public Types
