@@ -53,7 +53,7 @@
  * constructors.
  */
 
-#ifndef CONFIG_DEBUG_CXX
+#ifdef CONFIG_DEBUG_CXX
 #  define cxxinfo        _info
 #else
 #  define cxxinfo(x...)

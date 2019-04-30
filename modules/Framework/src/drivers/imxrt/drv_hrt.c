@@ -21,6 +21,7 @@
 
 #include <dp_config.h>
 #include <dp_micro_hal.h>
+#include <dp_log.h>
 
 //#include <systemlib/dp_macros.h>
 //#include <lib/perf/perf_counter.h>
@@ -459,7 +460,6 @@ static int
 hrt_tim_isr(int irq, void *context, void *arg)
 {
 	/* grab the timer for latency tracking purposes */
-
 	latency_actual = rCNT;
 
 	/* copy interrupt status */
@@ -539,7 +539,6 @@ hrt_absolute_time(void)
 
 	dp_leave_critical_section(flags);
 	
-	printf("abstime:%lld, count::::%ld\n", abstime, count);
 	return abstime;
 }
 
