@@ -34,6 +34,9 @@ static Scheduler schedulerInstance;
 static Util utilInstance;
 static OpticalFlow opticalFlowDriver;
 
+static UAVRS::I2CDeviceManager i2c_mgr_instance;
+
+
 extern const AP_HAL::HAL& hal;
 
 
@@ -45,7 +48,7 @@ HAL_UAVRS::HAL_UAVRS() :
         nullptr,            /* no uartD */
         nullptr,            /* no uartE */
         nullptr,            /* no uartF */
-        nullptr,            /*i2c*/
+        &i2c_mgr_instance,            /*i2c*/
         &spiDeviceManager,
         &analogIn,
         &storageDriver,
@@ -77,6 +80,9 @@ void HAL_UAVRS::run(int argc, char* const argv[], Callbacks* callbacks) const
     hal.uartB->begin(115200);
     hal.uartC->begin(115200);
     _member->init();
+
+    // init the I2C wrapper class
+    UAVRS_I2C::init_lock();
 
     callbacks->setup();
 
