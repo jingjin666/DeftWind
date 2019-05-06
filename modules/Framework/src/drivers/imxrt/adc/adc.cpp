@@ -1,37 +1,6 @@
 /****************************************************************************
  *
-<<<<<<< HEAD
- *   Copyright (C) 2018 PX4 Development Team. All rights reserved.
-=======
- *   Copyright (C) 2018-2019 PX4 Development Team. All rights reserved.
->>>>>>> 47f1414909939a0013c2a142802e1a3489784294
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- * 3. Neither the name PX4 nor the names of its contributors may be
- *    used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
- * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * Copyright (c) 2018 UAVRS. All rights reserved.
  *
  ****************************************************************************/
 
@@ -44,8 +13,8 @@
  * and so forth. It avoids the gross complexity of the NuttX ADC driver.
  */
 
-#include <px4_config.h>
-#include <px4_log.h>
+#include <dp_config.h>
+#include <dp_log.h>
 #include <board_config.h>
 #include <drivers/device/device.h>
 
@@ -68,10 +37,10 @@
 #include <chip/imxrt_adc.h>
 #include "imxrt_periphclks.h"
 
-#include <perf/perf_counter.h>
+//#include <perf/perf_counter.h>
 
 #include <uORB/topics/system_power.h>
-#include <uORB/topics/adc_report.h>
+//#include <uORB/topics/adc_report.h>
 
 #if defined(ADC_CHANNELS)
 
@@ -127,14 +96,14 @@ private:
 	static const hrt_abstime _tickrate = 10000;	/**< 100Hz base rate */
 
 	hrt_call		_call;
-	perf_counter_t		_sample_perf;
+	//perf_counter_t		_sample_perf;
 
 	adc_chan_t		_channels; 	/**< bits set for channels */
 	unsigned		_channel_count;
 	adc_msg_s		*_samples;		/**< sample buffer */
 
 	orb_advert_t		_to_system_power;
-	orb_advert_t		_to_adc_report;
+	//orb_advert_t		_to_adc_report;
 
 	/** work trampoline */
 	static void		_tick_trampoline(void *arg);
@@ -154,17 +123,17 @@ private:
 	// update system_power ORB topic, only on FMUv2
 	void update_system_power(hrt_abstime now);
 
-	void update_adc_report(hrt_abstime now);
+	//void update_adc_report(hrt_abstime now);
 };
 
 ADC::ADC(adc_chan_t channels) :
 	CDev("adc", ADC0_DEVICE_PATH),
-	_sample_perf(perf_alloc(PC_ELAPSED, "adc_samples")),
+	//_sample_perf(perf_alloc(PC_ELAPSED, "adc_samples")),
 	_channels(channels),
 	_channel_count(0),
 	_samples(nullptr),
-	_to_system_power(nullptr),
-	_to_adc_report(nullptr)
+	_to_system_power(nullptr)
+	//_to_adc_report(nullptr)
 {
 	_debug_enabled = true;
 
@@ -201,59 +170,7 @@ ADC::~ADC()
 	imxrt_clockoff_adc1();
 }
 
-<<<<<<< HEAD
-int
-ADC::init()
-{
-	/* Input is Buss Clock 56 Mhz We will use /8 for 7 Mhz */
-
-	irqstate_t flags = px4_enter_critical_section();
-
-	imxrt_clockall_adc1();
-
-	rCFG(1) = ADC_CFG_ADICLK_IPGDIV2 | ADC_CFG_MODE_12BIT | \
-		  ADC_CFG_ADIV_DIV8 | ADC_CFG_ADLSMP | ADC_CFG_ADSTS_6_20 | \
-		  ADC_CFG_AVGS_4SMPL | ADC_CFG_OVWREN;
-	px4_leave_critical_section(flags);
-
-	/* Clear the CALF and begin the calibration */
-
-	rGS(1) = ADC_GS_CALF;
-	rGC(1) = ADC_GC_CAL | ADC_GC_AVGE;
-
-	while ((rGS(1) & ADC_GC_CAL) == ADC_GC_CAL) {
-		usleep(100);
-
-		if (rGS(1) & ADC_GS_CALF) {
-			return -1;
-		}
-	}
-
-	if (((rHS(1) & ADC_HS_COCO0) == 0) || (rGS(1) & ADC_GS_CALF)) {
-		return -1;
-	}
-
-	/* dummy read to clear COCO of calibration */
-
-	int32_t r = rR0(1);
-	UNUSED(r);
-
-	/* kick off a sample and wait for it to complete */
-	hrt_abstime now = hrt_absolute_time();
-
-	rHC0(1) =  0xd; // VREFSH = internal channel, for ADC self-test, hard connected to VRH internally
-
-	while (!(rHS(1) & ADC_HS_COCO0)) {
-
-		/* don't wait for more than 500us, since that means something broke - should reset here if we see this */
-		if ((hrt_absolute_time() - now) > 500) {
-			DEVICE_LOG("sample timeout");
-			return -1;
-		}
-
-		break;
-=======
-int board_adc_init()
+static int board_adc_init()
 {
 	static bool once = false;
 
@@ -263,14 +180,14 @@ int board_adc_init()
 
 		/* Input is Buss Clock 56 Mhz We will use /8 for 7 Mhz */
 
-		irqstate_t flags = px4_enter_critical_section();
+		irqstate_t flags = dp_enter_critical_section();
 
 		imxrt_clockall_adc1();
 
 		rCFG(1) = ADC_CFG_ADICLK_IPGDIV2 | ADC_CFG_MODE_12BIT | \
 			  ADC_CFG_ADIV_DIV8 | ADC_CFG_ADLSMP | ADC_CFG_ADSTS_6_20 | \
 			  ADC_CFG_AVGS_4SMPL | ADC_CFG_OVWREN;
-		px4_leave_critical_section(flags);
+		dp_leave_critical_section(flags);
 
 		/* Clear the CALF and begin the calibration */
 
@@ -334,9 +251,8 @@ ADC::init()
 	int rv = board_adc_init();
 
 	if (rv < 0) {
-		PX4_DEBUG("sample timeout");
+		DP_ERR("sample timeout");
 		return rv;
->>>>>>> 47f1414909939a0013c2a142802e1a3489784294
 	}
 
 	/* create the device node */
@@ -360,9 +276,9 @@ ADC::read(file *filp, char *buffer, size_t len)
 	}
 
 	/* block interrupts while copying samples to avoid racing with an update */
-	irqstate_t flags = px4_enter_critical_section();
+	irqstate_t flags = dp_enter_critical_section();
 	memcpy(buffer, _samples, len);
-	px4_leave_critical_section(flags);
+	dp_leave_critical_section(flags);
 
 	return len;
 }
@@ -402,10 +318,10 @@ ADC::_tick()
 		_samples[i].am_data = _sample(_samples[i].am_channel);
 	}
 
-	update_adc_report(now);
+	//update_adc_report(now);
 	update_system_power(now);
 }
-
+/*
 void
 ADC::update_adc_report(hrt_abstime now)
 {
@@ -426,139 +342,66 @@ ADC::update_adc_report(hrt_abstime now)
 	int instance;
 	orb_publish_auto(ORB_ID(adc_report), &_to_adc_report, &adc, &instance, ORB_PRIO_HIGH);
 }
-
+*/
 void
 ADC::update_system_power(hrt_abstime now)
 {
-#if defined (BOARD_ADC_USB_CONNECTED)
-	system_power_s system_power = {};
-	system_power.timestamp = now;
+#if defined(BOARD_ADC_USB_CONNECTED)
+    system_power_s system_power = {};
+    system_power.timestamp = hrt_absolute_time();
 
-	system_power.voltage5v_v = 0;
-	system_power.voltage3v3_v = 0;
-	system_power.v3v3_valid = 0;
-
-	/* Assume HW provides only ADC_SCALED_V5_SENSE */
-	int cnt = 1;
-	/* HW provides both ADC_SCALED_V5_SENSE and ADC_SCALED_V3V3_SENSORS_SENSE */
-#  if defined(ADC_SCALED_V5_SENSE) && defined(ADC_SCALED_V3V3_SENSORS_SENSE)
-	cnt++;
-#  endif
-
-	for (unsigned i = 0; i < _channel_count; i++) {
-#  if defined(ADC_SCALED_V5_SENSE)
-
-		if (_samples[i].am_channel == ADC_SCALED_V5_SENSE) {
-			// it is 2:1 scaled
-			system_power.voltage5v_v = _samples[i].am_data * (ADC_V5_V_FULL_SCALE / 4096.0f);
-			cnt--;
-
-		} else
-#  endif
-#  if defined(ADC_SCALED_V3V3_SENSORS_SENSE)
-		{
-			if (_samples[i].am_channel == ADC_SCALED_V3V3_SENSORS_SENSE) {
-				// it is 2:1 scaled
-				system_power.voltage3v3_v = _samples[i].am_data * (ADC_3V3_SCALE * (3.3f / 4096.0f));
-				system_power.v3v3_valid = 1;
-				cnt--;
-			}
-		}
-
-#  endif
-
-		if (cnt == 0) {
-			break;
-		}
-	}
-
-	/* Note once the board_config.h provides BOARD_ADC_USB_CONNECTED,
-	 * It must provide the true logic GPIO BOARD_ADC_xxxx macros.
-	 */
-	// these are not ADC related, but it is convenient to
-	// publish these to the same topic
-
-	system_power.usb_connected = BOARD_ADC_USB_CONNECTED;
-	/* If provided used the Valid signal from HW*/
-#if defined(BOARD_ADC_USB_VALID)
-	system_power.usb_valid = BOARD_ADC_USB_VALID;
-#else
-	/* If not provided then use connected */
-	system_power.usb_valid  = system_power.usb_connected;
+    system_power.voltage5V_v = 0;
+#if defined(ADC_5V_RAIL_SENSE)
+    for (unsigned i = 0; i < _channel_count; i++) {
+        if (_samples[i].am_channel == ADC_5V_RAIL_SENSE) {
+            // it is 2:1 scaled
+            system_power.voltage5V_v = _samples[i].am_data * (6.6f / 4096);
+        }
+    }
 #endif
+    // these are not ADC related, but it is convenient to
+    // publish these to the same topic
+    system_power.usb_connected = BOARD_ADC_USB_CONNECTED;
 
-	/* The valid signals (HW dependent) are associated with each brick */
+    // note that the valid pins are active High
+    system_power.brick_valid   = 1;
 
-	bool  valid_chan[BOARD_NUMBER_BRICKS] = BOARD_BRICK_VALID_LIST;
-	system_power.brick_valid = 0;
+    system_power.servo_valid   = 1;
 
-	for (int b = 0; b < BOARD_NUMBER_BRICKS; b++) {
-		system_power.brick_valid |=  valid_chan[b] ? 1 << b : 0;
-	}
+    // OC pins are not supported
+    system_power.periph_5V_OC  = 0;
+    system_power.hipower_5V_OC = 0;
 
-	system_power.servo_valid   = BOARD_ADC_SERVO_VALID;
-
-	// OC pins are active low
-	system_power.periph_5v_oc  = BOARD_ADC_PERIPH_5V_OC;
-	system_power.hipower_5v_oc = BOARD_ADC_HIPOWER_5V_OC;
-
-	/* lazily publish */
-	if (_to_system_power != nullptr) {
-		orb_publish(ORB_ID(system_power), _to_system_power, &system_power);
-
-	} else {
-		_to_system_power = orb_advertise(ORB_ID(system_power), &system_power);
-	}
-
-#endif // BOARD_ADC_USB_CONNECTED
+    /* lazily publish */
+    if (_to_system_power != nullptr) {
+        DP_LOG("system_power \n", system_power.usb_connected);
+        //orb_publish(ORB_ID(system_power), _to_system_power, &system_power);
+    } else {
+        //_to_system_power = orb_advertise(ORB_ID(system_power), &system_power);
+    }
+#endif
 }
 
-<<<<<<< HEAD
-uint16_t
-ADC::_sample(unsigned channel)
+static uint16_t board_adc_sample(unsigned channel)
 {
-	perf_begin(_sample_perf);
-
-	/* clear any previous COCC */
-	uint16_t result = rR0(1);
-
-	/* run a single conversion right now - should take about 35 cycles (5 microseconds) max */
-
-	rHC0(1) = (ADC_TOTAL_CHANNELS - 1) & channel;
-=======
-uint16_t board_adc_sample(unsigned channel)
-{
-
 	/* clear any previous COCO0 */
 
 	uint16_t result = rR0(1);
 
 	rHC0(1) =  channel;
->>>>>>> 47f1414909939a0013c2a142802e1a3489784294
 
 	/* wait for the conversion to complete */
 	hrt_abstime now = hrt_absolute_time();
 
 	while (!(rHS(1) & ADC_HS_COCO0)) {
-<<<<<<< HEAD
-
-		/* don't wait for more than 10us, since that means something broke - should reset here if we see this */
-		if ((hrt_absolute_time() - now) > 10) {
-			DEVICE_LOG("sample timeout");
-=======
 		/* don't wait for more than 50us, since that means something broke
 		 *  should reset here if we see this
 		 */
 		if ((hrt_absolute_time() - now) > 50) {
->>>>>>> 47f1414909939a0013c2a142802e1a3489784294
 			return 0xffff;
 		}
 	}
 
-<<<<<<< HEAD
-	/* read the result and clear EOC */
-	result = rR0(1);
-=======
 	/* read the result and clear  COCO0 */
 	result  = rR0(1);
 	return result;
@@ -567,16 +410,15 @@ uint16_t board_adc_sample(unsigned channel)
 uint16_t
 ADC::_sample(unsigned channel)
 {
-	perf_begin(_sample_perf);
+	//perf_begin(_sample_perf);
 
 	uint16_t result = board_adc_sample(channel);
 
 	if (result == 0xffff) {
-		PX4_ERR("sample timeout");
+		DP_ERR("sample timeout");
 	}
->>>>>>> 47f1414909939a0013c2a142802e1a3489784294
 
-	perf_end(_sample_perf);
+	//perf_end(_sample_perf);
 	return result;
 }
 
@@ -596,7 +438,7 @@ test(void)
 	int fd = open(ADC0_DEVICE_PATH, O_RDONLY);
 
 	if (fd < 0) {
-		PX4_ERR("can't open ADC device %d", errno);
+		DP_ERR("can't open ADC device %d", errno);
 		exit(1);
 	}
 
@@ -605,7 +447,7 @@ test(void)
 		ssize_t count = read(fd, data, sizeof(data));
 
 		if (count < 0) {
-			PX4_ERR("read error");
+			DP_ERR("read error");
 			exit(1);
 		}
 
@@ -631,13 +473,13 @@ adc_main(int argc, char *argv[])
 		g_adc = new ADC(ADC_CHANNELS);
 
 		if (g_adc == nullptr) {
-			PX4_ERR("couldn't allocate the ADC driver");
+			DP_ERR("couldn't allocate the ADC driver");
 			exit(1);
 		}
 
 		if (g_adc->init() != OK) {
 			delete g_adc;
-			PX4_ERR("ADC init failed");
+			DP_ERR("ADC init failed");
 			exit(1);
 		}
 	}

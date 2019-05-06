@@ -64,13 +64,6 @@ $(FIRMWARES): $(BUILD_DIR)%.build/firmware.dp: generateuorbtopicheaders
 	@echo %%%% Building $(config) in $(work_dir)
 	$(Q) $(MKDIR) -p $(work_dir)
 	$(Q) $(MAKE) $(MQUIET) -r -C $(work_dir) -f $(DP_MK_DIR)firmware.mk CONFIG=$(config) WORK_DIR=$(work_dir) $(FIRMWARE_GOAL)
-	
-#####################
-# generateuorbtopicheaders
-#####################
-.PHONY: generateuorbtopicheaders
-generateuorbtopicheaders:
-#	@echo "%%%%                      Generating uORB topic headers"
 
 #####################
 # all“¿¿µDESIRED_FIRMWARES<=STAGED_FIRMWARES“¿¿µFIRMWARES
@@ -106,3 +99,32 @@ endif
 	$(MKDIR) -p $(dir $@)
 	$(COPY) $(NUTTX_SRC)/nuttx-export.zip $@
 	cd $(NUTTX_SRC)/configs && $(RMDIR) $(board)
+
+#####################
+# uorb msg …˙≥…∆˜
+#####################	
+MSG_DIR = $(DP_BASE)/msg
+UORB_TEMPLATE_DIR = $(DP_BASE)/msg/templates/uorb
+MULTIPLATFORM_TEMPLATE_DIR = $(DP_BASE)/msg/templates/dp/uorb
+TOPICS_DIR = $(DP_BASE)/src/modules/uORB/topics
+MULTIPLATFORM_HEADER_DIR = $(DP_BASE)/src/platforms/$(DP_TARGET_OS)/dp_messages
+MULTIPLATFORM_PREFIX = dp_
+TOPICHEADER_TEMP_DIR = $(BUILD_DIR)topics_temporary
+GENMSG_PYTHONPATH = $(DP_BASE)/Tools/genmsg/src
+GENCPP_PYTHONPATH = $(DP_BASE)/Tools/gencpp/src
+
+#####################
+# generateuorbtopicheaders
+#####################
+.PHONY: generateuorbtopicheaders
+generateuorbtopicheaders:
+	@echo "Generating uORB topic headers"
+	$(Q) (PYTHONPATH=$(GENMSG_PYTHONPATH):$(GENCPP_PYTHONPATH):$(PYTHONPATH) $(PYTHON) \
+		$(DP_BASE)/Tools/px_generate_uorb_topic_headers.py \
+		-d $(MSG_DIR) -o $(TOPICS_DIR) -e $(UORB_TEMPLATE_DIR) -t $(TOPICHEADER_TEMP_DIR))
+	@$(ECHO) "Generating multiplatform uORB topic wrapper headers"
+	$(Q) (rm -r $(TOPICHEADER_TEMP_DIR))
+	$(Q) (PYTHONPATH=$(GENMSG_PYTHONPATH):$(GENCPP_PYTHONPATH):$(PYTHONPATH) $(PYTHON) \
+		$(DP_BASE)/Tools/px_generate_uorb_topic_headers.py \
+		-d $(MSG_DIR) -o $(MULTIPLATFORM_HEADER_DIR) -e $(MULTIPLATFORM_TEMPLATE_DIR) -t $(TOPICHEADER_TEMP_DIR) -p $(MULTIPLATFORM_PREFIX))
+	$(Q) (rm -r $(TOPICHEADER_TEMP_DIR))
