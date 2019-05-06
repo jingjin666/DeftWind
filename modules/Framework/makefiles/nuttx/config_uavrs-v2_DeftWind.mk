@@ -42,7 +42,7 @@ MODULES		+= examples/hello_world_cxx
 #
 MODULES		+= modules/systemlib
 MODULES		+= modules/systemlib/mixer
-#MODULES		+= modules/uORB
+MODULES		+= modules/uORB
 
 #
 # Transitional support - add commands from the NuttX export archive.
