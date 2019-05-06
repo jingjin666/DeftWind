@@ -103,7 +103,7 @@ void imxrt_usbsuspend(FAR struct usbdev_s *dev, bool resume)
 int board_read_VBUS_state(void);
 int board_read_VBUS_state(void)
 {
-	return 0; //todo:Add USB controller register
+    return imxrt_gpio_read(GPIO_USB_OTG_VBUS);
 }
 
 void up_usbinitialize(void);
