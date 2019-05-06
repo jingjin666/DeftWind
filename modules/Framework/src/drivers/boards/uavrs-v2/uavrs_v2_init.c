@@ -22,6 +22,7 @@
 
 #include "imxrt_start.h"
 #include "board_config.h"
+#include "dp_micro_hal.h"
 
 #include <drivers/drv_hrt.h>
 #include <drivers/drv_led.h>
@@ -137,6 +138,29 @@ static int nsh_archinitialize(void)
 	return OK;
 }
 
+
+/************************************************************************************
+ * Name: board_gpio_init
+ *
+ * Description:
+ *   Board may provide a list of GPI pins to get initialized
+ *
+ *  list    - A list of GPIO pins to be initialized
+ *  count   - Size of the list
+ *
+ * return  - Nothing
+  ************************************************************************************/
+
+
+static void board_gpio_init(const uint32_t list[], int count)
+{
+	for (int gpio = 0; gpio < count; gpio++) {
+		if (list[gpio] != 0) {
+			dp_arch_configgpio(list[gpio]);
+		}
+	}
+}
+
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -155,6 +179,10 @@ static int nsh_archinitialize(void)
 __EXPORT void imxrt_boardinitialize(void)
 {
 	led_init();
+
+	/* configure pins */
+	const uint32_t gpio[] = DP_GPIO_INIT_LIST;
+	board_gpio_init(gpio, sizeof(gpio)/sizeof(gpio[0]));
 
 	imxrt_spidev_initialize();
 

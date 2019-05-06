@@ -43,8 +43,11 @@
  * Public Functions
  ************************************************************************************/
 int imxrt_usb_initialize(void)
-{
+{    
 	imxrt_clockall_usboh3();
+
+    imxrt_config_gpio(GPIO_USB_OTG_VBUS);
+    
 	return 0;
 }
 

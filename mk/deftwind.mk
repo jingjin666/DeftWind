@@ -60,6 +60,12 @@ endif
 include $(MK_DIR)/mavgen.mk
 
 #####################
+# 导出ros,msg生成器工具
+#####################
+PYTHONPATH=$(SKETCHBOOK)/mk/Tools/genmsg/src:$(SKETCHBOOK)/mk/Tools/gencpp/src
+export PYTHONPATH
+
+#####################
 # 获取板子类型
 #####################
 # handle target based overrides for board type
