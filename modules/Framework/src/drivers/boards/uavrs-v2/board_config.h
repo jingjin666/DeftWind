@@ -29,6 +29,11 @@
 
 /* Configuration ************************************************************/
 
+/* Power supply control and monitoring GPIOs */
+
+#define GENERAL_INPUT_IOMUX  (IOMUX_CMOS_INPUT |  IOMUX_PULL_UP_47K | IOMUX_DRIVE_HIZ)
+#define GENERAL_OUTPUT_IOMUX (IOMUX_CMOS_OUTPUT | IOMUX_PULL_KEEP | IOMUX_DRIVE_33OHM  | IOMUX_SPEED_MEDIUM | IOMUX_SLEW_FAST)
+
 /* i.MX RT 1050 GPIO Pin Definitions ****************************************/
 
 /* LEDs
@@ -116,11 +121,52 @@
                          GPIO_PORT1 | GPIO_PIN3 | IOMUX_LPSPI3_CS)
 
 /* High-resolution timer */
+
 #define HRT_TIMER               1  /* use GPT1 for the HRT */
 #define HRT_TIMER_CHANNEL       1  /* use capture/compare channel 1 */
 
 //#define HRT_PPM_CHANNEL         /* GPT1_CAPTURE2 */  2  /* use capture/compare channel 2 */
 //#define GPIO_PPM_IN             /* GPT1_CAPTURE2 */ GPIO_GPT1_CAPTURE2
+
+/* ADC */
+
+#define ADC_IOMUX (IOMUX_CMOS_INPUT | IOMUX_PULL_NONE | IOMUX_DRIVE_HIZ)
+#define ADC1_CH(n)                  (n)
+#define ADC1_GPIO(n, p)             (GPIO_PORT1 | GPIO_PIN##p | ADC_IOMUX)
+#define DP_ADC_GPIO  \
+	/* COPTER_BATTERY_VOLTAGE          GPIO_AD_B0_14 GPIO1 Pin 14 */  ADC1_GPIO(3,  14),  \
+	/* PLANE_BATTERY_VOLTAGE           GPIO_AD_B1_05 GPIO1 Pin 21 */  ADC1_GPIO(10,  21),  \
+	/* STEERING_BATTERY_VOLTAGE        GPIO_AD_B1_04 GPIO1 Pin 20 */  ADC1_GPIO(9, 20)
+#define ADC_COPTER_BATTERY_VOLTAGE_CHANNEL          /* GPIO_AD_B0_14 GPIO1 Pin 14 */  ADC1_CH(3)
+#define ADC_PLANE_BATTERY_VOLTAGE_CHANNEL           /* GPIO_AD_B1_05 GPIO1 Pin 21 */  ADC1_CH(10)
+#define ADC_STEERING_GEAR_BATTERY_VOLTAGE_CHANNEL   /* GPIO_AD_B1_04 GPIO1 Pin 20 */  ADC1_CH(9)
+#define ADC_CHANNELS \
+	((1 << ADC_COPTER_BATTERY_VOLTAGE_CHANNEL)       | \
+	 (1 << ADC_PLANE_BATTERY_VOLTAGE_CHANNEL)       | \
+	 (1 << ADC_STEERING_GEAR_BATTERY_VOLTAGE_CHANNEL))
+
+/* USB OTG VBUS 
+ * GPIO_AD_B0_15
+ * ADC1_IN4
+ * GPIO1_IO15
+ */
+#define IOMUX_USB_OTG_VBUS       (IOMUX_SLEW_FAST | IOMUX_DRIVE_50OHM | \
+                         IOMUX_SPEED_MEDIUM | IOMUX_PULL_UP_100K | \
+                         _IOMUX_PULL_ENABLE)
+#define GPIO_USB_OTG_VBUS        (GPIO_INPUT | \
+                         GPIO_PORT1 | GPIO_PIN15 | IOMUX_USB_OTG_VBUS)
+
+/* By Providing BOARD_ADC_USB_CONNECTED (using the dp_arch abstraction)
+ * this board support the ADC system_power interface, and therefore
+ * provides the true logic GPIO BOARD_ADC_xxxx macros.
+ */
+#define BOARD_ADC_USB_CONNECTED dp_arch_gpioread(GPIO_USB_OTG_VBUS)
+
+/* The list of GPIO that will be initialized */
+
+#define DP_GPIO_INIT_LIST { \
+		DP_ADC_GPIO,            \
+}
 
 /****************************************************************************
  * Public Types
