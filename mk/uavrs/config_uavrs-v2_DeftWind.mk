@@ -21,14 +21,14 @@ MODULES			+= drivers/led
 # System commands
 #
 #MODULES			+= systemcmds/bl_update
-#MODULES			+= systemcmds/mixer
-#MODULES			+= systemcmds/perf
-#MODULES			+= systemcmds/reboot
-#MODULES			+= systemcmds/top
+MODULES			+= systemcmds/mixer
+MODULES			+= systemcmds/perf
+MODULES			+= systemcmds/reboot
+MODULES			+= systemcmds/top
 #MODULES			+= systemcmds/nshterm
 MODULES   		+= systemcmds/mtd
-#MODULES   		+= systemcmds/ver
-#MODULES      += systemcmds/usb_connected
+MODULES   		+= systemcmds/ver
+MODULES      += systemcmds/usb_connected
 MODULES			+= systemcmds/tests
 
 #
@@ -40,8 +40,8 @@ MODULES		+= examples/hello_world_cxx
 #
 # Library modules
 #
-#MODULES		+= modules/systemlib
-#MODULES		+= modules/systemlib/mixer
+MODULES		+= modules/systemlib
+MODULES		+= modules/systemlib/mixer
 #MODULES		+= modules/uORB
 
 #

@@ -24,9 +24,12 @@
 
 #ifdef CONFIG_ARCH_BOARD_UAVRS_V1
 #include <stm32_pwr.h>
+#elif defined(CONFIG_ARCH_BOARD_UAVRS_V2)
+#include <up_arch.h>
+#include <chip/imxrt_snvs.h>
 #endif
 
-//#include <systemlib/systemlib.h>
+#include <systemlib/systemlib.h>
 #include <dp_task.h>
 
 // Didn't seem right to include up_internal.h, so direct extern instead.
@@ -37,10 +40,11 @@ void dp_systemreset(bool to_bootloader)
 	if (to_bootloader) {
 #ifdef CONFIG_ARCH_BOARD_UAVRS_V1
 		stm32_pwr_enablebkp(true);
+        /* XXX wow, this is evil - write a magic number into backup register zero */
+        *(uint32_t *)0x40002850 = 0xb007b007;
+#elif defined(CONFIG_ARCH_BOARD_UAVRS_V2)
+        putreg32(0xb007b007, IMXRT_SNVS_LPGPR(3));
 #endif
-
-		/* XXX wow, this is evil - write a magic number into backup register zero */
-		*(uint32_t *)0x40002850 = 0xb007b007;
 	}
 
 	up_systemreset();

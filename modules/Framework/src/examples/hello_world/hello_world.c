@@ -19,11 +19,10 @@
 #include <dp_config.h>
 #include <nuttx/sched.h>
 
-//#include <systemlib/systemlib.h>
-//#include <systemlib/err.h>
+#include <systemlib/systemlib.h>
+#include <systemlib/err.h>
 #include <dp_defines.h>
 #include <dp_task.h>
-#define warnx printf
 
 static bool thread_should_exit = false;		/**< hello_world exit flag */
 static bool thread_running = false;		/**< hello_world status flag */
