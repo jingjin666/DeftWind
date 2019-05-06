@@ -408,8 +408,9 @@ void Plane::setup()
 
 void Plane::loop()
 {
-    printf("loop ------------\r\n");
-    sleep(2);
+    printf("loop---------------\r\n");
+    hal.uartB->printf("uart test--------------------\r\n");
+    hal.scheduler->delay(2000);
 #if 0
     uint32_t loop_us = 1000000UL / scheduler.get_loop_rate_hz();
 

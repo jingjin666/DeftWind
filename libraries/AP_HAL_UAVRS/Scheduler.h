@@ -54,6 +54,8 @@ public:
     
     bool     in_main_thread() const;
 
+    void     hal_initialized() { _hal_initialized = true; }
+
 private:
     bool _initialized;
     volatile bool _hal_initialized;

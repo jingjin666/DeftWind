@@ -3,6 +3,7 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
 
 #include <assert.h>
+#include <stdio.h>
 
 #include "HAL_UAVRS_Class.h"
 #include "AP_HAL_UAVRS_Private.h"
@@ -10,10 +11,10 @@
 using namespace UAVRS;
 
 #define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"	// Usb Mavlink
-#define UARTC_DEFAULT_DEVICE "/dev/ttyS2"	// Telecom MicroHard P900
-#define UARTD_DEFAULT_DEVICE "/dev/ttyS6"	// Rtk com1 ouput position data
-#define UARTB_DEFAULT_DEVICE "/dev/ttyS1"	// Rtk com2 input rtcm data and output raw position data
-#define UARTE_DEFAULT_DEVICE "/dev/ttyS0"	// Backup Gps Ublox M8N
+#define UARTB_DEFAULT_DEVICE "/dev/ttyS0"	// Telecom MicroHard P900
+#define UARTC_DEFAULT_DEVICE "/dev/ttyS2"	// Rtk com1 ouput position data
+#define UARTD_DEFAULT_DEVICE "/dev/ttyS3"	// Rtk com2 input rtcm data and output raw position data
+#define UARTE_DEFAULT_DEVICE "/dev/ttyS4"	// Backup Gps Ublox M8N
 #define UARTF_DEFAULT_DEVICE "/dev/null"
 
 static UARTDriver uartADriver(UARTA_DEFAULT_DEVICE, "UAVRS_uartA");
@@ -23,10 +24,6 @@ static UARTDriver uartDDriver(UARTD_DEFAULT_DEVICE, "UAVRS_uartD");
 static UARTDriver uartEDriver(UARTE_DEFAULT_DEVICE, "UAVRS_uartE");
 static UARTDriver uartFDriver(UARTF_DEFAULT_DEVICE, "UAVRS_uartF");
 
-
-//static UARTDriver uartADriver;
-//static UARTDriver uartBDriver;
-//static UARTDriver uartCDriver;
 static SPIDeviceManager spiDeviceManager;
 static AnalogIn analogIn;
 static Storage storageDriver;
@@ -36,6 +33,9 @@ static RCOutput rcoutDriver;
 static Scheduler schedulerInstance;
 static Util utilInstance;
 static OpticalFlow opticalFlowDriver;
+
+extern const AP_HAL::HAL& hal;
+
 
 HAL_UAVRS::HAL_UAVRS() :
     AP_HAL::HAL(
@@ -73,10 +73,15 @@ void HAL_UAVRS::run(int argc, char* const argv[], Callbacks* callbacks) const
      * up to the programmer to do this in the correct order.
      * Scheduler should likely come first. */
     scheduler->init();
-    uartA->begin(115200);
+    hal.uartA->begin(115200);
+    hal.uartB->begin(115200);
+    hal.uartC->begin(115200);
     _member->init();
 
     callbacks->setup();
+
+    schedulerInstance.hal_initialized();
+
     scheduler->system_initialized();
 
     for (;;) {
