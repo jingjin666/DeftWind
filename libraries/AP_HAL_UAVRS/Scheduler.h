@@ -4,7 +4,8 @@
 #include <sys/time.h>
 #include <signal.h>
 #include <pthread.h>
-#include "perf_counter.h"
+#include <systemlib/systemlib.h>
+#include <systemlib/perf_counter.h>
 #include <AP_HAL/AP_HAL.h>
 
 

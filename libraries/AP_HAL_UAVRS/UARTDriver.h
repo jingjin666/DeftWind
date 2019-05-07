@@ -1,7 +1,7 @@
 #pragma once
 
 #include "AP_HAL_UAVRS.h"
-#include "perf_counter.h"
+#include <systemlib/perf_counter.h>
 
 #include <AP_HAL/utility/RingBuffer.h>
 
