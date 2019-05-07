@@ -47,7 +47,7 @@ public:
 	static void init_lock(void) {
 		pthread_mutex_init(&instance_lock, nullptr);
 	}
-#endif	
+#endif
 private:
 	static uint8_t instance;
 	//static pthread_mutex_t instance_lock;
@@ -63,7 +63,7 @@ uint8_t DP_I2C::instance;
 
 /*
   constructor for I2C wrapper class
- */    
+ */
 DP_I2C::DP_I2C(uint8_t bus) : I2C(devname, devpath, map_bus_number(bus), 0, 400000UL)
 {
 	_debug_enabled = true;
@@ -72,7 +72,7 @@ DP_I2C::DP_I2C(uint8_t bus) : I2C(devname, devpath, map_bus_number(bus), 0, 4000
 
 /*
   map bus numbers
- */    
+ */
 uint8_t DP_I2C::map_bus_number(uint8_t bus) const
 {
 	switch (bus) {
@@ -87,7 +87,7 @@ uint8_t DP_I2C::map_bus_number(uint8_t bus) const
 	case 3:
 		// map to expansion bus
 		return 3;
-		
+
 	case 4:
 		// map to expansion bus
 	return 4;
@@ -110,7 +110,7 @@ bool DP_I2C::do_transfer(uint8_t address, const uint8_t *send, uint32_t send_len
 		#endif
 		init_done = true;
 		// we do late init() so we can setup the device paths
-		
+
 		snprintf(devname, sizeof(devname), "DP_I2C_%u", instance);
 		snprintf(devpath, sizeof(devpath), "/dev/dpi2c%u", instance);
 		init_ok = (init() == OK);
@@ -188,11 +188,11 @@ __BEGIN_DECLS
 
 int test_i2c(int argc, char *argv[])
 {
-	const uint8_t send[2] = {1, 2};
-	uint8_t recv[2] = {0};
+	const uint8_t send[] = {0};
+	uint8_t recv[32] = {0};
 	bool ret;
 	uint8_t bus = 0;
-	
+
 	printf("Test i2c driver.\n");
 
 	if(argc < 2) {
@@ -206,20 +206,26 @@ int test_i2c(int argc, char *argv[])
 			printf("Invalid Param::Please tests i2c 1|2|3|4.\n");
 			return -1;
 		}
-	}else {
+	}
+else {
 		printf("Invalid Param::Please tests i2c 1|2|3|4\n");
 		return -1;
 	}
-	
+
 	if(i2c_dev == nullptr) {
-		i2c_dev = new I2CDevice(bus, 0x50, false);
+		i2c_dev = new I2CDevice(bus, 0xA0, false);
 	}
-	
-	for(uint8_t i=0; i < 5; i++) {
-		ret = i2c_dev->transfer(send, sizeof(send), recv, sizeof(recv));
+
+	for(uint8_t i=0; i < 8; i++) {
+		ret = i2c_dev->transfer(send, 0, recv, sizeof(recv));
 		if(ret) {
-			printf("I2c transfer [%d] complete.\n", i);
-			printf("%d, %d\n", recv[0], recv[1]);
+			for(uint8_t i = 0; i < sizeof(recv); i++) {
+				printf("0x%02X ", recv[i]);
+				if((i + 1) % 16 == 0) {
+					printf("\n");
+				}
+			}
+			printf("\n");
 		} else {
 			printf("I2c transfer [%d] error.\n", i);
 		}
@@ -227,4 +233,5 @@ int test_i2c(int argc, char *argv[])
 	}
 	return 0;
 }
+
 __END_DECLS
