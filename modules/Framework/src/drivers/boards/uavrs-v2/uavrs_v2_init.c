@@ -23,7 +23,7 @@
 #include "imxrt_start.h"
 #include "board_config.h"
 #include "dp_micro_hal.h"
-
+#include <systemlib/cpuload.h>
 #include <drivers/drv_hrt.h>
 #include <drivers/drv_led.h>
 
@@ -121,6 +121,11 @@ static int nsh_archinitialize(void)
 
 	/* configure the DMA allocator */
 	dma_alloc_init();
+
+    /* configure CPU load estimation */
+#ifdef CONFIG_SCHED_INSTRUMENTATION
+    cpuload_initialize_once();
+#endif
 
 	/* initial LED state */
 	drv_led_start();

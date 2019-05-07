@@ -116,7 +116,7 @@ I2C::init()
 	// This is necessary as automatically lowering the bus speed
 	// for maximum compatibility could induce timing issues on
 	// critical sensors the adopter might be unaware of.
-	I2C_SETFREQUENCY(_dev, _bus_clocks[bus_index]);
+	//I2C_SETFREQUENCY(_dev, _bus_clocks[bus_index]);
 
 	// call the probe function to check whether the device is present
 	ret = probe();
@@ -169,6 +169,7 @@ I2C::transfer(const uint8_t *send, unsigned send_len, uint8_t *recv, unsigned re
 		msgs = 0;
 
 		if (send_len > 0) {
+            msgv[msgs].frequency = _bus_clocks[_bus - 1];
 			msgv[msgs].addr = _address;
 			msgv[msgs].flags = 0;
 			msgv[msgs].buffer = const_cast<uint8_t *>(send);
@@ -177,6 +178,7 @@ I2C::transfer(const uint8_t *send, unsigned send_len, uint8_t *recv, unsigned re
 		}
 
 		if (recv_len > 0) {
+            msgv[msgs].frequency = _bus_clocks[_bus - 1];
 			msgv[msgs].addr = _address;
 			msgv[msgs].flags = I2C_M_READ;
 			msgv[msgs].buffer = recv;
