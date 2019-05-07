@@ -21,7 +21,7 @@
 
 #include "imxrt_gpio.h"
 #include "imxrt_iomuxc.h"
-#include "chip/imxrt_pinmux.h"
+
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -167,6 +167,8 @@
 #define DP_GPIO_INIT_LIST { \
 		DP_ADC_GPIO,            \
 }
+
+
 
 /****************************************************************************
  * Public Types

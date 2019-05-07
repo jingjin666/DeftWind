@@ -17,68 +17,101 @@
 #pragma once
 
 #include <inttypes.h>
-
 #include <AP_HAL/HAL.h>
 #include <AP_HAL/SPIDevice.h>
-
 #include "Semaphores.h"
+#include "Device.h"
+#include "Scheduler.h"
+#include <platforms/dp_spi.h>
+
 
 namespace UAVRS {
 
-class SPIDevice : public AP_HAL::SPIDevice {
+class SPIDesc;
+
+class SPIBus : public DeviceBus {
 public:
-    SPIDevice()
+    SPIBus(void) :
+        DeviceBus(UAVRS_SPI_PRIORITY) {}
+    struct spi_dev_s *dev;
+    uint8_t bus;
+};
+
+
+struct SPIDesc {
+    SPIDesc(const char *_name, uint8_t _bus, 
+            enum spi_devtype_e _device, enum spi_mode_e _mode,
+            uint32_t _lowspeed, uint32_t _highspeed)
+        : name(_name), bus(_bus), device(_device), mode(_mode),
+          lowspeed(_lowspeed), highspeed(_highspeed)
     {
     }
 
-    virtual ~SPIDevice() { }
+    const char *name;
+    uint8_t bus;
+    enum spi_devtype_e device;
+    enum spi_mode_e mode;
+    uint32_t lowspeed;
+    uint32_t highspeed;
+};
+
+
+class SPIDevice : public AP_HAL::SPIDevice {
+public:
+    SPIDevice(SPIBus &_bus, SPIDesc &_device_desc);
+
+    virtual ~SPIDevice();
 
     /* AP_HAL::Device implementation */
 
     /* See AP_HAL::Device::set_speed() */
-    bool set_speed(AP_HAL::Device::Speed speed) override
-    {
-        return true;
-    }
+    bool set_speed(AP_HAL::Device::Speed speed) override;
+
+    // low level transfer function
+    void do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len);
 
     /* See AP_HAL::Device::transfer() */
     bool transfer(const uint8_t *send, uint32_t send_len,
-                  uint8_t *recv, uint32_t recv_len) override
-    {
-        return true;
-    }
+                  uint8_t *recv, uint32_t recv_len) override;
 
     /* See AP_HAL::SPIDevice::transfer_fullduplex() */
     bool transfer_fullduplex(const uint8_t *send, uint8_t *recv,
-                             uint32_t len) override
-    {
-        return true;
-    }
+                             uint32_t len) override;
 
     /* See AP_HAL::Device::get_semaphore() */
-    AP_HAL::Semaphore *get_semaphore()
-    {
-        return &_semaphore;
-    }
+    AP_HAL::Semaphore *get_semaphore();
 
     /* See AP_HAL::Device::register_periodic_callback() */
     AP_HAL::Device::PeriodicHandle register_periodic_callback(
-        uint32_t period_usec, AP_HAL::Device::PeriodicCb) override
-    {
-        return nullptr;
-    }
+        uint32_t period_usec, AP_HAL::Device::PeriodicCb) override;
+
+    bool adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint32_t period_usec);
+    bool set_chip_select(bool set);
 
 private:
-    Semaphore _semaphore;
+    SPIBus &bus;
+    SPIDesc &device_desc;
+    uint32_t frequency;
+    perf_counter_t perf;
+    char *pname;
+    bool cs_forced;
+    static void *spi_thread(void *arg);
 };
 
 class SPIDeviceManager : public AP_HAL::SPIDeviceManager {
 public:
-    SPIDeviceManager() { }
-    AP_HAL::OwnPtr<AP_HAL::SPIDevice> get_device(const char *name) override
+    friend class SPIDevice;
+
+    static SPIDeviceManager *from(AP_HAL::SPIDeviceManager *spi_mgr)
     {
-        return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(new SPIDevice());
+        return static_cast<SPIDeviceManager*>(spi_mgr);
     }
+
+    AP_HAL::OwnPtr<AP_HAL::SPIDevice> get_device(const char *name);
+
+private:
+    static SPIDesc device_table[];
+    SPIBus *buses;
 };
 
 }
