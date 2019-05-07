@@ -62,6 +62,11 @@ public:
 
     virtual ~SPIDevice();
 
+    enum SPI_Speed {
+        SPI_SPEED_HIGH,
+        SPI_SPEED_LOW,
+    };
+
     /* AP_HAL::Device implementation */
 
     /* See AP_HAL::Device::set_speed() */

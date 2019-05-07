@@ -17,37 +17,9 @@
 #include "Scheduler.h"
 #include "Semaphores.h"
 #include "Util.h"
-
-
-#define UAVRS_SPI_BUS_ADIS	4
-
-/* Use these in place of the spi_dev_e enumeration to select a specific SPI device on SPI4 */
-#define UAVRS_SPIDEV_ADIS		1
-
-
-FAR struct spi_dev_s *up_spiinitialize(int port){ return nullptr;}
-
-/****************************************************************************
- * Name: up_spi_use_irq_save
- *
- * Description:
- *
- * return true if this bus needs to use irqsave/irqrestore for locking
- */   
-FAR bool up_spi_use_irq_save(FAR struct spi_dev_s *){ return false;}
-
-/****************************************************************************
- * Name: up_spi_set_need_irq_save
- *
- * Description:
- *
- * set a bus to needing irqsave/irqrestore for locking
- */   
-FAR void up_spi_set_need_irq_save(FAR struct spi_dev_s *){}
-
-irqstate_t  irqsave(void){ return 0;}
-
-void irqrestore(irqstate_t){}
+#include <drivers/device/spi.h>
+#include "board_config.h"
+#include <nuttx/arch.h>
 
 
 
@@ -67,7 +39,7 @@ SPIDevice::SPIDevice(SPIBus &_bus, SPIDesc &_device_desc)
 {
     set_device_bus(_bus.bus);
     set_device_address(_device_desc.device);
-    set_speed(AP_HAL::Device::SPEED_LOW);
+    set_speed((AP_HAL::Device::Speed)SPI_SPEED_LOW);
     SPI_SELECT(bus.dev, device_desc.device, false);
     asprintf(&pname, "SPI:%s:%u:%u",
              device_desc.name,
@@ -91,10 +63,10 @@ SPIDevice::~SPIDevice()
 bool SPIDevice::set_speed(AP_HAL::Device::Speed speed)
 {
     switch (speed) {
-    case AP_HAL::Device::SPEED_HIGH:
+    case SPI_SPEED_HIGH:
         frequency = device_desc.highspeed;
         break;
-    case AP_HAL::Device::SPEED_LOW:
+    case SPI_SPEED_LOW:
         frequency = device_desc.lowspeed;
         break;
     }
@@ -121,10 +93,10 @@ void SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
       yes, this is a nasty hack. Suggestions for a better method
       appreciated.
      */
-    bool use_irq_save = up_spi_use_irq_save(bus.dev);
+    bool use_irq_save = up_interrupt_context();
     irqstate_t state;
     if (use_irq_save) {
-        state = irqsave();
+        state = up_irq_save();
     }
     perf_begin(perf);
     SPI_LOCK(bus.dev, true);
@@ -139,7 +111,7 @@ void SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
     SPI_LOCK(bus.dev, false);
     perf_end(perf);
     if (use_irq_save) {
-        irqrestore(state);
+        up_irq_restore(state);
     }
 }
 
@@ -236,7 +208,7 @@ SPIDeviceManager::get_device(const char *name)
         }
         busp->next = buses;
         busp->bus = desc.bus;
-        busp->dev = up_spiinitialize(desc.bus);
+        busp->dev = dp_spibus_initialize(desc.bus);
         buses = busp;
     }
 
