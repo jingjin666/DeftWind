@@ -1,7 +1,7 @@
 /****************************************************************************
  * include/sys/boardctl.h
  *
- *   Copyright (C) 2015-2018 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2015-2019 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -44,6 +44,14 @@
 #include <stdint.h>
 
 #include <nuttx/fs/ioctl.h>
+
+#ifdef CONFIG_VNCSERVER
+#  include <nuttx/nx/nx.h>
+#endif
+
+#ifdef CONFIG_NXTERM
+#  include <nuttx/nx/nxterm.h>
+#endif
 
 #ifdef CONFIG_LIB_BOARDCTL
 
@@ -110,10 +118,49 @@
  * DEPENDENCIES:  Board logic must provide board_<usbdev>_initialize()
  *
  * CMD:           BOARDIOC_NX_START
- * DESCRIPTION:   Start the NX servier
- * ARG:           None
+ * DESCRIPTION:   Start the NX server
+ * ARG:           Integer display number to be served by this NXMU instance.
  * CONFIGURATION: CONFIG_NX
- * DEPENDENCIES:  Base graphics logic provides nx_start()
+ * DEPENDENCIES:  Base graphics logic provides nxmu_start()
+ *
+ * CMD:           BOARDIOC_VNC_START
+ * DESCRIPTION:   Start the NX server and framebuffer driver.
+ * ARG:           A reference readable instance of struct
+ *                boardioc_vncstart_s
+ * CONFIGURATION: CONFIG_VNCSERVER
+ * DEPENDENCIES:  VNC server provides vnc_default_fbinitialize()
+ *
+ * CMD:           BOARDIOC_NXTERM
+ * DESCRIPTION:   Create an NX terminal device
+ * ARG:           A reference readable/writable instance of struct
+ *                boardioc_nxterm_create_s
+ * CONFIGURATION: CONFIG_NXTERM
+ * DEPENDENCIES:  Base NX terminal logic provides nx_register() and
+ *                nxtk_register()
+ *
+ * CMD:           BOARDIOC_NXTERM_REDRAW
+ * DESCRIPTION:   Re-draw a portion of the NX console.  This function
+ *                should be called from the appropriate window callback
+ *                logic.
+ * ARG:           A reference readable instance of struct
+ *                boardioc_nxterm_redraw_s
+ * CONFIGURATION: CONFIG_NXTERM
+ * DEPENDENCIES:  Base NX terminal logic provides nxterm_redraw()
+ *
+ * CMD:           BOARDIOC_NXTERM_KBDIN
+ * DESCRIPTION:   Provide NxTerm keyboard input to NX.
+ * ARG:           A reference readable instance of struct
+ *                boardioc_nxterm_kbdin_s
+ * CONFIGURATION: CONFIG_NXTERM_NXKBDIN
+ * DEPENDENCIES:  Base NX terminal logic provides nxterm_kbdin()
+ *
+ * CMD:           BOARDIOC_TESTSET
+ * DESCRIPTION:   Access architecture-specific up_testset() operation
+ * ARG:           A pointer to a write-able spinlock object.  On success
+ *                the  preceding spinlock state is returned:  0=unlocked,
+ *                1=locked.
+ * CONFIGURATION: CONFIG_BOARDCTL_TESTSET
+ * DEPENDENCIES:  Architecture-specific logic provides up_testset()
  */
 
 #define BOARDIOC_INIT              _BOARDIOC(0x0001)
@@ -125,6 +172,11 @@
 #define BOARDIOC_OS_SYMTAB         _BOARDIOC(0x0007)
 #define BOARDIOC_USBDEV_CONTROL    _BOARDIOC(0x0008)
 #define BOARDIOC_NX_START          _BOARDIOC(0x0009)
+#define BOARDIOC_VNC_START         _BOARDIOC(0x000a)
+#define BOARDIOC_NXTERM            _BOARDIOC(0x000b)
+#define BOARDIOC_NXTERM_REDRAW     _BOARDIOC(0x000c)
+#define BOARDIOC_NXTERM_KBDIN      _BOARDIOC(0x000d)
+#define BOARDIOC_TESTSET           _BOARDIOC(0x000e)
 
 /* If CONFIG_BOARDCTL_IOCTL=y, then board-specific commands will be support.
  * In this case, all commands not recognized by boardctl() will be forwarded
@@ -133,31 +185,13 @@
  * User defined board commands may begin with this value:
  */
 
-#define BOARDIOC_USER              _BOARDIOC(0x0009)
+#define BOARDIOC_USER              _BOARDIOC(0x000f)
 
 /****************************************************************************
  * Public Type Definitions
  ****************************************************************************/
 
-/* Structure used to pass arguments and get returned values from the
- * BOARDIOC_GRAPHICS_SETUP command.
- */
-
-#ifdef CONFIG_NX_LCDDRIVER
-struct lcd_dev_s;                /* Forward reference */
-#else
-struct fb_vtable_s;              /* Forward reference */
-#endif
-
-struct boardioc_graphics_s
-{
-  int devno;                     /* IN: Graphics device number */
-#ifdef CONFIG_NX_LCDDRIVER
-  FAR struct lcd_dev_s *dev;     /* OUT: LCD driver instance */
-#else
-  FAR struct fb_vtable_s *dev;   /* OUT: Framebuffer driver instance */
-#endif
-};
+/* Structures used with IOCTL commands */
 
 /* In order to full describe a symbol table, a vector containing the address
  * of the symbol table and the number of elements in the symbol table is
@@ -230,6 +264,58 @@ struct boardioc_usbdev_ctrl_s
   FAR void **handle;              /* Connection handle */
 };
 #endif /* CONFIG_BOARDCTL_USBDEVCTRL */
+
+#ifdef CONFIG_VNCSERVER
+/* Argument passed with the BOARDIOC_VNC_START command */
+
+struct boardioc_vncstart_s
+{
+  int display;                    /* Display number */
+  NXHANDLE handle;                /* Handle returned by nx_connect */
+};
+#endif
+
+#ifdef CONFIG_NXTERM
+/* Arguments passed with the BOARDIOC_NXTERM command */
+
+enum boardioc_termtype_e
+{
+  BOARDIOC_XTERM_RAW = 0,         /* Raw NX terminal window */
+  BOARDIOC_XTERM_FRAMED,          /* Framed NxTK terminal window */
+  BOARDIOC_XTERM_TOOLBAR          /* Tooolbar of framed NxTK terminal window */
+};
+
+struct boardioc_nxterm_create_s
+{
+  NXTERM nxterm;                  /* Returned NXTERM handle */
+  FAR void *hwnd;                 /* Window handle (NXWINDOW or NXTKWINDOW). */
+  struct nxterm_window_s wndo;    /* Describes the initial window: color, size, font */
+  enum boardioc_termtype_e type;  /* Terminal window type  */
+  uint8_t minor;                  /* Terminal device minor number, N, in
+                                   * /dev/nxtermN.  0 <= N <= 255 */
+};
+
+/* Arguments passed with the BOARDIOC_NXTERM_REDRAW command */
+
+struct boardioc_nxterm_redraw_s
+{
+  NXTERM handle;                            /* NxTerm handle */
+  struct nxgl_rect_s rect;                  /* Rectangle to be re-drawn */
+  bool more;                                /* True: More redraw commands follow */
+};
+
+#ifdef CONFIG_NXTERM_NXKBDIN
+/* Arguments passed with the BOARDIOC_NXTERM_KBDIN command */
+
+struct boardioc_nxterm_kbdin_s
+{
+  NXTERM handle;                            /* NxTerm handle */
+  FAR const uint8_t *buffer;                /* Buffered keyboard data */
+  uint8_t buflen;                           /* Amount of data in buffer */
+};
+#endif
+
+#endif /* CONFIG_NXTERM */
 
 /****************************************************************************
  * Public Data

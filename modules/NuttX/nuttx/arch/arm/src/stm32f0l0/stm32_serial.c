@@ -51,14 +51,13 @@
 
 #include <nuttx/irq.h>
 #include <nuttx/arch.h>
+#include <nuttx/fs/ioctl.h>
 #include <nuttx/serial/serial.h>
 #include <nuttx/power/pm.h>
 
 #ifdef CONFIG_SERIAL_TERMIOS
 #  include <termios.h>
 #endif
-
-#include <arch/serial.h>
 
 #include "up_arch.h"
 #include "up_internal.h"
@@ -554,7 +553,7 @@ static struct stm32_serial_s g_usart3priv =
       .priv      = &g_usart3priv,
     },
 
-  .irq           = STM32_IRQ_USART345678,
+  .irq           = STM32_IRQ_USART3,
   .parity        = CONFIG_USART3_PARITY,
   .bits          = CONFIG_USART3_BITS,
   .stopbits2     = CONFIG_USART3_2STOP,
@@ -615,7 +614,7 @@ static struct stm32_serial_s g_usart4priv =
       .priv      = &g_usart4priv,
     },
 
-  .irq           = STM32_IRQ_USART345678,
+  .irq           = STM32_IRQ_USART4,
   .parity        = CONFIG_USART4_PARITY,
   .bits          = CONFIG_USART4_BITS,
   .stopbits2     = CONFIG_USART4_2STOP,
@@ -680,7 +679,7 @@ static struct stm32_serial_s g_usart5priv =
       .priv     = &g_usart5priv,
     },
 
-  .irq            = STM32_IRQ_USART345678,
+  .irq            = STM32_IRQ_USART5,
   .parity         = CONFIG_USART5_PARITY,
   .bits           = CONFIG_USART5_BITS,
   .stopbits2      = CONFIG_USART5_2STOP,

@@ -59,7 +59,6 @@
 #include <nuttx/irq.h>
 #include <arch/board/board.h>
 
-#include "cache.h"
 #include "chip.h"
 #include "up_arch.h"
 
@@ -996,8 +995,8 @@ static void imxrt_endtransfer(struct imxrt_dev_s *priv,
 
   /* DMA modified the buffer, so we need to flush its cache lines. */
 
-  arch_invalidate_dcache((uintptr_t)priv->buffer,
-                         (uintptr_t)priv->bufferend);
+  up_invalidate_dcache((uintptr_t)priv->buffer,
+                       (uintptr_t)priv->bufferend);
 
   /* Debug instrumentation */
 
@@ -1296,11 +1295,11 @@ static sdio_statset_t imxrt_status(FAR struct sdio_dev_s *dev)
 {
   struct imxrt_dev_s *priv = (struct imxrt_dev_s *)dev;
 
-  /* This register reflects the state of CD no matter if it's a separate pin
-   * or DAT3
-   */
-
+#if defined(CONFIG_MMCSD_HAVE_CARDDETECT) && defined(PIN_USDHC1_CD)
+  if (!imxrt_gpio_read(PIN_USDHC1_CD))
+#else
   if ((getreg32(IMXRT_USDHC1_PRSSTAT) & USDHC_PRSSTAT_CINS) != 0)
+#endif
     {
       priv->cdstatus |= SDIO_STATUS_PRESENT;
     }

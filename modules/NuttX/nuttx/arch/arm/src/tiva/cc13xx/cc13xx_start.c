@@ -46,13 +46,12 @@
 #include <nuttx/init.h>
 #include <arch/irq.h>
 
-#ifdef CONFIG_ARCH_FPU
-#  include "nvic.h"
-#endif
-
+#include "nvic.h"
 #include "up_arch.h"
 #include "up_internal.h"
 
+#include "tiva_enablepwr.h"
+#include "tiva_enableclks.h"
 #include "tiva_lowputc.h"
 #include "tiva_userspace.h"
 #include "tiva_eeprom.h"
@@ -229,12 +228,6 @@ void __start(void)
 
   cc13xx_trim_device();
 
-  /* Configure the UART so that we can get debug output as soon as possible */
-
-  tiva_lowsetup();
-  tiva_fpuconfig();
-  showprogress('A');
-
   /* Clear .bss.  We'll do this inline (vs. calling memset) just to be
    * certain that there are no issues with the state of global variables.
    */
@@ -244,7 +237,16 @@ void __start(void)
       *dest++ = 0;
     }
 
-  showprogress('B');
+  /* Enable power and clocking for the GPIO peripheral. */
+
+  tiva_gpio_enablepwr();
+  tiva_gpio_enableclk();
+
+  /* Configure the UART so that we can get debug output as soon as possible */
+
+  tiva_lowsetup();
+  tiva_fpuconfig();
+  showprogress('A');
 
 #ifdef CONFIG_BOOT_RUNFROMFLASH
   /* Move the initialized data section from his temporary holding spot in
@@ -258,14 +260,14 @@ void __start(void)
       *dest++ = *src++;
     }
 
-  showprogress('C');
+  showprogress('B');
 #endif
 
 #ifdef USE_EARLYSERIALINIT
   /* Perform early serial initialization */
 
   up_earlyserialinit();
-  showprogress('D');
+  showprogress('C');
 #endif
 
 #ifdef CONFIG_BUILD_PROTECTED
@@ -276,35 +278,35 @@ void __start(void)
    */
 
   tiva_userspace();
-  showprogress('E');
+  showprogress('D');
 #endif
 
-#ifndef CONFIG_ARCH_CHIP_CC13X0 /* REVISIT */
-  /* Initialize the Power Manager internal state.  It must be called prior
+#ifdef CONFIG_TIVA_CC26X2_POWERLIB /* REVISIT:  Used with CC13x2 as well. */
+  /* Initialize the Power Manager internal state.  This must be called prior
    * to any other Power API.
    */
 
   cc13xx_power_initialize();
-  showprogress('F');
+  showprogress('E');
 #endif
 
   /* Initialize on-board resources */
 
   tiva_boardinitialize();
-  showprogress('G');
+  showprogress('F');
 
 #ifdef CONFIG_TIVA_EEPROM
   /*Initialize the EEPROM */
 
   tiva_eeprom_initialize();
-  showprogress('H');
+  showprogress('G');
 #endif
 
   /* Then start NuttX */
 
   showprogress('\r');
   showprogress('\n');
-  os_start();
+  nx_start();
 
   /* Shouldn't get here */
 

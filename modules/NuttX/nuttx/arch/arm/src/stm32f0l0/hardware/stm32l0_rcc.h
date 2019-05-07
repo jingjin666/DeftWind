@@ -272,7 +272,7 @@
 
 /* AHB peripheral reset register */
 
-#define RCC_AHBRSTR_DMARST          (0)  /* Bit 0: DMA reset */
+#define RCC_AHBRSTR_DMA1RST         (0)  /* Bit 0: DMA 1 reset */
                                          /* Bits 1-7: Reserved */
 #define RCC_AHBRSTR_MIFRST          (8)  /* Bit 8: Memory interface reset */
                                          /* Bits 9-11: Reserved */
@@ -318,15 +318,15 @@
                                               /* Bits 15-16: Reserved */
 #define RCC_APB1RSTR_USART2RST      (1 << 17) /* Bit 17: USART 2 reset */
 #define RCC_APB1RSTR_USART3RST      (1 << 18) /* Bit 18: USART 3 reset */
-#define RCC_APB1RSTR_UART4RST       (1 << 19) /* Bit 19: UART 4 reset */
-#define RCC_APB1RSTR_UART5RST       (1 << 20) /* Bit 20: UART 5 reset */
+#define RCC_APB1RSTR_USART4RST      (1 << 19) /* Bit 19: USART 4 reset */
+#define RCC_APB1RSTR_USART5RST      (1 << 20) /* Bit 20: USART 5 reset */
 #define RCC_APB1RSTR_I2C1RST        (1 << 21) /* Bit 21: I2C 1 reset */
 #define RCC_APB1RSTR_I2C2RST        (1 << 22) /* Bit 22: I2C 2 reset */
 #define RCC_APB1RSTR_USBRST         (1 << 23) /* Bit 23: USB reset */
                                               /* Bits 24-26: Reserved */
 #define RCC_APB1RSTR_CRSRST         (1 << 27) /* Bit 27: Clock recovery system reset */
 #define RCC_APB1RSTR_PWRRST         (1 << 28) /* Bit 28: Power interface reset */
-#define RCC_APB1RSTR_DACRST         (1 << 29) /* Bit 29: DAC interface reset */
+#define RCC_APB1RSTR_DAC1RST        (1 << 29) /* Bit 29: DAC 1 interface reset */
 #define RCC_APB1RSTR_I2C3RST        (1 << 30) /* Bit 30: I2C3 reset */
 #define RCC_APB1RSTR_LPTIM1RST      (1 << 31) /* Bit 31: Low-power timer reset */
 
@@ -342,7 +342,7 @@
 
 /* AHB Peripheral Clock enable register */
 
-#define RCC_AHBENR_DMAEN            (0)  /* Bit 0: DMA clock enable */
+#define RCC_AHBENR_DMA1EN           (0)  /* Bit 0: DMA 1 clock enable */
                                          /* Bits 1-7: Reserved */
 #define RCC_AHBENR_MIFEN            (8)  /* Bit 8: Memory interface clock enable */
                                          /* Bits 9-11: Reserved */
@@ -388,15 +388,15 @@
                                                 /* Bits 15-16: Reserved */
 #define RCC_APB1ENR_USART2EN          (1 << 17) /* Bit 17: USART 2 clock enable */
 #define RCC_APB1ENR_USART3EN          (1 << 18) /* Bit 18: USART 3 clock enable */
-#define RCC_APB1ENR_UART4EN           (1 << 19) /* Bit 19: UART 4 clock enable */
-#define RCC_APB1ENR_UART5EN           (1 << 20) /* Bit 20: UART 5 clock enable */
+#define RCC_APB1ENR_USART4EN          (1 << 19) /* Bit 19: USART 4 clock enable */
+#define RCC_APB1ENR_USART5EN          (1 << 20) /* Bit 20: USART 5 clock enable */
 #define RCC_APB1ENR_I2C1EN            (1 << 21) /* Bit 21: I2C 1 clock enable */
 #define RCC_APB1ENR_I2C2EN            (1 << 22) /* Bit 22: I2C 2 clock enable */
 #define RCC_APB1ENR_USBEN             (1 << 23) /* Bit 23: USB clock enable */
                                                 /* Bits 24-26: Reserved */
 #define RCC_APB1ENR_CRSEN             (1 << 27) /* Bit 27: Clock recovery system clock enable */
 #define RCC_APB1ENR_PWREN             (1 << 28) /* Bit 28: Power interface clock enable */
-#define RCC_APB1ENR_DACEN             (1 << 29) /* Bit 29: DAC interface clock enable */
+#define RCC_APB1ENR_DAC1EN            (1 << 29) /* Bit 29: DAC 1 interface clock enable */
 #define RCC_APB1ENR_I2C3EN            (1 << 30) /* Bit 30: I2C3 clock enable */
 #define RCC_APB1ENR_LPTIM1EN          (1 << 31) /* Bit 31: Low-power timer clock enable */
 
@@ -412,7 +412,7 @@
 
 /* AHB peripheral clock enable in Sleep mode register */
 
-#define RCC_AHBSMENR_DMASMEN            (0)  /* Bit 0: DMA clock enable in Sleep mode */
+#define RCC_AHBSMENR_DMA1SMEN           (0)  /* Bit 0: DMA 1 clock enable in Sleep mode */
                                              /* Bits 1-7: Reserved */
 #define RCC_AHBSMENR_MIFSMEN            (8)  /* Bit 8: Memory interface clock enable in Sleep mode */
                                              /* Bits 9-11: Reserved */
@@ -458,15 +458,15 @@
                                                   /* Bits 15-16: Reserved */
 #define RCC_APB1SMENR_USART2SMEN        (1 << 17) /* Bit 17: USART 2 clock enable in Sleep mode */
 #define RCC_APB1SMENR_USART3SMEN        (1 << 18) /* Bit 18: USART 3 clock enable in Sleep mode */
-#define RCC_APB1SMENR_UART4SMEN         (1 << 19) /* Bit 19: UART 4 clock enable in Sleep mode */
-#define RCC_APB1SMENR_UART5SMEN         (1 << 20) /* Bit 20: UART 5 clock enable in Sleep mode */
+#define RCC_APB1SMENR_USART4SMEN        (1 << 19) /* Bit 19: USART 4 clock enable in Sleep mode */
+#define RCC_APB1SMENR_USART5SMEN        (1 << 20) /* Bit 20: USART 5 clock enable in Sleep mode */
 #define RCC_APB1SMENR_I2C1SMEN          (1 << 21) /* Bit 21: I2C 1 clock enable in Sleep mode */
 #define RCC_APB1SMENR_I2C2SMEN          (1 << 22) /* Bit 22: I2C 2 clock enable in Sleep mode */
 #define RCC_APB1SMENR_USBSMEN           (1 << 23) /* Bit 23: USB clock enable in Sleep mode */
                                                   /* Bits 24-26: Reserved */
 #define RCC_APB1SMENR_CRSSMEN           (1 << 27) /* Bit 27: Clock recovery system clock enable in Sleep mode */
 #define RCC_APB1SMENR_PWRSMEN           (1 << 28) /* Bit 28: Power interface clock enable in Sleep mode */
-#define RCC_APB1SMENR_DACSMEN           (1 << 29) /* Bit 29: DAC interface clock enable in Sleep mode */
+#define RCC_APB1SMENR_DAC1SMEN          (1 << 29) /* Bit 29: DAC 1 interface clock enable in Sleep mode */
 #define RCC_APB1SMENR_I2C3SMEN          (1 << 30) /* Bit 30: I2C3 clock enable in Sleep mode */
 #define RCC_APB1SMENR_LPTIM1SMEN        (1 << 31) /* Bit 31: Low-power timer clock enable in Sleep mode */
 

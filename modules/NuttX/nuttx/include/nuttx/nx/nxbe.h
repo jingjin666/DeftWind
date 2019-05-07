@@ -1,7 +1,8 @@
 /****************************************************************************
  * include/nuttx/nx/nxbe.h
  *
- *   Copyright (C) 2008-2011, 2013, 2017 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2011, 2013, 2017, 2019 Gregory Nutt. All rights
+ *     reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -62,13 +63,62 @@
 #endif
 
 /* NXBE Definitions *********************************************************/
-/* Window flags and helper macros */
 
-#define NXBE_WINDOW_BLOCKED  (1 << 0) /* The window is blocked and will not
-                                       * receive further input. */
+/* Window flags and helper macros:
+ *
+ * NXBE_WINDOW_BLOCKED   - Window input is blocked (internal use only)
+ * NXBE_WINDOW_FRAMED    - Framed (NxTK) Window
+ * NXBE_WINDOW_RAMBACKED - Window is backed by a framebuffer
+ * NXBE_WINDOW_MODAL     - Window is in a focused, modal state
+ */
 
-#define NXBE_ISBLOCKED(wnd)  (((wnd)->flags & NXBE_WINDOW_BLOCKED) != 0)
-#define NXBE_SETBLOCKED(wnd) do { (wnd)->flags |= NXBE_WINDOW_BLOCKED; } while (0)
+#define NXBE_WINDOW_BLOCKED   (1 << 0) /* Bit 0: The window is blocked and will
+                                        *        not receive further input. */
+#define NXBE_WINDOW_FRAMED    (1 << 1) /* Bit 1: Framed (NxTK) Window */
+#define NXBE_WINDOW_RAMBACKED (1 << 2) /* Bit 2: Window is backed by a framebuffer */
+#define NXBE_WINDOW_MODAL     (1 << 3) /* Bit 3: Window is in a focused, modal state */
+
+/* Valid user flags for different window types */
+
+#ifdef CONFIG_NX_RAMBACKED
+#  define NX_WINDOW_USER      NXBE_WINDOW_RAMBACKED
+#  define NXTK_WINDOW_USER    (NXBE_WINDOW_FRAMED | NXBE_WINDOW_RAMBACKED)
+#  define NXBE_WINDOW_USER    (NXBE_WINDOW_FRAMED | NXBE_WINDOW_RAMBACKED)
+#else
+#  define NX_WINDOW_USER      0
+#  define NXTK_WINDOW_USER    NXBE_WINDOW_FRAMED
+#  define NXBE_WINDOW_USER    NXBE_WINDOW_FRAMED
+#endif
+
+/* Helpful flag macros */
+
+#define NXBE_ISBLOCKED(wnd) \
+  (((wnd)->flags & NXBE_WINDOW_BLOCKED) != 0)
+#define NXBE_SETBLOCKED(wnd) \
+  do { (wnd)->flags |= NXBE_WINDOW_BLOCKED; } while (0)
+#define NXBE_CLRBLOCKED(wnd) \
+  do { (wnd)->flags &= ~NXBE_WINDOW_BLOCKED; } while (0)
+
+#define NXBE_ISFRAMED(wnd) \
+  (((wnd)->flags & NXBE_WINDOW_FRAMED) != 0)
+#define NXBE_SETFRAMED(wnd) \
+  do { (wnd)->flags |= NXBE_WINDOW_FRAMED; } while (0)
+#define NXBE_CLRFRAMED(wnd) \
+  do { (wnd)->flags &= ~NXBE_WINDOW_FRAMED; } while (0)
+
+#define NXBE_ISRAMBACKED(wnd) \
+  (((wnd)->flags & NXBE_WINDOW_RAMBACKED) != 0)
+#define NXBE_SETRAMBACKED(wnd) \
+  do { (wnd)->flags |= NXBE_WINDOW_RAMBACKED; } while (0)
+#define NXBE_CLRRAMBACKED(wnd) \
+  do { (wnd)->flags &= ~NXBE_WINDOW_RAMBACKED; } while (0)
+
+#define NXBE_ISMODAL(wnd) \
+  (((wnd)->flags & NXBE_WINDOW_MODAL) != 0)
+#define NXBE_SETMODAL(wnd) \
+  do { (wnd)->flags |= NXBE_WINDOW_MODAL; } while (0)
+#define NXBE_CLRMODAL(wnd) \
+  do { (wnd)->flags &= ~NXBE_WINDOW_MODAL; } while (0)
 
 /****************************************************************************
  * Public Types
@@ -83,13 +133,13 @@
  */
 
 struct nxbe_state_s;
-struct nxfe_conn_s;
+struct nxmu_conn_s;
 struct nxbe_window_s
 {
   /* State information */
 
   FAR struct nxbe_state_s *be;        /* The back-end state structure */
-  FAR struct nxfe_conn_s *conn;       /* Connection to the window client */
+  FAR struct nxmu_conn_s *conn;       /* Connection to the window client */
   FAR const struct nx_callback_s *cb; /* Event handling callbacks */
 
   /* The following links provide the window's vertical position using a
@@ -103,11 +153,23 @@ struct nxbe_window_s
    * absolute screen coordinate system (0,0)->(xres,yres)
    */
 
-  struct nxgl_rect_s bounds;          /* The bounding rectangle of window */
+  struct nxgl_rect_s bounds;          /* The bounding rectangle of the window */
 
   /* Window flags (see the NXBE_* bit definitions above) */
 
   uint8_t flags;
+
+#ifdef CONFIG_NX_RAMBACKED
+  /* Per-window framebuffer support */
+
+#ifdef CONFIG_BUILD_KERNEL
+  uint16_t npages;                    /* Number of pages in allocation */
+#endif
+  nxgl_coord_t stride;                /* Width of framebuffer in bytes */
+  FAR nxgl_mxpixel_t *fbmem;          /* Allocated framebuffer in kernel
+                                       * address spaced.  Must be contiguous.
+                                       */
+#endif
 
   /* Client state information this is provide in window callbacks */
 
@@ -137,4 +199,3 @@ extern "C"
 #endif
 
 #endif /* __INCLUDE_NUTTX_NX_NXBE_H */
-

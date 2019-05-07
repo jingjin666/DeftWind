@@ -159,13 +159,12 @@ struct macnet_driver_s
   sem_t md_eventsem;              /* Signaling semaphore for waiting get event */
   sq_queue_t primitive_queue;     /* For holding primitives to pass along */
 
-#ifndef CONFIG_DISABLE_SIGNALS
   /* MAC Service notification information */
 
   bool    md_notify_registered;
-  uint8_t md_notify_signo;
   pid_t   md_notify_pid;
-#endif
+  struct sigevent md_notify_event;
+  struct sigwork_s md_notify_work;
 };
 
 /****************************************************************************
@@ -441,20 +440,12 @@ static int macnet_notify(FAR struct mac802154_maccb_s *maccb,
           nxsem_post(&priv->md_eventsem);
         }
 
-#ifndef CONFIG_DISABLE_SIGNALS
       if (priv->md_notify_registered)
         {
-#ifdef CONFIG_CAN_PASS_STRUCTS
-          union sigval value;
-          value.sival_int = (int)primitive->type;
-          (void)nxsig_queue(priv->md_notify_pid, priv->md_notify_signo,
-                            value);
-#else
-          (void)nxsig_queue(priv->md_notify_pid, priv->md_notify_signo,
-                            (FAR void *)primitive->type);
-#endif
+          priv->md_notify_event.sigev_value.sival_int = primitive->type;
+          nxsig_notification(priv->md_notify_pid, &priv->md_notify_event,
+                             SI_QUEUE, &priv->md_notify_work);
         }
-#endif
 
       nxsem_post(&priv->md_exclsem);
       return OK;
@@ -1039,7 +1030,6 @@ static int macnet_ioctl(FAR struct net_driver_s *dev, int cmd,
 
           switch (cmd)
             {
-        #ifndef CONFIG_DISABLE_SIGNALS
               /* Command:     MAC802154IOC_NOTIFY_REGISTER
                * Description: Register to receive a signal whenever there is a
                *              event primitive sent from the MAC layer.
@@ -1053,13 +1043,12 @@ static int macnet_ioctl(FAR struct net_driver_s *dev, int cmd,
                 {
                   /* Save the notification events */
 
-                  priv->md_notify_signo       = netmac->u.signo;
+                  priv->md_notify_event       = netmac->u.event;
                   priv->md_notify_pid         = getpid();
                   priv->md_notify_registered  = true;
                   ret = OK;
                 }
                 break;
-        #endif
 
               case MAC802154IOC_GET_EVENT:
                 {

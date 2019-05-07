@@ -298,7 +298,7 @@ if [ "X${USRONLY}" != "Xy" ]; then
 					{ echo "MK: 'mkdir ${EXPORTDIR}/arch/${hdir}/chip' failed"; exit 1; }
 
 				# Then copy the header files (only) into the new directory
-
+				cp -rf -a -P "${ARCHDIR}"/${hdir}/chip/rt105x "${EXPORTDIR}"/arch/${hdir}/chip/ 2>/dev/null
 				cp -f "${ARCHDIR}"/${hdir}/chip/*.h "${EXPORTDIR}"/arch/${hdir}/chip/. 2>/dev/null
 			fi
 		fi

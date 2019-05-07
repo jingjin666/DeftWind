@@ -285,7 +285,6 @@ config ARCH_CHIP_SIMPLELINK
 	bool "TI SimpleLink"
 	select ARCH_HAVE_MPU
 	select ARM_HAVE_MPU_UNIFIED
-	select ARCH_HAVE_FPU
 	select ARCH_HAVE_FETCHADD
 	depends on EXPERIMENTAL
 	---help---
@@ -329,6 +328,8 @@ config ARCH_CHIP_STM32F7
 	select ARCH_HAVE_SPI_BITORDER
 	select ARM_HAVE_MPU_UNIFIED
 	select ARMV7M_HAVE_STACKCHECK
+	select ARCH_HAVE_TICKLESS
+	select ARCH_HAVE_TIMEKEEPING
 	---help---
 		STMicro STM32 architectures (ARM Cortex-M7).
 
@@ -401,11 +402,25 @@ config ARCH_CHIP_XMC4
 	---help---
 		Infineon XMC4xxx(ARM Cortex-M4) architectures
 
+config ARCH_CHIP_CXD56XX
+	bool "Sony CXD56xx"
+	select ARCH_CORTEXM4
+	select ARCH_HAVE_MPU
+	select ARM_HAVE_MPU_UNIFIED
+	select ARCH_HAVE_FPU
+	select ARCH_HAVE_HEAPCHECK
+	select ARCH_HAVE_MULTICPU
+	select ARCH_HAVE_SDIO if MMCSD
+	---help---
+		Sony CXD56XX (ARM Cortex-M4) architectures
+
 endchoice
 
 config ARCH_ARM7TDMI
 	bool
 	default n
+	select ARCH_DCACHE
+	select ARCH_ICACHE
 	---help---
 		The Arm7TDMI-S is an excellent workhorse processor capable of a wide
 		array of applications. Traditionally used in mobile handsets, the
@@ -414,6 +429,8 @@ config ARCH_ARM7TDMI
 config ARCH_ARM920T
 	bool
 	default n
+	select ARCH_DCACHE
+	select ARCH_ICACHE
 	select ARCH_HAVE_MMU
 	select ARCH_USE_MMU
 	---help---
@@ -429,6 +446,8 @@ config ARCH_ARM920T
 config ARCH_ARM926EJS
 	bool
 	default n
+	select ARCH_DCACHE
+	select ARCH_ICACHE
 	select ARCH_HAVE_MMU
 	select ARCH_USE_MMU
 	---help---
@@ -450,6 +469,8 @@ config ARCH_ARM926EJS
 config ARCH_ARM1136J
 	bool
 	default n
+	select ARCH_DCACHE
+	select ARCH_ICACHE
 	select ARCH_HAVE_MMU
 	select ARCH_USE_MMU
 	---help---
@@ -460,6 +481,8 @@ config ARCH_ARM1136J
 config ARCH_ARM1156T2
 	bool
 	default n
+	select ARCH_DCACHE
+	select ARCH_ICACHE
 	select ARCH_HAVE_MMU
 	select ARCH_USE_MMU
 	---help---
@@ -469,6 +492,8 @@ config ARCH_ARM1156T2
 config ARCH_ARM1176JZ
 	bool
 	default n
+	select ARCH_DCACHE
+	select ARCH_ICACHE
 	select ARCH_HAVE_MMU
 	select ARCH_USE_MMU
 	---help---
@@ -487,15 +512,21 @@ config ARCH_CORTEXM23
 	bool
 	default n
 
+config ARCH_ARMV7M
+	bool
+	default n
+
 config ARCH_CORTEXM3
 	bool
 	default n
+	select ARCH_ARMV7M
 	select ARCH_HAVE_IRQPRIO
 	select ARCH_HAVE_IRQTRIGGER
 	select ARCH_HAVE_RAMVECTORS
 	select ARCH_HAVE_LAZYFPU
 	select ARCH_HAVE_HIPRI_INTERRUPT
 	select ARCH_HAVE_RESET
+	select ARCH_HAVE_TESTSET
 	select ARCH_HAVE_HARDFAULT_DEBUG
 	select ARCH_HAVE_MEMFAULT_DEBUG
 
@@ -506,18 +537,21 @@ config ARCH_CORTEXM33
 config ARCH_CORTEXM4
 	bool
 	default n
+	select ARCH_ARMV7M
 	select ARCH_HAVE_IRQPRIO
 	select ARCH_HAVE_IRQTRIGGER
 	select ARCH_HAVE_RAMVECTORS
 	select ARCH_HAVE_LAZYFPU
 	select ARCH_HAVE_HIPRI_INTERRUPT
 	select ARCH_HAVE_RESET
+	select ARCH_HAVE_TESTSET
 	select ARCH_HAVE_HARDFAULT_DEBUG
 	select ARCH_HAVE_MEMFAULT_DEBUG
 
 config ARCH_CORTEXM7
 	bool
 	default n
+	select ARCH_ARMV7M
 	select ARCH_HAVE_FPU
 	select ARCH_HAVE_IRQPRIO
 	select ARCH_HAVE_IRQTRIGGER
@@ -525,77 +559,92 @@ config ARCH_CORTEXM7
 	select ARCH_HAVE_LAZYFPU
 	select ARCH_HAVE_HIPRI_INTERRUPT
 	select ARCH_HAVE_RESET
-	select ARCH_HAVE_COHERENT_DCACHE if ELF || MODULE
+	select ARCH_HAVE_TESTSET
 	select ARCH_HAVE_HARDFAULT_DEBUG
 	select ARCH_HAVE_MEMFAULT_DEBUG
+
+config ARCH_ARMV7A
+	bool
+	default n
 
 config ARCH_CORTEXA5
 	bool
 	default n
+	select ARCH_ARMV7A
+	select ARCH_DCACHE
+	select ARCH_ICACHE
 	select ARCH_HAVE_MMU
 	select ARCH_USE_MMU
-	select ARCH_HAVE_COHERENT_DCACHE if ELF || MODULE
+	select ARCH_HAVE_TESTSET
+
+config ARCH_CORTEXA7
+	bool
+	default n
+	select ARCH_ARMV7A
+	select ARCH_DCACHE
+	select ARCH_ICACHE
+	select ARCH_HAVE_MMU
+	select ARCH_USE_MMU
+	select ARCH_HAVE_TESTSET
 
 config ARCH_CORTEXA8
 	bool
 	default n
+	select ARCH_ARMV7A
+	select ARCH_DCACHE
+	select ARCH_ICACHE
 	select ARCH_HAVE_MMU
 	select ARCH_USE_MMU
-	select ARCH_HAVE_COHERENT_DCACHE if ELF || MODULE
+	select ARCH_HAVE_TESTSET
 
 config ARCH_CORTEXA9
 	bool
 	default n
+	select ARCH_ARMV7A
+	select ARCH_DCACHE
+	select ARCH_ICACHE
 	select ARCH_HAVE_MMU
 	select ARCH_USE_MMU
-	select ARCH_HAVE_COHERENT_DCACHE if ELF || MODULE
+	select ARCH_HAVE_TESTSET
+
+config ARCH_ARMV7R
+	bool
+	default n
 
 config ARCH_CORTEXR4
 	bool
 	default n
+	select ARCH_ARMV7R
+	select ARCH_DCACHE
+	select ARCH_ICACHE
 	select ARCH_HAVE_MPU
-	select ARCH_HAVE_COHERENT_DCACHE if ELF || MODULE
-
-config ARCH_CORTEXR4F
-	bool
-	default n
-	select ARCH_HAVE_MPU
-	select ARCH_HAVE_FPU
-	select ARCH_HAVE_COHERENT_DCACHE if ELF || MODULE
+	select ARCH_HAVE_TESTSET
 
 config ARCH_CORTEXR5
 	bool
 	default n
+	select ARCH_ARMV7R
+	select ARCH_DCACHE
+	select ARCH_ICACHE
 	select ARCH_HAVE_MPU
-	select ARCH_HAVE_COHERENT_DCACHE if ELF || MODULE
-
-config ARCH_CORTEXR5F
-	bool
-	default n
-	select ARCH_HAVE_MPU
-	select ARCH_HAVE_FPU
-	select ARCH_HAVE_COHERENT_DCACHE if ELF || MODULE
+	select ARCH_HAVE_TESTSET
 
 config ARCH_CORTEXR7
 	bool
 	default n
+	select ARCH_ARMV7R
+	select ARCH_DCACHE
+	select ARCH_ICACHE
 	select ARCH_HAVE_MPU
-	select ARCH_HAVE_COHERENT_DCACHE if ELF || MODULE
-
-config ARCH_CORTEXR7F
-	bool
-	default n
-	select ARCH_HAVE_MPU
-	select ARCH_HAVE_FPU
-	select ARCH_HAVE_COHERENT_DCACHE if ELF || MODULE
+	select ARCH_HAVE_TESTSET
 
 config ARCH_FAMILY
 	string
 	default "arm"		if ARCH_ARM7TDMI || ARCH_ARM926EJS || ARCH_ARM920T
 	default "armv6-m"	if ARCH_CORTEXM0
-	default "armv7-a"	if ARCH_CORTEXA5 || ARCH_CORTEXA8 || ARCH_CORTEXA9
-	default "armv7-m"	if ARCH_CORTEXM3 || ARCH_CORTEXM4 || ARCH_CORTEXM7
-	default "armv7-r"	if ARCH_CORTEXR4 || ARCH_CORTEXR4F || ARCH_CORTEXR5 || ARCH_CORTEXR5F || ARCH_CORTEX74 || ARCH_CORTEXR7F
+	default "armv7-a"	if ARCH_ARMV7A
+	default "armv7-m"	if ARCH_ARMV7M
+	default "armv7-r"	if ARCH_ARMV7R
 
 config ARCH_CHIP
 	string
@@ -635,34 +684,7 @@ config ARCH_CHIP
 	default "str71x"	if ARCH_CHIP_STR71X
 	default "tms570"	if ARCH_CHIP_TMS570
 	default "xmc4"		if ARCH_CHIP_XMC4
-
-config ARCH_HAVE_FPU
-	bool
-	default n
-
-config ARCH_HAVE_DPFPU
-	bool
-	default n
-
-config ARCH_HAVE_LAZYFPU
-	bool
-
-config ARCH_FPU
-	bool "FPU support"
-	default y
-	depends on ARCH_HAVE_FPU
-	---help---
-		Build in support for the ARM Cortex-M4 Floating Point Unit (FPU).
-		Check your chip specifications first; not all Cortex-M4 chips
-		support the FPU.
-
-config ARCH_DPFPU
-	bool "Double precision FPU support"
-	default y
-	depends on ARCH_FPU && ARCH_HAVE_DPFPU
-	---help---
-		Enable toolchain support for double precision (64-bit) floating
-		point if both the toolchain and the hardware support it.
+	default "cxd56xx"	if ARCH_CHIP_CXD56XX
 
 config ARCH_HAVE_TRUSTZONE
 	bool
@@ -688,6 +710,11 @@ config ARCH_TRUSTZONE_BOTH
 	depends on EXPERIMENTAL
 
 endchoice # TrustZone Configuration
+
+config ARM_THUMB
+	bool
+	default n
+	depends on ARCH_ARMV7A
 
 config ARM_HAVE_MPU_UNIFIED
 	bool
@@ -783,13 +810,13 @@ config ARM_SEMIHOSTING_HOSTFS
 if ARCH_CORTEXM0
 source arch/arm/src/armv6-m/Kconfig
 endif
-if ARCH_CORTEXA5 || ARCH_CORTEXA8 || ARCH_CORTEXA9
+if ARCH_ARMV7A
 source arch/arm/src/armv7-a/Kconfig
 endif
-if ARCH_CORTEXM3 || ARCH_CORTEXM4 || ARCH_CORTEXM7
+if ARCH_ARMV7M
 source arch/arm/src/armv7-m/Kconfig
 endif
-if ARCH_CORTEXR4 || ARCH_CORTEXR4F || ARCH_CORTEXR5 || ARCH_CORTEXR5F || ARCH_CORTEX74 || ARCH_CORTEXR7F
+if ARCH_ARMV7R
 source arch/arm/src/armv7-r/Kconfig
 endif
 if ARCH_ARM7TDMI || ARCH_ARM920T || ARCH_ARM926EJS || ARCH_ARM1136J || ARCH_ARM1156T2 || ARCH_ARM1176JZ
@@ -902,6 +929,9 @@ source arch/arm/src/tms570/Kconfig
 endif
 if ARCH_CHIP_XMC4
 source arch/arm/src/xmc4/Kconfig
+endif
+if ARCH_CHIP_CXD56XX
+source arch/arm/src/cxd56xx/Kconfig
 endif
 
 endif # ARCH_ARM

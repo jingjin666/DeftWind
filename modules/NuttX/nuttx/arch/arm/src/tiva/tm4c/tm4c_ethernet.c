@@ -2874,9 +2874,9 @@ static int tiva_ioctl(struct net_driver_s *dev, int cmd, unsigned long arg)
 #ifdef CONFIG_TIVA_PHY_INTERRUPTS
       case SIOCMIINOTIFY: /* Set up for PHY event notifications */
         {
-          struct mii_iotcl_notify_s *req = (struct mii_iotcl_notify_s *)((uintptr_t)arg);
+          struct mii_ioctl_notify_s *req = (struct mii_ioctl_notify_s *)((uintptr_t)arg);
 
-          ret = phy_notify_subscribe(dev->d_ifname, req->pid, req->signo, req->arg);
+          ret = phy_notify_subscribe(dev->d_ifname, req->pid, &req->event);
           if (ret == OK)
             {
               /* Enable PHY link up/down interrupts */
@@ -4020,10 +4020,9 @@ static int tive_emac_configure(FAR struct tiva_ethmac_s *priv)
  *
  ****************************************************************************/
 
-#if TIVA_NETHCONTROLLERS == 1
+#if TIVA_NETHCONTROLLERS == 1 || defined(CONFIG_NETDEV_LATEINIT)
 static inline
 #endif
-
 int tiva_ethinitialize(int intf)
 {
   struct tiva_ethmac_s *priv;
@@ -4161,7 +4160,7 @@ int tiva_ethinitialize(int intf)
  *
  ****************************************************************************/
 
-#if TIVA_NETHCONTROLLERS == 1
+#if TIVA_NETHCONTROLLERS == 1 && !defined(CONFIG_NETDEV_LATEINIT)
 void up_netinitialize(void)
 {
   (void)tiva_ethinitialize(0);

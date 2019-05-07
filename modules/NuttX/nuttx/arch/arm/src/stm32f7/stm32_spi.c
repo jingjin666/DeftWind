@@ -82,7 +82,6 @@
 #include "up_internal.h"
 #include "up_arch.h"
 
-#include "cache.h"
 #include "chip.h"
 #include "stm32_gpio.h"
 #include "stm32_dma.h"
@@ -1681,7 +1680,7 @@ static void spi_exchange(FAR struct spi_dev_s *dev, FAR const void *txbuffer,
   if ((priv->rxdma == NULL) || (priv->txdma == NULL) ||
       (txbuffer && !stm32_dmacapable((uint32_t)txbuffer, nwords, priv->txccr)) ||
       (rxbuffer && !stm32_dmacapable((uint32_t)rxbuffer, nwords, priv->rxccr)) ||
-      up_interrupt_context())
+      up_interrupt_context() || nwords < CONFIG_STM32F7_SPI_DMA_THRESHOLD)
     {
       /* Invalid DMA channels, unsupported memory region, or interrupt context, fall back to non-DMA method. */
 
@@ -1712,7 +1711,7 @@ static void spi_exchange(FAR struct spi_dev_s *dev, FAR const void *txbuffer,
 
       if (txbuffer)
         {
-          arch_flush_dcache((uintptr_t)txbuffer, (uintptr_t)txbuffer + buflen);
+          up_flush_dcache((uintptr_t)txbuffer, (uintptr_t)txbuffer + buflen);
         }
 
 #ifdef CONFIG_SPI_TRIGGER
@@ -1751,13 +1750,13 @@ static void spi_exchange(FAR struct spi_dev_s *dev, FAR const void *txbuffer,
 
       if (rxbuffer)
         {
-          arch_invalidate_dcache((uintptr_t)rxbuffer,
-                                 (uintptr_t)rxbuffer + buflen);
+          up_invalidate_dcache((uintptr_t)rxbuffer,
+                               (uintptr_t)rxbuffer + buflen);
         }
       else
         {
-          arch_invalidate_dcache((uintptr_t)rxdummy,
-                                 (uintptr_t)rxdummy + sizeof(rxdummy));
+          up_invalidate_dcache((uintptr_t)rxdummy,
+                               (uintptr_t)rxdummy + sizeof(rxdummy));
         }
     }
 }

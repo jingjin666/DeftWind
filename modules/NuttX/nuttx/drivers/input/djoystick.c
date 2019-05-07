@@ -100,12 +100,11 @@ struct djoy_open_s
 
   volatile bool do_closing;
 
-#ifndef CONFIG_DISABLE_SIGNALS
   /* Joystick event notification information */
 
   pid_t do_pid;
   struct djoy_notify_s do_notify;
-#endif
+  struct sigwork_s do_work;
 
 #ifndef CONFIG_DISABLE_POLL
   /* Poll event information */
@@ -131,7 +130,7 @@ static inline int djoy_takesem(sem_t *sem);
 
 /* Sampling and Interrupt handling */
 
-#if !defined(CONFIG_DISABLE_POLL) || !defined(CONFIG_DISABLE_SIGNALS)
+#ifndef CONFIG_DISABLE_POLL
 static void    djoy_enable(FAR struct djoy_upperhalf_s *priv);
 static void    djoy_interrupt(FAR const struct djoy_lowerhalf_s *lower,
                               FAR void *arg);
@@ -199,7 +198,7 @@ static inline int djoy_takesem(sem_t *sem)
  * Name: djoy_enable
  ****************************************************************************/
 
-#if !defined(CONFIG_DISABLE_POLL) || !defined(CONFIG_DISABLE_SIGNALS)
+#ifndef CONFIG_DISABLE_POLL
 static void djoy_enable(FAR struct djoy_upperhalf_s *priv)
 {
   FAR const struct djoy_lowerhalf_s *lower;
@@ -244,12 +243,10 @@ static void djoy_enable(FAR struct djoy_upperhalf_s *priv)
         }
 #endif
 
-#ifndef CONFIG_DISABLE_SIGNALS
       /* OR in the signal events */
 
       press   |= opriv->do_notify.dn_press;
       release |= opriv->do_notify.dn_release;
-#endif
     }
 
   /* Enable/disable button interrupts */
@@ -277,7 +274,7 @@ static void djoy_enable(FAR struct djoy_upperhalf_s *priv)
  * Name: djoy_interrupt
  ****************************************************************************/
 
-#if !defined(CONFIG_DISABLE_POLL) || !defined(CONFIG_DISABLE_SIGNALS)
+#ifndef CONFIG_DISABLE_POLL
 static void djoy_interrupt(FAR const struct djoy_lowerhalf_s *lower,
                            FAR void *arg)
 {
@@ -300,7 +297,7 @@ static void djoy_sample(FAR struct djoy_upperhalf_s *priv)
   FAR const struct djoy_lowerhalf_s *lower;
   FAR struct djoy_open_s *opriv;
   djoy_buttonset_t sample;
-#if !defined(CONFIG_DISABLE_POLL) || !defined(CONFIG_DISABLE_SIGNALS)
+#ifndef CONFIG_DISABLE_POLL
   djoy_buttonset_t change;
   djoy_buttonset_t press;
   djoy_buttonset_t release;
@@ -327,7 +324,7 @@ static void djoy_sample(FAR struct djoy_upperhalf_s *priv)
 
   add_ui_randomness(sample);
 
-#if !defined(CONFIG_DISABLE_POLL) || !defined(CONFIG_DISABLE_SIGNALS)
+#ifndef CONFIG_DISABLE_POLL
   /* Determine which buttons have been newly pressed and which have been
    * newly released.
    */
@@ -366,7 +363,6 @@ static void djoy_sample(FAR struct djoy_upperhalf_s *priv)
         }
 #endif
 
-#ifndef CONFIG_DISABLE_SIGNALS
       /* Have any signal events occurred? */
 
       if ((press & opriv->do_notify.dn_press)     != 0 ||
@@ -374,17 +370,10 @@ static void djoy_sample(FAR struct djoy_upperhalf_s *priv)
         {
           /* Yes.. Signal the waiter */
 
-#ifdef CONFIG_CAN_PASS_STRUCTS
-          union sigval value;
-          value.sival_int = (int)sample;
-          (void)nxsig_queue(opriv->do_pid, opriv->do_notify.dn_signo,
-                            value);
-#else
-          (void)nxsig_queue(opriv->do_pid, opriv->do_notify.dn.signo,
-                            (FAR void *)sample);
-#endif
+          opriv->do_notify.dn_event.sigev_value.sival_int = sample;
+          nxsig_notification(opriv->do_pid, &opriv->do_notify.dn_event,
+                             SI_QUEUE, &opriv->do_work);
         }
-#endif
     }
 
   /* Enable/disable interrupt handling */
@@ -538,6 +527,10 @@ static int djoy_close(FAR struct file *filep)
       priv->du_open = opriv->do_flink;
     }
 
+  /* Cancel any pending notification */
+
+  nxsig_cancel_notification(&opriv->do_work);
+
   /* And free the open structure */
 
   kmm_free(opriv);
@@ -634,10 +627,10 @@ static int djoy_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
     {
     /* Command:     DJOYIOC_SUPPORTED
      * Description: Report the set of button events supported by the hardware;
-     * Argument:    A pointer to writeable integer value in which to return the
-     *              set of supported buttons.
-     * Return:      Zero (OK) on success.  Minus one will be returned on failure
-     *              with the errno value set appropriately.
+     * Argument:    A pointer to writeable integer value in which to return
+     *              the set of supported buttons.
+     * Return:      Zero (OK) on success.  Minus one will be returned on
+     *              failure with the errno value set appropriately.
      */
 
     case DJOYIOC_SUPPORTED:
@@ -687,7 +680,6 @@ static int djoy_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
       break;
 #endif
 
-#ifndef CONFIG_DISABLE_SIGNALS
     /* Command:     DJOYIOC_REGISTER
      * Description: Register to receive a signal whenever there is a change
      *              in any of the joystick discrete inputs.  This feature,
@@ -710,7 +702,7 @@ static int djoy_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
 
             opriv->do_notify.dn_press   = notify->dn_press;
             opriv->do_notify.dn_release = notify->dn_release;
-            opriv->do_notify.dn_signo  = notify->dn_signo;
+            opriv->do_notify.dn_event   = notify->dn_event;
             opriv->do_pid               = getpid();
 
             /* Enable/disable interrupt handling */
@@ -720,7 +712,6 @@ static int djoy_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
           }
       }
       break;
-#endif
 
     default:
       ierr("ERROR: Unrecognized command: %ld\n", cmd);

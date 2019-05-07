@@ -54,26 +54,25 @@
 
 /* Clocking *****************************************************************/
 
-/* HSI - Internal 8 MHz RC Oscillator
+/* HSI - Internal 16 MHz RC Oscillator
  * LSI - 32 KHz RC
- * HSE - 8 MHz from MCO output of ST-LINK
+ * HSE - 8 MHz from MCO output of ST-LINK (default OFF on board)
  * LSE - 32.768 kHz
  */
 
 #define STM32_BOARD_XTAL        8000000ul
 
-#define STM32_HSEBYP_ENABLE
-#define STM32_HSI_FREQUENCY     8000000ul
+#define STM32_HSI_FREQUENCY     16000000ul
 #define STM32_LSI_FREQUENCY     32000            /* Between 30kHz and 60kHz */
 #define STM32_HSE_FREQUENCY     STM32_BOARD_XTAL
 #define STM32_LSE_FREQUENCY     32768            /* X2 on board */
 
-/* PLL source is HSE/1, PLL multipler is 8: PLL frequency is 8MHz (XTAL) x 8 = 64MHz */
+/* PLL source is HSI/1, PLL multipler is 4: PLL frequency is 16MHz (XTAL) x 4 = 64MHz */
 
-#define STM32_CFGR_PLLSRC       RCC_CFGR_PLLSRC
+#define STM32_CFGR_PLLSRC       0
 #define STM32_CFGR_PLLXTPRE     0
-#define STM32_CFGR_PLLMUL       RCC_CFGR_PLLMUL_CLKx8
-#define STM32_PLL_FREQUENCY     (8*STM32_BOARD_XTAL)
+#define STM32_CFGR_PLLMUL       RCC_CFGR_PLLMUL_CLKx4
+#define STM32_PLL_FREQUENCY     (4*STM32_HSI_FREQUENCY)
 
 /* Use the PLL and set the SYSCLK source to be the PLL/2 (32MHz) */
 
@@ -179,14 +178,15 @@
  * PA6         | SX1276_MISO
  * PB3         | SX1276_SCK
  * PA15        | SX1276_NSS
- * ?           | SX1276_DIO0
- * ?           | SX1276_DIO2
- * ?           | SX1276_DIO3
- * PA5         | SX1276_DIO4 optional
+ * PB4         | SX1276_DIO0
+ * PB1         | SX1276_DIO1
+ * PB0         | SX1276_DIO2
+ * PC13        | SX1276_DIO3
+ * PA5         | SX1276_DIO4 optional / LED5
  * PA4         | SX1276_DIO5 optional
- * ?           | CRF1
- * ?           | CRF2
- * ?           | CRF3
+ * PA1         | CRF1
+ * PC1         | CRF2
+ * PC2         | CRF3
  * PA3         | STLINK Virtual COM RX
  * PA2         | STLINK Virtual COM TX
  * PA10        | USART1_RX
@@ -195,9 +195,9 @@
  * PB14        | SPI2_MISO
  * PB13        | SPI2_SCK
  * PB12        | SPI2_NSS
- * PB5         | LPTIM1_INI
- * PB6         | LPTIM1_ETR
- * PB7         | LPTIM1_IN2
+ * PB5         | LPTIM1_INI / LED2
+ * PB6         | LPTIM1_ETR / LED3
+ * PB7         | LPTIM1_IN2 / LED4
  * PB2         | LPTIM1_OUT / BUTTON
  * PA0         | BUTTON (optional)
  * PB9         | I2C1_SDA
@@ -227,7 +227,7 @@
 /* SPI1 is connected to SX1276 radio */
 
 #define GPIO_SPI1_MOSI GPIO_SPI1_MOSI_2 /* PA7 */
-#define GPIO_SPI1_MISO GPIO_SPI1_MOSI_2 /* PA6 */
+#define GPIO_SPI1_MISO GPIO_SPI1_MISO_2 /* PA6 */
 #define GPIO_SPI1_SCK  GPIO_SPI1_SCK_2  /* PB3 */
 #define GPIO_SPI1_NSS  GPIO_SPI1_NSS_1  /* PA15 */
 

@@ -1,7 +1,7 @@
 /****************************************************************************
  * apps/include/graphics/nxwidgets/cbgwindow.hxx
  *
- *   Copyright (C) 2012, 2015 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2012, 2015, 2019 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -140,6 +140,18 @@ namespace NXWidgets
     CWidgetControl *getWidgetControl(void) const;
 
     /**
+     * Synchronize the window with the NX server.  This function will delay
+     * until the the NX server has caught up with all of the queued requests.
+     * When this function returns, the state of the NX server will be the
+     * same as the state of the application.
+     */
+
+    inline void synchronize(void)
+    {
+      CCallback::synchronize(m_hWindow, CCallback::NX_RAWWINDOW);
+    }
+
+    /**
      * Request the position and size information of the window. The values
      * will be returned asynchronously through the client callback method.
      * The GetPosition() method may than be called to obtain the positional
@@ -192,20 +204,47 @@ namespace NXWidgets
      * Bring the window to the top of the display.  NOTE:  The background
      * window cannot be raised.
      *
-     * @return True on success, false on any failure.
+     * @return Always returns false.
      */
 
-    bool raise(void);
+    inline bool raise(void)
+    {
+      // The background cannot be raised
+
+      return false;
+    }
 
     /**
      * Lower the window to the bottom of the display.  NOTE:  The background
      * window is always at the bottom of the window hierarchy.
      *
-     * @return True on success, false on any failure.
+     * @return Always returns false.
      */
 
-    bool lower(void);
+    inline bool lower(void)
+    {
+      // The background cannot be lowered
 
+      return false;
+    }
+
+    /**
+     * May be used to either (1) raise a window to the top of the display and
+     * select modal behavior, or (2) disable modal behavior.  NOTE:  The
+     * background cannot be a modal window.
+     *
+     * @param enable True: enter modal state; False: leave modal state
+     * @return Always returns false.
+     */
+
+    inline bool modal(bool enable)
+    {
+      // The background cannot a modal window
+
+      return false;
+    }
+
+#ifdef CONFIG_NXTERM_NXKBDIN
     /**
      * Each window implementation also inherits from CCallback.  CCallback,
      * by default, forwards NX keyboard input to the various widgets residing
@@ -220,7 +259,6 @@ namespace NXWidgets
      *    directed to the widgets within the window.
      */
 
-#ifdef CONFIG_NXTERM_NXKBDIN
     inline void redirectNxTerm(NXTERM handle)
     {
       setNxTerm(handle);

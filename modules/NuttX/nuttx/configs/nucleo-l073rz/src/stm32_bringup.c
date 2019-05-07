@@ -72,10 +72,10 @@
  * Description:
  *   Perform architecture-specific initialization
  *
- *   CONFIG_BOARD_INITIALIZE=y :
- *     Called from board_initialize().
+ *   CONFIG_BOARD_LATE_INITIALIZE=y :
+ *     Called from board_late_initialize().
  *
- *   CONFIG_BOARD_INITIALIZE=n && CONFIG_LIB_BOARDCTL=y && CONFIG_NSH_ARCHINIT:
+ *   CONFIG_BOARD_LATE_INITIALIZE=n && CONFIG_LIB_BOARDCTL=y && CONFIG_NSH_ARCHINIT:
  *     Called from the NSH library
  *
  ****************************************************************************/
@@ -142,6 +142,22 @@ int stm32_bringup(void)
       syslog(LOG_ERR, "ERROR: Failed to initialize wireless driver: %d\n", ret);
     }
 #endif  /* CONFIG_WL_NRF24L01 */
+
+#ifdef CONFIG_LPWAN_SX127X
+  ret = stm32_lpwaninitialize();
+  if (ret < 0)
+    {
+      syslog(LOG_ERR, "ERROR: Failed to initialize wireless driver: %d\n", ret);
+    }
+#endif  /* CONFIG_LPWAN_SX127X */
+
+#ifdef CONFIG_CL_MFRC522
+  ret = stm32_mfrc522initialize("/dev/rfid0");
+  if (ret < 0)
+    {
+      syslog(LOG_ERR, "ERROR: stm32_mfrc522initialize() failed: %d\n", ret);
+    }
+#endif  /* CONFIG_CL_MFRC522 */
 
   UNUSED(ret);
   return OK;

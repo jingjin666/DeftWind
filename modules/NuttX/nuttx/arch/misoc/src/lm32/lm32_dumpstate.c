@@ -1,7 +1,7 @@
 /****************************************************************************
  * arch/misoc/src/lm32/lm32_dumpstate.c
  *
- *  Copyright (C) 2011 Gregory Nutt. All rights reserved.
+ *  Copyright (C) 2011, 2019 Gregory Nutt. All rights reserved.
  *  Author: Gregory Nutt <gnutt@nuttx.org>
  *          Ramtin Amin <keytwo@gmail.com>
  *
@@ -150,7 +150,7 @@ void lm32_dumpstate(void)
 
   /* Get the limits on the user stack memory */
 
-  if (rtcb->flink == NULL)
+  if (rtcb->pid == 0) /* Check for CPU0 IDLE thread */
     {
       ustackbase = g_idle_topstack - 4;
       ustacksize = CONFIG_IDLETHREAD_STACKSIZE;

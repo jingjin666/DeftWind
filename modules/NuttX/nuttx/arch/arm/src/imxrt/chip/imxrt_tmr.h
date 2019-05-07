@@ -1,4 +1,4 @@
-/************************************************************************************
+/********************************************************************************************************************************************
  * arch/arm/src/imxrt/chip/imxrt_tmr.h
  *
  *   Copyright (C) 2018 Gregory Nutt. All rights reserved.
@@ -32,23 +32,23 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- ************************************************************************************/
+ ********************************************************************************************************************************************/
 
 #ifndef __ARCH_ARM_SRC_IMXRT_CHIP_IMXRT_TMR_H
 #define __ARCH_ARM_SRC_IMXRT_CHIP_IMXRT_TMR_H
 
-/************************************************************************************
+/********************************************************************************************************************************************
  * Included Files
- ************************************************************************************/
+ ********************************************************************************************************************************************/
 
 #include <nuttx/config.h>
 #include "chip/imxrt_memorymap.h"
 
-/************************************************************************************
+/********************************************************************************************************************************************
  * Pre-processor Definitions
- ************************************************************************************/
+ ********************************************************************************************************************************************/
 
-/* Register Offsets *****************************************************************/
+/* Register Offsets *************************************************************************************************************************/
 
 #define IMXRT_TMR_COMP1_OFFSET               0x0000  /* Timer Channel Compare Register 1 */
 #define IMXRT_TMR_COMP2_OFFSET               0x0002  /* Timer Channel Compare Register 2 */
@@ -295,7 +295,7 @@
 #define IMXRT_TMR4_FILT3_OFFSET              IMXRT_TMR_OFFSET(IMXRT_TMR_CH3, IMXRT_TMR_FILT_OFFSET)    /* Timer Channel Input Filter Register */
 #define IMXRT_TMR4_DMA3_OFFSET               IMXRT_TMR_OFFSET(IMXRT_TMR_CH3, IMXRT_TMR_DMA_OFFSET)     /* Timer Channel DMA Enable Register */
 
-/* Register addresses ***********************************************************************/
+/* Register addresses *******************************************************************************************************************************/
 
 #define IMXRT_TMR1_COMP10                   (IMXRT_QTIMER1_BASE + IMXRT_TMR1_COMP10_OFFSET)   /* Timer Channel Compare Register 1 */
 #define IMXRT_TMR1_COMP20                   (IMXRT_QTIMER1_BASE + IMXRT_TMR1_COMP20_OFFSET)   /* Timer Channel Compare Register 2 */
@@ -510,7 +510,7 @@
 #define IMXRT_TMR4_FILT3                    (IMXRT_QTIMER4_BASE + IMXRT_TMR4_FILT3_OFFSET)    /* Timer Channel Input Filter Register */
 #define IMXRT_TMR4_DMA3                     (IMXRT_QTIMER4_BASE + IMXRT_TMR4_DMA3_OFFSET)     /* Timer Channel DMA Enable Register */
 
-/* Register Bit Definitions *********************************************************/
+/* Register Bit Definitions *****************************************************************************************************************/
 
 /* Timer Channel Control Register */
 

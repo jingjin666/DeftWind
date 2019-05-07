@@ -89,20 +89,20 @@
 #  include "netutils/netlib.h"
 #endif
 
-#if defined(CONFIG_NET_UDP) && CONFIG_NFILE_DESCRIPTORS > 0
+#ifdef CONFIG_NET_UDP
 #  include "netutils/netlib.h"
 #  if !defined(CONFIG_NSH_DISABLE_GET) || !defined(CONFIG_NSH_DISABLE_PUT)
 #    include "netutils/tftp.h"
 #  endif
 #endif
 
-#if defined(CONFIG_NET_TCP) && CONFIG_NFILE_DESCRIPTORS > 0
+#ifdef CONFIG_NET_TCP
 #  ifndef CONFIG_NSH_DISABLE_WGET
 #    include "netutils/webclient.h"
 #  endif
 #endif
 
-#if defined(CONFIG_NSH_DHCPC) || defined(CONFIG_NSH_DNS)
+#if defined(CONFIG_NETINIT_DHCPC) || defined(CONFIG_NETINIT_DNS)
 #  include "netutils/dhcpc.h"
 #endif
 
@@ -151,7 +151,7 @@ typedef struct pktradio_addr_s mac_addr_t;
 #endif
 #endif
 
-#if defined(CONFIG_NET_UDP) && CONFIG_NFILE_DESCRIPTORS > 0
+#ifdef CONFIG_NET_UDP
 struct tftpc_args_s
 {
   bool            binary;    /* true:binary ("octet") false:text ("netascii") */
@@ -212,7 +212,7 @@ static int ifconfig_callback(FAR struct nsh_vtbl_s *vtbl, FAR char *devname)
  * Name: tftpc_parseargs
  ****************************************************************************/
 
-#if defined(CONFIG_NET_UDP) && CONFIG_NFILE_DESCRIPTORS > 0
+#ifdef CONFIG_NET_UDP
 int tftpc_parseargs(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv,
                     struct tftpc_args_s *args)
 {
@@ -349,7 +349,7 @@ errout:
  * Name: wget_callback
  ****************************************************************************/
 
-#if defined(CONFIG_NET_TCP) && CONFIG_NFILE_DESCRIPTORS > 0
+#ifdef CONFIG_NET_TCP
 #ifndef CONFIG_NSH_DISABLE_WGET
 static void wget_callback(FAR char **buffer, int offset, int datend,
                           FAR int *buflen, FAR void *arg)
@@ -457,7 +457,7 @@ static inline void nsh_sethwaddr(FAR const char *ifname, FAR mac_addr_t *macaddr
  * Name: cmd_get
  ****************************************************************************/
 
-#if defined(CONFIG_NET_UDP) && CONFIG_NFILE_DESCRIPTORS > 0
+#ifdef CONFIG_NET_UDP
 #ifndef CONFIG_NSH_DISABLE_GET
 int cmd_get(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
 {
@@ -564,7 +564,7 @@ int cmd_ifconfig(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
 #ifdef HAVE_HWADDR
   FAR char *hw = NULL;
 #endif
-#if defined(CONFIG_NSH_DHCPC) || defined(CONFIG_NSH_DNS)
+#if defined(CONFIG_NETINIT_DHCPC) || defined(CONFIG_NETINIT_DNS)
   FAR char *dns = NULL;
 #endif
 #if defined(CONFIG_NET_IPv4) && defined(CONFIG_NET_IPv6)
@@ -575,7 +575,7 @@ int cmd_ifconfig(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
 #ifdef HAVE_HWADDR
   mac_addr_t macaddr;
 #endif
-#if defined(CONFIG_NSH_DHCPC)
+#if defined(CONFIG_NETINIT_DHCPC)
   FAR void *handle;
 #endif
   int ret;
@@ -679,7 +679,7 @@ int cmd_ifconfig(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
                 }
 #endif
 
-#if defined(CONFIG_NSH_DHCPC) || defined(CONFIG_NSH_DNS)
+#if defined(CONFIG_NETINIT_DHCPC) || defined(CONFIG_NETINIT_DNS)
               else if (!strcmp(tmp, "dns"))
                 {
                   if (argc - 1 >= i + 1)
@@ -754,7 +754,7 @@ int cmd_ifconfig(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
     {
       if (hostip != NULL)
         {
-#if defined(CONFIG_NSH_DHCPC)
+#if defined(CONFIG_NETINIT_DHCPC)
           if (strcmp(hostip, "dhcp") == 0)
             {
               /* Set DHCP addr */
@@ -869,7 +869,7 @@ int cmd_ifconfig(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
 
   UNUSED(ifname); /* Not used in all configurations */
 
-#if defined(CONFIG_NSH_DHCPC) || defined(CONFIG_NSH_DNS)
+#if defined(CONFIG_NETINIT_DHCPC) || defined(CONFIG_NETINIT_DNS)
 #ifdef CONFIG_NET_IPv6
 #ifdef CONFIG_NET_IPv4
   if (inet6)
@@ -898,9 +898,9 @@ int cmd_ifconfig(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
       netlib_set_ipv4dnsaddr(&addr);
     }
 #endif /* CONFIG_NET_IPv4 */
-#endif /* CONFIG_NSH_DHCPC || CONFIG_NSH_DNS */
+#endif /* CONFIG_NETINIT_DHCPC || CONFIG_NETINIT_DNS */
 
-#if defined(CONFIG_NSH_DHCPC)
+#if defined(CONFIG_NETINIT_DHCPC)
   /* Get the MAC address of the NIC */
 
   if (!gip)
@@ -1159,7 +1159,7 @@ errout_invalid:
  * Name: cmd_put
  ****************************************************************************/
 
-#if defined(CONFIG_NET_UDP) && CONFIG_NFILE_DESCRIPTORS > 0
+#ifdef CONFIG_NET_UDP
 #ifndef CONFIG_NSH_DISABLE_PUT
 int cmd_put(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
 {
@@ -1201,7 +1201,7 @@ int cmd_put(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
  * Name: cmd_wget
  ****************************************************************************/
 
-#if defined(CONFIG_NET_TCP) && CONFIG_NFILE_DESCRIPTORS > 0
+#ifdef CONFIG_NET_TCP
 #ifndef CONFIG_NSH_DISABLE_WGET
 int cmd_wget(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
 {
@@ -1339,3 +1339,4 @@ errout:
 #endif
 
 #endif /* CONFIG_NET */
+

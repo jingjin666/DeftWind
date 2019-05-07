@@ -53,9 +53,7 @@ CSRCS += nsh_login.c
 endif
 endif
 
-ifneq ($(CONFIG_NFILE_DESCRIPTORS),0)
 CSRCS += nsh_fsutils.c
-endif
 
 ifeq ($(CONFIG_NSH_BUILTIN_APPS),y)
 CSRCS += nsh_builtin.c
@@ -74,15 +72,7 @@ CSRCS += nsh_romfsetc.c
 endif
 
 ifeq ($(CONFIG_NET),y)
-CSRCS += nsh_netinit.c nsh_netcmds.c
-
-ifeq ($(CONFIG_WIRELESS_WAPI),y)
-ifeq ($(CONFIG_NSH_NETINIT),y)
-ifneq ($(CONFIG_NSH_NETLOCAL),y)
-CSRCS += nsh_associate.c
-endif
-endif
-endif
+CSRCS += nsh_netcmds.c
 
 ifeq ($(CONFIG_NET_ROUTE),y)
 CSRCS += nsh_routecmds.c
