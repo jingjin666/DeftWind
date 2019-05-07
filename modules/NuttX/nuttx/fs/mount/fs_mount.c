@@ -1,7 +1,7 @@
 /****************************************************************************
  * fs/mount/fs_mount.c
  *
- *   Copyright (C) 2007-2009, 2011-2013, 2015, 2017, 2018 Gregory Nutt. All
+ *   Copyright (C) 2007-2009, 2011-2013, 2015, 2017-2019 Gregory Nutt. All
  *     rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
@@ -63,16 +63,19 @@
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
+
 /* Configuration ************************************************************/
+
 /* In the canonical case, a file system is bound to a block driver.  However,
  * some less typical cases a block driver is not required.  Examples are
- * pseudo file systems (like BINFS or PROCFS) and MTD file systems (like NXFFS).
+ * pseudo file systems (like BINFS or PROCFS) and MTD file systems (like
+ * NXFFS).
  *
  * These file systems all require block drivers:
  */
 
 #if defined(CONFIG_FS_FAT) || defined(CONFIG_FS_ROMFS) || \
-    defined(CONFIG_FS_SMARTFS)
+    defined(CONFIG_FS_SMARTFS) || defined(CONFIG_FS_LITTLEFS)
 #  define BDFS_SUPPORT 1
 #endif
 
@@ -87,7 +90,7 @@
 #if defined(CONFIG_FS_NXFFS) || defined(CONFIG_FS_BINFS) || \
     defined(CONFIG_FS_PROCFS) || defined(CONFIG_NFS) || \
     defined(CONFIG_FS_TMPFS) || defined(CONFIG_FS_USERFS) || \
-    defined(CONFIG_FS_CROMFS)
+    defined(CONFIG_FS_CROMFS) || defined(CONFIG_FS_UNIONFS)
 #  define NODFS_SUPPORT
 #endif
 
@@ -117,6 +120,9 @@ extern const struct mountpt_operations romfs_operations;
 #ifdef CONFIG_FS_SMARTFS
 extern const struct mountpt_operations smartfs_operations;
 #endif
+#ifdef CONFIG_FS_LITTLEFS
+extern const struct mountpt_operations littlefs_operations;
+#endif
 
 static const struct fsmap_t g_bdfsmap[] =
 {
@@ -129,6 +135,9 @@ static const struct fsmap_t g_bdfsmap[] =
 #ifdef CONFIG_FS_SMARTFS
     { "smartfs", &smartfs_operations },
 #endif
+#ifdef CONFIG_FS_LITTLEFS
+    { "littlefs", &littlefs_operations },
+#endif
     { NULL,   NULL },
 };
 #endif /* BDFS_SUPPORT */
@@ -136,22 +145,28 @@ static const struct fsmap_t g_bdfsmap[] =
 #ifdef MDFS_SUPPORT
 /* File systems that require MTD drivers */
 
+#ifdef CONFIG_FS_ROMFS
+extern const struct mountpt_operations romfs_operations;
+#endif
 #ifdef CONFIG_FS_SPIFFS
 extern const struct mountpt_operations spiffs_operations;
 #endif
-
 #ifdef CONFIG_FS_LITTLEFS
 extern const struct mountpt_operations littlefs_operations;
 #endif
 
 static const struct fsmap_t g_mdfsmap[] =
 {
+#ifdef CONFIG_FS_ROMFS
+    { "romfs", &romfs_operations },
+#endif
 #ifdef CONFIG_FS_SPIFFS
     { "spiffs", &spiffs_operations },
 #endif
 #ifdef CONFIG_FS_LITTLEFS
     { "littlefs", &littlefs_operations },
 #endif
+    { NULL,   NULL },
 };
 #endif /* MDFS_SUPPORT */
 
@@ -182,6 +197,9 @@ extern const struct mountpt_operations hostfs_operations;
 #ifdef CONFIG_FS_CROMFS
 extern const struct mountpt_operations cromfs_operations;
 #endif
+#ifdef CONFIG_FS_UNIONFS
+extern const struct mountpt_operations unionfs_operations;
+#endif
 
 static const struct fsmap_t g_nonbdfsmap[] =
 {
@@ -208,6 +226,9 @@ static const struct fsmap_t g_nonbdfsmap[] =
 #endif
 #ifdef CONFIG_FS_CROMFS
     { "cromfs", &cromfs_operations },
+#endif
+#ifdef CONFIG_FS_UNIONFS
+    { "unionfs", &unionfs_operations },
 #endif
     { NULL, NULL },
 };
@@ -384,12 +405,14 @@ int mount(FAR const char *source, FAR const char *target,
       ret = inode_reserve(target, &mountpt_inode);
       if (ret < 0)
         {
-          /* inode_reserve can fail for a couple of reasons, but the most likely
-           * one is that the inode already exists. inode_reserve may return:
+          /* inode_reserve can fail for a couple of reasons, but the most
+           * likely one is that the inode already exists. inode_reserve may
+           * return:
            *
            *  -EINVAL - 'path' is invalid for this operation
            *  -EEXIST - An inode already exists at 'path'
-           *  -ENOMEM - Failed to allocate in-memory resources for the operation
+           *  -ENOMEM - Failed to allocate in-memory resources for the
+           *            operation
            */
 
           ferr("ERROR: Failed to reserve inode for target %s\n", target);

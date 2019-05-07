@@ -73,7 +73,7 @@
 
 /* Don't compile if prerequisites are not met */
 
-#if defined(CONFIG_USBHOST) && !defined(CONFIG_USBHOST_INT_DISABLE) && CONFIG_NFILE_DESCRIPTORS > 0
+#if defined(CONFIG_USBHOST) && !defined(CONFIG_USBHOST_INT_DISABLE)
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -85,14 +85,6 @@
 
 #ifndef CONFIG_SCHED_WORKQUEUE
 #  warning "Worker thread support is required (CONFIG_SCHED_WORKQUEUE)"
-#endif
-
-/* Signals must not be disabled as they are needed for nxsig_kill.  Need to
- * have CONFIG_DISABLE_SIGNALS=n
- */
-
-#ifdef CONFIG_DISABLE_SIGNALS
-#  warning "Signal support is required (CONFIG_DISABLE_SIGNALS)"
 #endif
 
 /* Provide some default values for other configuration settings */
@@ -2577,4 +2569,4 @@ int usbhost_mouse_init(void)
   return usbhost_registerclass(&g_hidmouse);
 }
 
-#endif /* CONFIG_USBHOST)&& !CONFIG_USBHOST_INT_DISABLE && CONFIG_NFILE_DESCRIPTORS */
+#endif /* CONFIG_USBHOST)&& !CONFIG_USBHOST_INT_DISABLE */

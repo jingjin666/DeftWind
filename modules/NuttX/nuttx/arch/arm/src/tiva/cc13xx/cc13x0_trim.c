@@ -57,6 +57,8 @@
 #include "hardware/tiva_prcm.h"
 #include "hardware/tiva_vims.h"
 
+#include "cc13xx/cc13x0_rom.h"
+
 /******************************************************************************
  * Private Functions
  ******************************************************************************/
@@ -134,11 +136,18 @@ static void trim_wakeup_fromshutdown(uint32_t fcfg1_revision)
               TIVA_ADI3_REFSYS_MASK4B + (TIVA_ADI3_REFSYS_DCDCCTL5_OFFSET * 2));
     }
 
-  /* Enable for JTAG to be powered down(will still be powered on if debugger
-   * is connected)
+  /* Enable for JTAG to be powered down. The JTAG domain is automatically
+   * powered up on if a debugger is connected.  If a debugger is not
+   * connected this function can be used to power off the JTAG domain.
+   * Achieving the lowest power modes (shutdown/powerdown) requires the
+   * JTAG domain to be turned off. In general the JTAG domain should never
+   * be powered in production code.
+   *
+   * NOTE: This logic comes from the aon_wuc.h header file in the TI
+   * DriverLib.
    */
 
-  AONWUCJtagPowerOff();
+  putreg32(0, TIVA_AON_WUC_JTAGCFG);
 
   /* read the MODE_CONF register in CCFG */
 
@@ -149,14 +158,13 @@ static void trim_wakeup_fromshutdown(uint32_t fcfg1_revision)
    * -Configure DCDC.
    */
 
-  SetupAfterColdResetWakeupFromShutDownCfg1(ccfg_modeconf);
+  rom_setup_coldreset_from_shutdown_cfg1(ccfg_modeconf);
 
   /* Second part of trim done after cold reset and wakeup from shutdown:
    * -Configure XOSC.
    */
 
-  SetupAfterColdResetWakeupFromShutDownCfg2(fcfg1_revision,
-                                            ccfg_modeconf);
+  rom_setup_coldreset_from_shutdown_cfg2(fcfg1_revision, ccfg_modeconf);
 
   /* Increased margin between digital supply voltage and VDD BOD during
    * standby. VTRIM_UDIG: signed 4 bits value to be incremented by 2 (max = 7)
@@ -168,6 +176,7 @@ static void trim_wakeup_fromshutdown(uint32_t fcfg1_revision)
   mp1rev = ((getreg32(TIVA_FCFG1_TRIM_CAL_REVISION) &
              FCFG1_TRIM_CAL_REVISION_MP1_MASK) >>
             FCFG1_TRIM_CAL_REVISION_MP1_SHIFT);
+
   if (mp1rev < 542)
     {
       uint32_t ldoTrimReg = getreg32(TIVA_FCFG1_BAT_RC_LDO_TRIM);
@@ -211,11 +220,11 @@ static void trim_wakeup_fromshutdown(uint32_t fcfg1_revision)
    * -Configure HPOSC. -Setup the LF clock.
    */
 
-  SetupAfterColdResetWakeupFromShutDownCfg3(ccfg_modeconf);
+  rom_setup_coldreset_from_shutdown_cfg3(ccfg_modeconf);
 
   /* Allow AUX to power down */
 
-  AUXWUCPowerCtrl(AUX_WUC_POWER_DOWN);
+  rom_aonwuc_powerctrl(AUX_WUC_POWER_DOWN);
 
   /* Leaving on AUX and clock for AUX_DDI0_OSC on but turn off clock for
    * AUX_ADI4
@@ -307,34 +316,37 @@ void cc13xx_trim_device(void)
 
   /* Select correct CACHE mode and set correct CACHE configuration */
 
-  SetupSetCacheModeAccordingToCcfgSetting();
+  rom_setup_cachemode();
 
-  /* 1. Check for powerdown 2. Check for shutdown 3. Assume cold reset if none
-   * of the above. It is always assumed that the application will freeze the
-   * latches in AON_IOC when going to powerdown in order to retain the values
-   * on the IOs. NB. If this bit is not cleared before proceeding to
-   * powerdown, the IOs will all default to the reset configuration when
+  /* 1. Check for powerdown
+   * 2. Check for shutdown
+   * 3. Assume cold reset if none of the above.
+   *
+   * It is always assumed that the application will freeze the latches in
+   * AON_IOC when going to powerdown in order to retain the values on the
+   * IOs. NB. If this bit is not cleared before proceeding to powerdown,
+   * the IOs will all default to the reset configuration when
    * restarting.
    */
 
   if ((getreg32(TIVA_AON_IOC_IOCLATCH) & AON_IOC_IOCLATCH_EN) == 0)
     {
       /* NB. This should be calling a ROM implementation of required trim and
-       * compensation e.g.
-       * trim_wakeup_frompowerdown()
+       * compensation e.g. trim_wakeup_frompowerdown()
        */
 
       trim_wakeup_frompowerdown();
     }
 
-  /* Check for shutdown When device is going to shutdown the hardware will
+  /* Check for shutdown.  When device is going to shutdown the hardware will
    * automatically clear the SLEEPDIS bit in the SLEEP register in the
    * AON_SYSCTL module. It is left for the application to assert this bit when
    * waking back up, but not before the desired IO configuration has been
    * re-established.
    */
 
-  else if ((getreg32(TIVA_AON_SYSCTL_SLEEPCTL) & AON_SYSCTL_SLEEPCTL_IO_PAD_SLEEP_DIS) == 0)
+  else if ((getreg32(TIVA_AON_SYSCTL_SLEEPCTL) &
+            AON_SYSCTL_SLEEPCTL_IO_PAD_SLEEP_DIS) == 0)
     {
       /* NB. This should be calling a ROM implementation of required trim and
        * compensation e.g. trim_wakeup_fromshutdown() -->
@@ -349,14 +361,12 @@ void cc13xx_trim_device(void)
       /* Consider adding a check for soft reset to allow debugging to skip this
        * section!!! NB. This should be calling a ROM implementation of
        * required trim and compensation e.g. trim_coldreset() -->
-       * trim_wakeup_fromshutdown() -->
-       * trim_wakeup_frompowerdown()
+       * trim_wakeup_fromshutdown() -->  trim_wakeup_frompowerdown()
        */
 
       trim_coldreset();
       trim_wakeup_fromshutdown(fcfg1_revision);
       trim_wakeup_frompowerdown();
-
     }
 
   /* Set VIMS power domain control. PDCTL1VIMS = 0 ==> VIMS power domain is
@@ -369,7 +379,7 @@ void cc13xx_trim_device(void)
    * up from sleep
    */
 
-  regval = getreg32(TIVA_FLASH_FPAC1);
+  regval  = getreg32(TIVA_FLASH_FPAC1);
   regval &= ~FLASH_FPAC1_PSLEEPTDIS_MASK;
   regval |= (0x139 << FLASH_FPAC1_PSLEEPTDIS_SHIFT);
   putreg32(regval, TIVA_FLASH_FPAC1);
@@ -402,6 +412,5 @@ void cc13xx_trim_device(void)
   while ((getreg32(TIVA_VIMS_STAT) & VIMS_STAT_MODE_CHANGING) != 0)
     {
       /* Do nothing - wait for an eventual ongoing mode change to complete. */
-
     }
 }

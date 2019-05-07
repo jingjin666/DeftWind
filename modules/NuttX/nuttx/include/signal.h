@@ -275,8 +275,10 @@
  * special meaning in some circumstances (e.g., kill()).
  */
 
+#ifndef __SIGSET_T_DEFINED
 typedef uint32_t sigset_t;   /* Bit set of 32 signals */
 #define __SIGSET_T_DEFINED 1
+#endif
 
 /* Possibly volatile-qualified integer type of an object that can be accessed
  * as an atomic entity, even in the presence of asynchronous interrupts.
@@ -327,10 +329,15 @@ struct siginfo
   pid_t        si_pid;       /* Sending task ID */
   int          si_status;    /* Exit value or signal (SIGCHLD only). */
 #endif
+#if 0                        /* Not implemented */
+  FAR void    *si_addr;      /* Report address with SIGFPE, SIGSEGV, or SIGBUS */
+#endif
 };
 
+#ifndef __SIGINFO_T_DEFINED
 typedef struct siginfo siginfo_t;
 #define __SIGINFO_T_DEFINED 1
+#endif
 
 /* Non-standard convenience definition of signal handling function types.
  * These should be used only internally within the NuttX signal logic.
@@ -374,11 +381,8 @@ int  kill(pid_t pid, int signo);
 void psignal(int signum, FAR const char *message);
 void psiginfo(FAR const siginfo_t *pinfo, FAR const char *message);
 int  raise(int signo);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wshadow"
 int  sigaction(int signo, FAR const struct sigaction *act,
                FAR struct sigaction *oact);
-#pragma GCC diagnostic pop
 int  sigaddset(FAR sigset_t *set, int signo);
 int  sigdelset(FAR sigset_t *set, int signo);
 int  sigemptyset(FAR sigset_t *set);

@@ -57,7 +57,7 @@
  * assumed.
  */
 
-#if !defined(CONFIG_DEV_CONSOLE) || CONFIG_NFILE_DESCRIPTORS == 0
+#ifndef CONFIG_DEV_CONSOLE
 #  undef  USE_SERIALDRIVER
 #  undef  USE_EARLYSERIALINIT
 #  undef  CONFIG_DEV_LOWCONSOLE
@@ -260,8 +260,6 @@ void up_pminitialize(void);
 #else
 #  define up_pminitialize()
 #endif
-
-void up_systemreset(void) noreturn_function;
 
 /* Interrupt handling *******************************************************/
 

@@ -201,12 +201,13 @@ config LPC17_UART4
 
 config LPC17_CAN1
 	bool "CAN1"
-	select UART4_SERIALDRIVER
 	default n
+	select CAN
 
 config LPC17_CAN2
 	bool "CAN2"
 	default n
+	select CAN
 
 config LPC17_SPI
 	bool "SPI"
@@ -449,6 +450,18 @@ config LPC17_EXTDRAMHEAP
 	default y
 	---help---
 		Add the external SDRAM into the heap.
+
+config LPC17_EXTDRAMHEAP_OFFSET
+	int "DRAM heap offset"
+	default 0
+	depends on LPC17_EXTDRAMHEAP
+	---help---
+		Memory may be reserved at the beginning of DRAM for other purposes
+		(for example for video framebuffers).  Memory can similar be
+		reserved at the end of DRAM using LPC17_EXTDRAMSIZE.  The amount to
+		be added to the heap will be from DRAM_BASE + LPC17_EXTDRAMHEAP_OFFSET
+		through DRAM_BASE + LPC17_EXTDRAMSIZE where (DRAM_BASE is the base
+		address of CS0).
 
 endif
 

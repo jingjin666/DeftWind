@@ -1,7 +1,7 @@
 /****************************************************************************
  * apps/include/graphics/nxwidgets/cnxwindow.hxx
  *
- *   Copyright (C) 2012, 2015 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2012, 2015, 2019 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -140,6 +140,18 @@ namespace NXWidgets
     CWidgetControl *getWidgetControl(void) const;
 
     /**
+     * Synchronize the window with the NX server.  This function will delay
+     * until the the NX server has caught up with all of the queued requests.
+     * When this function returns, the state of the NX server will be the
+     * same as the state of the application.
+     */
+
+    inline void synchronize(void)
+    {
+      CCallback::synchronize(m_hNxWindow, CCallback::NX_RAWWINDOW);
+    }
+
+    /**
      * Request the position and size information of the window. The values
      * will be returned asynchronously through the client callback method.
      * The GetPosition() method may than be called to obtain the positional
@@ -199,6 +211,16 @@ namespace NXWidgets
      */
 
     bool lower(void);
+
+    /**
+     * May be used to either (1) raise a window to the top of the display and
+     * select modal behavior, or (2) disable modal behavior.
+     *
+     * @param enable True: enter modal state; False: leave modal state
+     * @return True on success, false on any failure.
+     */
+
+    bool modal(bool enable);
 
     /**
      * Each window implementation also inherits from CCallback.  CCallback,

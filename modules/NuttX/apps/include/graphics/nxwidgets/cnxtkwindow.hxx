@@ -1,7 +1,7 @@
 /****************************************************************************
  * apps/include/graphics/nxwidgets/cnxtkwindow.hxx
  *
- *   Copyright (C) 2012, 2015 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2012, 2015, 2019 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -140,6 +140,18 @@ namespace NXWidgets
     CWidgetControl *getWidgetControl(void) const;
 
     /**
+     * Synchronize the window with the NX server.  This function will delay
+     * until the the NX server has caught up with all of the queued requests.
+     * When this function returns, the state of the NX server will be the
+     * same as the state of the application.
+     */
+
+    inline void synchronize(void)
+    {
+      CCallback::synchronize(m_hNxTkWindow, CCallback::NXTK_FRAMEDWINDOW);
+    }
+
+    /**
      * Open a toolbar on the framed window.  This method both instantiates
      * the toolbar object AND calls the INxWindow::open() method to
      * create the toolbar.  The toolbar is ready for use upon return.
@@ -228,6 +240,17 @@ namespace NXWidgets
     bool lower(void);
 
     /**
+     * May be used to either (1) raise a window to the top of the display and
+     * select modal behavior, or (2) disable modal behavior.
+     *
+     * @param enable True: enter modal state; False: leave modal state
+     * @return True on success, false on any failure.
+     */
+
+    bool modal(bool enable);
+
+#ifdef CONFIG_NXTERM_NXKBDIN
+    /**
      * Each window implementation also inherits from CCallback.  CCallback,
      * by default, forwards NX keyboard input to the various widgets residing
      * in the window. But NxTerm is a different usage model; In this case,
@@ -241,7 +264,6 @@ namespace NXWidgets
      *    directed to the widgets within the window.
      */
 
-#ifdef CONFIG_NXTERM_NXKBDIN
     inline void redirectNxTerm(NXTERM handle)
     {
       setNxTerm(handle);
@@ -364,4 +386,3 @@ namespace NXWidgets
 #endif // __cplusplus
 
 #endif // __APPS_INCLUDE_GRAPHICS_NXWIDGETS_CNXTKWINDOW_HXX
-

@@ -167,7 +167,7 @@ static void oneshot_callback(FAR struct oneshot_lowerhalf_s *lower,
 
 #ifdef CONFIG_SCHED_TICKLESS
   ONESHOT_CURRENT(g_oneshot_lower, &now);
-  sched_alarm_expiration(&now);
+  nxsched_alarm_expiration(&now);
 #else
   struct timespec delta;
 
@@ -176,7 +176,7 @@ static void oneshot_callback(FAR struct oneshot_lowerhalf_s *lower,
       static uint64_t tick = 1;
       struct timespec next;
 
-      sched_process_timer();
+      nxsched_process_timer();
       timespec_from_usec(&next, ++tick * USEC_PER_TICK);
       ONESHOT_CURRENT(g_oneshot_lower, &now);
       clock_timespec_subtract(&next, &now, &delta);
@@ -274,7 +274,7 @@ void up_timer_getmask(FAR uint64_t *mask)
       ONESHOT_MAX_DELAY(g_oneshot_lower, &maxts);
       maxticks = timespec_to_usec(&maxts) / USEC_PER_TICK;
 
-      for(; ; )
+      for (; ; )
         {
           uint64_t next = (*mask << 1) | 1;
           if (next > maxticks)
@@ -306,7 +306,7 @@ int up_timer_gettime(FAR struct timespec *ts)
  * Description:
  *   Cancel the alarm and return the time of cancellation of the alarm.
  *   These two steps need to be as nearly atomic as possible.
- *   sched_alarm_expiration() will not be called unless the alarm is
+ *   nxsched_alarm_expiration() will not be called unless the alarm is
  *   restarted with up_alarm_start().
  *
  *   If, as a race condition, the alarm has already expired when this
@@ -353,14 +353,14 @@ int up_alarm_cancel(FAR struct timespec *ts)
  * Name: up_alarm_start
  *
  * Description:
- *   Start the alarm.  sched_alarm_expiration() will be called when the
+ *   Start the alarm.  nxsched_alarm_expiration() will be called when the
  *   alarm occurs (unless up_alaram_cancel is called to stop it).
  *
  *   Provided by platform-specific code and called from the RTOS base code.
  *
  * Input Parameters:
  *   ts - The time in the future at the alarm is expected to occur.  When
- *        the alarm occurs the timer logic will call sched_alarm_expiration().
+ *        the alarm occurs the timer logic will call nxsched_alarm_expiration().
  *
  * Returned Value:
  *   Zero (OK) is returned on success; a negated errno value is returned on
@@ -389,6 +389,47 @@ int up_alarm_start(FAR const struct timespec *ts)
     }
 
   return ret;
+}
+#endif
+
+/*****************************************************************************
+ * Name: up_critmon_*
+ *
+ * Description:
+ *   The first interface simply provides the current time value in unknown
+ *   units.  NOTE:  This function may be called early before the timer has
+ *   been initialized.  In that event, the function should just return a
+ *   start time of zero.
+ *
+ *   Nothing is assumed about the units of this time value.  The following
+ *   are assumed, however: (1) The time is an unsigned integer value, (2)
+ *   the time is monotonically increasing, and (3) the elapsed time (also
+ *   in unknown units) can be obtained by subtracting a start time from
+ *   the current time.
+ *
+ *   The second interface simple converts an elapsed time into well known
+ *   units.
+ *****************************************************************************/
+
+#ifdef CONFIG_SCHED_CRITMONITOR
+uint32_t up_critmon_gettime(void)
+{
+  uint32_t ret = 0;
+
+  if (g_oneshot_lower != NULL)
+    {
+      struct timespec ts;
+
+      ONESHOT_CURRENT(g_oneshot_lower, &ts);
+      ret = timespec_to_usec(&ts);
+    }
+
+  return ret;
+}
+
+void up_critmon_convert(uint32_t elapsed, FAR struct timespec *ts)
+{
+  timespec_from_usec(ts, elapsed);
 }
 #endif
 

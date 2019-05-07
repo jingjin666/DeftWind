@@ -215,10 +215,10 @@ static int nsh_task(void)
 
   nsh_initialize();
 
-#if defined(CONFIG_NSH_TELNET) && !defined(CONFIG_NSH_NETLOCAL)
+#if defined(CONFIG_NSH_TELNET) && !defined(CONFIG_NETINIT_NETLOCAL)
   /* If the Telnet console is selected as a front-end, then start the
    * Telnet daemon UNLESS network initialization is deferred via
-   * CONFIG_NSH_NETLOCAL.  In that case, the telnet daemon must be
+   * CONFIG_NETINIT_NETLOCAL.  In that case, the telnet daemon must be
    * started manually with the telnetd command after the network has
    * been initialized
    */
@@ -244,12 +244,7 @@ static int nsh_task(void)
    * is wrong.
    */
 
-#if CONFIG_NFILE_DESCRIPTORS > 0
   fprintf(stderr, "ERROR: nsh_consolemain() returned: %d\n", ret);
-#else
-  printf("ERROR: nsh_consolemain() returned: %d\n", ret);
-#endif
-
   exitval = 1;
 #endif
 

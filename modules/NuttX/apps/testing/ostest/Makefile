@@ -43,16 +43,13 @@ STACKSIZE = 2048
 
 # NuttX OS Test
 
-ASRCS =
-CSRCS = dev_null.c restart.c sigprocmask.c
+ASRCS   =
+CSRCS   = dev_null.c restart.c sigprocmask.c sighand.c signest.c
 MAINSRC = ostest_main.c
 
-ifneq ($(CONFIG_DISABLE_SIGNALS),y)
-CSRCS +=  sighand.c signest.c
 ifeq ($(CONFIG_SIG_SIGSTOP_ACTION),y)
 ifeq ($(CONFIG_SIG_SIGKILL_ACTION),y)
 CSRCS += suspend.c
-endif
 endif
 endif
 
@@ -79,9 +76,9 @@ CSRCS += waitpid.c
 endif
 
 ifneq ($(CONFIG_DISABLE_PTHREAD),y)
-CSRCS += cancel.c cond.c mutex.c sem.c semtimed.c barrier.c timedwait.c
-CSRCS += pthread_rwlock.c
-CSRCS += pthread_rwlock_cancel.c
+CSRCS += cancel.c cond.c mutex.c timedmutex.c sem.c semtimed.c barrier.c
+CSRCS += timedwait.c
+CSRCS += pthread_rwlock.c pthread_rwlock_cancel.c
 
 ifneq ($(CONFIG_NPTHREAD_KEYS),0)
 CSRCS += specific.c

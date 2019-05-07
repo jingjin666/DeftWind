@@ -58,6 +58,7 @@
 #include <nuttx/fs/fs.h>
 #include <nuttx/serial/serial.h>
 #include <nuttx/fs/ioctl.h>
+#include <nuttx/power/pm.h>
 
 /************************************************************************************
  * Pre-processor Definitions
@@ -81,7 +82,6 @@
 
 /* Timing */
 
-#define POLL_DELAY_MSEC 1
 #define POLL_DELAY_USEC 1000
 
 /************************************************************************************
@@ -301,7 +301,7 @@ static int uart_putxmitchar(FAR uart_dev_t *dev, int ch, bool oktoblock)
                * the semaphore.
                */
 
-#ifdef CONFIG_SERIAL_DMA
+#ifdef CONFIG_SERIAL_TXDMA
               uart_dmatxavail(dev);
 #endif
               uart_enabletxint(dev);
@@ -378,12 +378,34 @@ static inline ssize_t uart_irqwrite(FAR uart_dev_t *dev, FAR const char *buffer,
     {
       int ch = *buffer++;
 
+#ifdef CONFIG_SERIAL_TERMIOS
+      /* Do output post-processing */
+
+      if ((dev->tc_oflag & OPOST) != 0)
+        {
+          /* Mapping CR to NL? */
+
+          if ((ch == '\r') && (dev->tc_oflag & OCRNL) != 0)
+            {
+              ch = '\n';
+            }
+
+          /* Are we interested in newline processing? */
+
+          if ((ch == '\n') && (dev->tc_oflag & (ONLCR | ONLRET)) != 0)
+            {
+              uart_putc(dev, '\r');
+            }
+        }
+
+#else /* !CONFIG_SERIAL_TERMIOS */
       /* If this is the console, then we should replace LF with CR-LF */
 
       if (dev->isconsole && ch == '\n')
         {
           uart_putc(dev, '\r');
         }
+#endif
 
       /* Output the character, using the low-level direct UART interfaces */
 
@@ -462,7 +484,7 @@ static int uart_tcdrain(FAR uart_dev_t *dev, clock_t timeout)
                * the semaphore.
                */
 
-#ifdef CONFIG_SERIAL_DMA
+#ifdef CONFIG_SERIAL_TXDMA
               uart_dmatxavail(dev);
 #endif
               uart_enabletxint(dev);
@@ -493,11 +515,7 @@ static int uart_tcdrain(FAR uart_dev_t *dev, clock_t timeout)
             {
               clock_t elapsed;
 
-#ifndef CONFIG_DISABLE_SIGNALS
               nxsig_usleep(POLL_DELAY_USEC);
-#else
-              up_mdelay(POLL_DELAY_MSEC);
-#endif
 
               /* Check for a timeout */
 
@@ -601,23 +619,7 @@ static int uart_open(FAR struct file *filep)
            goto errout_with_sem;
         }
 
-#ifdef CONFIG_SERIAL_TERMIOS
-      /* Initialize termios state */
-
-      dev->tc_iflag = 0;
-      if (dev->isconsole)
-        {
-          /* Enable \n -> \r\n translation for the console */
-
-          dev->tc_oflag = OPOST | ONLCR;
-        }
-      else
-        {
-          dev->tc_oflag = 0;
-        }
-#endif
-
-#ifdef CONFIG_SERIAL_DMA
+#ifdef CONFIG_SERIAL_RXDMA
       /* Notify DMA that there is free space in the RX buffer */
 
       uart_dmarxfree(dev);
@@ -683,13 +685,6 @@ static int uart_close(FAR struct file *filep)
 
       (void)uart_tcdrain(dev, 4 * TICK_PER_SEC);
     }
-
-  /* Mark the I/O buffers empty */
-
-  dev->xmit.head = 0;
-  dev->xmit.tail = 0;
-  dev->recv.head = 0;
-  dev->recv.tail = 0;
 
   /* Free the IRQ and disable the UART */
 
@@ -887,7 +882,7 @@ static ssize_t uart_read(FAR struct file *filep, FAR char *buffer, size_t buflen
 
       else
         {
-#ifdef CONFIG_SERIAL_DMA
+#ifdef CONFIG_SERIAL_RXDMA
           /* Disable all interrupts and test again...
            * uart_disablerxint() is insufficient for the check in DMA mode.
            */
@@ -910,7 +905,7 @@ static ssize_t uart_read(FAR struct file *filep, FAR char *buffer, size_t buflen
                * additional data to be received.
                */
 
-#ifdef CONFIG_SERIAL_DMA
+#ifdef CONFIG_SERIAL_RXDMA
               /* Notify DMA that there is free space in the RX buffer */
 
               uart_dmarxfree(dev);
@@ -991,7 +986,7 @@ static ssize_t uart_read(FAR struct file *filep, FAR char *buffer, size_t buflen
                * the loop.
                */
 
-#ifdef CONFIG_SERIAL_DMA
+#ifdef CONFIG_SERIAL_RXDMA
               leave_critical_section(flags);
 #else
               uart_enablerxint(dev);
@@ -1000,7 +995,7 @@ static ssize_t uart_read(FAR struct file *filep, FAR char *buffer, size_t buflen
         }
     }
 
-#ifdef CONFIG_SERIAL_DMA
+#ifdef CONFIG_SERIAL_RXDMA
   /* Notify DMA that there is free space in the RX buffer */
 
   flags = enter_critical_section();
@@ -1008,7 +1003,7 @@ static ssize_t uart_read(FAR struct file *filep, FAR char *buffer, size_t buflen
   leave_critical_section(flags);
 #endif
 
-#ifndef CONFIG_SERIAL_DMA
+#ifndef CONFIG_SERIAL_RXDMA
   /* RX interrupt could be disabled by RX buffer overflow. Enable it now. */
 
   uart_enablerxint(dev);
@@ -1224,7 +1219,7 @@ static ssize_t uart_write(FAR struct file *filep, FAR const char *buffer,
 
   if (dev->xmit.head != dev->xmit.tail)
     {
-#ifdef CONFIG_SERIAL_DMA
+#ifdef CONFIG_SERIAL_TXDMA
       uart_dmatxavail(dev);
 #endif
       uart_enabletxint(dev);
@@ -1611,16 +1606,24 @@ errout:
 
 int uart_register(FAR const char *path, FAR uart_dev_t *dev)
 {
-#if defined(CONFIG_TTY_SIGINT) || defined(CONFIG_TTY_SIGSTP)
+#ifdef CONFIG_SERIAL_TERMIOS
+#  if defined(CONFIG_TTY_SIGINT) || defined(CONFIG_TTY_SIGSTP)
   /* Initialize  of the task that will receive SIGINT signals. */
 
   dev->pid = (pid_t)-1;
+#  endif
 
-  /* If this UART is a serial console, then enable signals by default */
+  /* If this UART is a serial console */
 
   if (dev->isconsole)
     {
+      /* Enable signals by default */
+
       dev->tc_lflag |= ISIG;
+
+      /* Enable \n -> \r\n translation for the console */
+
+      dev->tc_oflag = OPOST | ONLCR;
     }
 #endif
 
@@ -1673,6 +1676,16 @@ void uart_datareceived(FAR uart_dev_t *dev)
   /* Notify all poll/select waiters that they can read from the recv buffer */
 
   uart_pollnotify(dev, POLLIN);
+
+#ifdef CONFIG_PM
+  /* Call pm_activity when characters are received on the console device */
+
+  if (dev->isconsole)
+    {
+      pm_activity(CONFIG_SERIAL_PM_ACTIVITY_DOMAIN,
+                  CONFIG_SERIAL_PM_ACTIVITY_PRIORITY);
+    }
+#endif
 }
 
 /************************************************************************************

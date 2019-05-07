@@ -60,7 +60,6 @@
 #include <nuttx/irq.h>
 #include <arch/board/board.h>
 
-#include "cache.h"
 #include "chip.h"
 #include "up_arch.h"
 
@@ -185,12 +184,22 @@
 #define STM32_SDMMC_CLKCR_MMCXFR    (STM32_SDMMC_MMCXFR_CLKDIV    | \
                                      STM32_SDMMC_CLKCR_EDGE | \
                                      STM32_SDMMC_CLKCR_WIDBUS_D1)
-#define STM32_SDMMC_CLCKR_SDXFR     (STM32_SDMMC_SDXFR_CLKDIV     | \
-                                     STM32_SDMMC_CLKCR_EDGE | \
-                                     STM32_SDMMC_CLKCR_WIDBUS_D1)
-#define STM32_SDMMC_CLCKR_SDWIDEXFR (STM32_SDMMC_SDXFR_CLKDIV     | \
-                                     STM32_SDMMC_CLKCR_EDGE | \
-                                     STM32_SDMMC_CLKCR_WIDBUS_D4)
+
+#ifdef STM32_SDMMC_SDXFR_BYPCLKDIV
+#  define STM32_SDMMC_CLCKR_SDXFR     (STM32_SDMMC_CLKCR_BYPASS     | \
+                                       STM32_SDMMC_CLKCR_EDGE | \
+                                       STM32_SDMMC_CLKCR_WIDBUS_D1)
+#  define STM32_SDMMC_CLCKR_SDWIDEXFR (STM32_SDMMC_CLKCR_BYPASS     | \
+                                       STM32_SDMMC_CLKCR_EDGE | \
+                                       STM32_SDMMC_CLKCR_WIDBUS_D4)
+#else
+#  define STM32_SDMMC_CLCKR_SDXFR     (STM32_SDMMC_SDXFR_CLKDIV     | \
+                                       STM32_SDMMC_CLKCR_EDGE | \
+                                       STM32_SDMMC_CLKCR_WIDBUS_D1)
+#  define STM32_SDMMC_CLCKR_SDWIDEXFR (STM32_SDMMC_SDXFR_CLKDIV     | \
+                                       STM32_SDMMC_CLKCR_EDGE | \
+                                       STM32_SDMMC_CLKCR_WIDBUS_D4)
+#endif
 
 /* Timing */
 
@@ -2995,7 +3004,7 @@ static int stm32_dmarecvsetup(FAR struct sdio_dev_s *dev, FAR uint8_t *buffer,
 #else
 #  if defined(CONFIG_ARMV7M_DCACHE) && !defined(CONFIG_ARMV7M_DCACHE_WRITETHROUGH)
   /* buffer alignment is required for DMA transfers with dcache in buffered
-   * mode (not write-through) because the arch_invalidate_dcache could lose
+   * mode (not write-through) because the up_invalidate_dcache could lose
    * buffered buffered writes if the buffer alignment and sizes are not on
    * ARMV7M_DCACHE_LINESIZE boundaries.
    */
@@ -3044,7 +3053,7 @@ static int stm32_dmarecvsetup(FAR struct sdio_dev_s *dev, FAR uint8_t *buffer,
   if ((uintptr_t)buffer < DTCM_START || (uintptr_t)buffer + buflen > DTCM_END)
     {
 #if !defined(CONFIG_ARCH_HAVE_SDIO_DELAYED_INVLDT)
-      arch_invalidate_dcache_by_addr((uintptr_t)buffer,(uintptr_t)buffer + buflen);
+      up_invalidate_dcache((uintptr_t)buffer,(uintptr_t)buffer + buflen);
 #endif
     }
 
@@ -3090,7 +3099,7 @@ static int stm32_dmasendsetup(FAR struct sdio_dev_s *dev,
 #else
 #  if defined(CONFIG_ARMV7M_DCACHE) && !defined(CONFIG_ARMV7M_DCACHE_WRITETHROUGH)
   /* buffer alignment is required for DMA transfers with dcache in buffered
-   * mode (not write-through) because the arch_flush_dcache would corrupt adjacent
+   * mode (not write-through) because the up_flush_dcache would corrupt adjacent
    * memory if the buffer alignment and sizes are not on ARMV7M_DCACHE_LINESIZE
    * boundaries.
    */
@@ -3117,9 +3126,9 @@ static int stm32_dmasendsetup(FAR struct sdio_dev_s *dev,
   if ((uintptr_t)buffer < DTCM_START || (uintptr_t)buffer + buflen > DTCM_END)
     {
 #ifdef CONFIG_ARMV7M_DCACHE_WRITETHROUGH
-      arch_invalidate_dcache_by_addr((uintptr_t)buffer, (uintptr_t)buffer + buflen);
+      up_invalidate_dcache((uintptr_t)buffer, (uintptr_t)buffer + buflen);
 #else
-      arch_flush_dcache((uintptr_t)buffer, (uintptr_t)buffer + buflen);
+      up_flush_dcache((uintptr_t)buffer, (uintptr_t)buffer + buflen);
 #endif
     }
 
@@ -3184,8 +3193,8 @@ static int stm32_dmadelydinvldt(FAR struct sdio_dev_s *dev,
   if ((uintptr_t)buffer < DTCM_START ||
       (uintptr_t)buffer + buflen > DTCM_END)
     {
-      arch_invalidate_dcache_by_addr((uintptr_t)buffer,
-                                     (uintptr_t)buffer + buflen);
+      up_invalidate_dcache((uintptr_t)buffer,
+                           (uintptr_t)buffer + buflen);
     }
 
   return OK;

@@ -185,43 +185,6 @@
 #endif
 
 /****************************************************************************
- * Name: I2C_SETFREQUENCY
- *
- * Description:
- *   Set the I2C frequency. This frequency will be retained in the struct
- *   i2c_dev_s instance and will be used with all transfers.  Required.
- *
- * Input Parameters:
- *   dev       - Device-specific state data
- *   frequency - The I2C frequency requested
- *
- * Returned Value:
- *   Returns the actual frequency selected
- *
- ****************************************************************************/
-
-#define I2C_SETFREQUENCY(d,f) ((d)->ops->setfrequency(d,f))
-
-/****************************************************************************
- * Name: I2C_SETADDRESS
- *
- * Description:
- *   Set the I2C slave address. This frequency will be retained in the struct
- *   i2c_dev_s instance and will be used with all transfers.  Required.
- *
- * Input Parameters:
- *   dev     - Device-specific state data
- *   address - The I2C slave address
- *   nbits   - The number of address bits provided (7 or 10)
- *
- * Returned Value:
- *   Returns OK on success; a negated errno on failure.
- *
- ****************************************************************************/
-
-#define I2C_SETADDRESS(d,a,n) ((d)->ops->setaddress(d,a,n))
-
-/****************************************************************************
  * Public Types
  ****************************************************************************/
 
@@ -236,8 +199,6 @@ struct i2c_ops_s
 #ifdef CONFIG_I2C_RESET
   CODE int (*reset)(FAR struct i2c_master_s *dev);
 #endif
-  CODE int (*setfrequency)(FAR struct i2c_master_s *dev, uint32_t frequency);
-  CODE int (*setaddress)(FAR struct i2c_master_s *dev, int addr, int nbits);
 };
 
 /* This structure contains the full state of I2C as needed for a specific

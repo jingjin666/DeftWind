@@ -52,7 +52,6 @@
 #include <nuttx/kmalloc.h>
 #include <nuttx/arch.h>
 #include <nuttx/sched.h>
-#include <nuttx/signal.h>
 #include <nuttx/cancelpt.h>
 
 #include "sched/sched.h"
@@ -88,11 +87,11 @@
  ****************************************************************************/
 
 int nxmq_verify_send(mqd_t mqdes, FAR const char *msg, size_t msglen,
-                     int prio)
+                     unsigned int prio)
 {
   /* Verify the input parameters */
 
-  if (!msg || !mqdes || prio < 0 || prio > MQ_PRIO_MAX)
+  if (msg == NULL || mqdes == NULL || prio > MQ_PRIO_MAX)
     {
       return -EINVAL;
     }
@@ -340,7 +339,7 @@ int nxmq_wait_send(mqd_t mqdes)
  ****************************************************************************/
 
 int nxmq_do_send(mqd_t mqdes, FAR struct mqueue_msg_s *mqmsg,
-                 FAR const char *msg, size_t msglen, int prio)
+                 FAR const char *msg, size_t msglen, unsigned int prio)
 {
   FAR struct tcb_s *btcb;
   FAR struct mqueue_inode_s *msgq;
@@ -395,7 +394,6 @@ int nxmq_do_send(mqd_t mqdes, FAR struct mqueue_msg_s *mqmsg,
    * message queue
    */
 
-#ifndef CONFIG_DISABLE_SIGNALS
   if (msgq->ntmqdes)
     {
       struct sigevent event;
@@ -414,9 +412,9 @@ int nxmq_do_send(mqd_t mqdes, FAR struct mqueue_msg_s *mqmsg,
 
       /* Notification the client */
 
-      DEBUGVERIFY(nxsig_notification(pid, &event, SI_MESGQ));
+      DEBUGVERIFY(nxsig_notification(pid, &event,
+                                     SI_MESGQ, &msgq->ntwork));
     }
-#endif
 
   /* Check if any tasks are waiting for the MQ not empty event. */
 

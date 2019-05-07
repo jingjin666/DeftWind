@@ -1799,6 +1799,8 @@ nuttx/
  |   |   `- README.txt
  |   |- kwikstik-k40/
  |   |   `- README.txt
+ |   |- launchxl-cc1310/
+ |   |   `- README.txt
  |   |- launchxl-cc1312r1/
  |   |   `- README.txt
  |   |- launchxl-tms57004/
@@ -1868,6 +1870,8 @@ nuttx/
  |   |   `- README.txt
  |   |- nucleo-f410rb
  |   |   `- README.txt
+ |   |- nucleo-f446re
+ |   |   `- README.txt
  |   |- nucleo-l432kc/
  |   |   `- README.txt
  |   |- nucleo-l452re/
@@ -1897,6 +1901,8 @@ nuttx/
  |   |- olimex-stm32-p407/
  |   |   `- README.txt
  |   |- olimex-strp711/
+ |   |   `- README.txt
+ |   |- omnibusf4/
  |   |   `- README.txt
  |   |- open1788/
  |   |   `- README.txt
@@ -1952,6 +1958,8 @@ nuttx/
  |   |- shenzhou/
  |   |   `- README.txt
  |   |- skp16c26/
+ |   |   `- README.txt
+ |   |- spresense/
  |   |   `- README.txt
  |   |- stm3210e-eval/
  |   |   |- RIDE/README.txt
@@ -2144,6 +2152,8 @@ apps/
  |   |- nsh/
  |   |  `- README.txt
  |   |- nxplayer/
+ |   |  `- README.txt
+ |   |- psmq/
  |   |  `- README.txt
  |   |- symtab/
  |   |   `- README.txt

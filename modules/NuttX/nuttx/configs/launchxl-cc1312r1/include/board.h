@@ -107,13 +107,26 @@
 
 /* Button definitions *******************************************************/
 
+/* The LaunchXL-CC1312R1 has two push-puttons:
+ *
+ *   DIO13_BTN1  SW1  Low input sensed when depressed
+ *   DIO14_BTN2  SW2  Low input sensed when depressed
+ */
+
+#define BUTTON_SW1        0
+#define BUTTON_SW2        1
+#define NUM_BUTTONS       2
+
+#define BUTTON_SW1_BIT    (1 << BUTTON_SW1)
+#define BUTTON_SW2_BIT    (1 << BUTTON_SW2)
+
 /* Pin configuration ********************************************************/
 
 #ifdef CONFIG_TIVA_UART0
 /* UART0:
  *
  * The on-board XDS110 Debugger provide a USB virtual serial console using
- * UART0 (PA0/U0RX and PA1/U0TX).
+ * UART0 (DIO2_RXD and DIO3_TXD).
  */
 
 #  define GPIO_UART0_RX &g_gpio_uart0_rx
@@ -128,11 +141,11 @@
 
 /* Pin configuration ********************************************************/
 
-struct cc134xx_pinconfig_s; /* Forward reference */
+struct cc13xx_pinconfig_s; /* Forward reference */
 
 #ifdef CONFIG_TIVA_UART0
-extern const struct cc134xx_pinconfig_s g_gpio_uart0_rx;
-extern const struct cc134xx_pinconfig_s g_gpio_uart0_tx;
+extern const struct cc13xx_pinconfig_s g_gpio_uart0_rx;
+extern const struct cc13xx_pinconfig_s g_gpio_uart0_tx;
 #endif
 
 #endif /* __CONFIG_NUCLEO_F303ZE_INCLUDE_BOARD_H */
