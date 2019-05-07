@@ -35,6 +35,8 @@ static Util utilInstance;
 static OpticalFlow opticalFlowDriver;
 
 static UAVRS::I2CDeviceManager i2c_mgr_instance;
+static UAVRS::SPIDeviceManager spi_mgr_instance;
+
 
 
 extern const AP_HAL::HAL& hal;
@@ -45,11 +47,11 @@ HAL_UAVRS::HAL_UAVRS() :
         &uartADriver,
         &uartBDriver,
         &uartCDriver,
-        nullptr,            /* no uartD */
-        nullptr,            /* no uartE */
-        nullptr,            /* no uartF */
+        &uartDDriver,            /* no uartD */
+        &uartEDriver,            /* no uartE */
+        &uartFDriver,            /* no uartF */
         &i2c_mgr_instance,            /*i2c*/
-        &spiDeviceManager,
+        &spi_mgr_instance,
         &analogIn,
         &storageDriver,
         &uartADriver,

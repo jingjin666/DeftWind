@@ -21,7 +21,7 @@
 
 #include "imxrt_gpio.h"
 #include "imxrt_iomuxc.h"
-#include "chip/imxrt_pinmux.h"
+
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -167,6 +167,14 @@
 #define DP_GPIO_INIT_LIST { \
 		DP_ADC_GPIO,            \
 }
+
+
+
+#define UAVRS_SPI_BUS_ADIS	4
+
+/* Use these in place of the spi_dev_e enumeration to select a specific SPI device on SPI4 */
+#define UAVRS_SPIDEV_ADIS		1
+
 
 /****************************************************************************
  * Public Types
