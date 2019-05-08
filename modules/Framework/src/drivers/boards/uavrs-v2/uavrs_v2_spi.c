@@ -43,13 +43,22 @@
 void weak_function imxrt_spidev_initialize(void)
 {
 #ifdef CONFIG_IMXRT_LPSPI1
-  (void)imxrt_config_gpio(GPIO_LPSPI1_CS); /* LPSPI1 chip select */
-  (void)imxrt_config_gpio(GPIO_MMCSD_EN);
+		(void)imxrt_config_gpio(GPIO_LPSPI1_CS_MPU2950);
+		(void)imxrt_config_gpio(GPIO_LPSPI1_CS_BARO);
 #endif
+
+#ifdef CONFIG_IMXRT_LPSPI2
+		(void)imxrt_config_gpio(GPIO_LPSPI2_CS);
+#endif
+
 #ifdef CONFIG_IMXRT_LPSPI3
-  (void)imxrt_config_gpio(GPIO_LPSPI3_CS); /* LPSPI3 chip select */
-  imxrt_gpio_write(GPIO_LPSPI3_CS, 1);
+		(void)imxrt_config_gpio(GPIO_LPSPI3_CS_ADIS16375BM);
 #endif
+
+#ifdef CONFIG_IMXRT_LPSPI4
+		(void)imxrt_config_gpio(GPIO_LPSPI4_CS_FM25V05);
+#endif
+
 }
 
 /****************************************************************************
@@ -82,7 +91,16 @@ __EXPORT void imxrt_lpspi1select(FAR struct spi_dev_s *dev, uint32_t devid, bool
 {
   spiinfo("devid: %d CS: %s\n", (int)devid, selected ? "assert" : "de-assert");
 
-  imxrt_gpio_write(GPIO_LPSPI1_CS, !selected);
+  	switch(devid) {
+		case 0:
+			imxrt_gpio_write(GPIO_LPSPI1_CS_MPU2950, !selected);
+			break;
+		case 1:
+			imxrt_gpio_write(GPIO_LPSPI1_CS_BARO, !selected);
+			break;
+		default:
+			break;
+  }
 }
 
 __EXPORT uint8_t imxrt_lpspi1status(FAR struct spi_dev_s *dev, uint32_t devid)
@@ -109,8 +127,8 @@ __EXPORT uint8_t imxrt_lpspi2status(FAR struct spi_dev_s *dev, uint32_t devid)
 __EXPORT void imxrt_lpspi3select(FAR struct spi_dev_s *dev, uint32_t devid, bool selected)
 {
   spiinfo("devid: %d CS: %s\n", (int)devid, selected ? "assert" : "de-assert");
-  
-  imxrt_gpio_write(GPIO_LPSPI3_CS, !selected);
+
+  imxrt_gpio_write(GPIO_LPSPI3_CS_ADIS16375BM, !selected);
 }
 
 __EXPORT uint8_t imxrt_lpspi3status(FAR struct spi_dev_s *dev, uint32_t devid)
@@ -124,7 +142,7 @@ __EXPORT void imxrt_lpspi4select(FAR struct spi_dev_s *dev, uint32_t devid, bool
 {
   spiinfo("devid: %d CS: %s\n", (int)devid, selected ? "assert" : "de-assert");
 
-  imxrt_gpio_write(GPIO_LPSPI4_CS, !selected);
+  imxrt_gpio_write(GPIO_LPSPI4_CS_FM25V05, !selected);
 }
 
 __EXPORT uint8_t imxrt_lpspi4status(FAR struct spi_dev_s *dev, uint32_t devid)
