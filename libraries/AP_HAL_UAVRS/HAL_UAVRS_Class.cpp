@@ -86,6 +86,15 @@ void HAL_UAVRS::run(int argc, char* const argv[], Callbacks* callbacks) const
     // init the I2C wrapper class
     UAVRS_I2C::init_lock();
 
+    const uint8_t send[] = {0};
+	uint8_t recv[32] = {0};
+	bool ret;
+	uint8_t bus = 0;
+
+    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
+
+    _dev = hal.i2c_mgr->get_device(bus, 0xA0);
+
     callbacks->setup();
 
     schedulerInstance.hal_initialized();
@@ -94,6 +103,20 @@ void HAL_UAVRS::run(int argc, char* const argv[], Callbacks* callbacks) const
 
     for (;;) {
         callbacks->loop();
+
+        ret = _dev->transfer(send, 0, recv, sizeof(recv));
+
+        if(ret) {
+			for(uint8_t i = 0; i < sizeof(recv); i++) {
+				printf("0x%02X ", recv[i]);
+				if((i + 1) % 16 == 0) {
+					printf("\n");
+				}
+			}
+			printf("\n");
+		} else {
+			printf("I2c transfer error.\n");
+		}
     }
 }
 
