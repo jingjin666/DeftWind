@@ -23,8 +23,8 @@
 #include <dp_micro_hal.h>
 #include <dp_log.h>
 
-//#include <systemlib/dp_macros.h>
-//#include <lib/perf/perf_counter.h>
+#include <systemlib/dp_macros.h>
+#include <systemlib/perf_counter.h>
 #include <nuttx/arch.h>
 #include <nuttx/irq.h>
 
@@ -54,12 +54,6 @@
 #else
 #  define hrtinfo(x...)
 #endif
-
-#define CAT3_(A, B, C)    A##B##C
-#define CAT3(A, B, C)     CAT3_(A, B, C)
-
-#define _CAT(a, b) a ## b
-#define CAT(a, b) _CAT(a, b)
 
 /* latency histogram */
 #define LATENCY_BUCKET_COUNT 8

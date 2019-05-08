@@ -1,33 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (C) 2018 PX4 Development Team. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- * 3. Neither the name PX4 nor the names of its contributors may be
- *    used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
- * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * Copyright (c) 2018 UAVRS. All rights reserved.
  *
  ****************************************************************************/
 
@@ -37,8 +10,8 @@
  * Servo driver supporting PWM servos connected to imxrt FLEXPWM blocks.
  */
 
-#include <px4_config.h>
-#include <systemlib/px4_macros.h>
+#include <dp_config.h>
+#include <systemlib/dp_macros.h>
 #include <nuttx/arch.h>
 #include <nuttx/irq.h>
 
@@ -357,18 +330,18 @@ static int allocate_channel(unsigned channel, io_timer_channel_mode_t mode)
 
 static int timer_set_rate(unsigned channel, unsigned rate)
 {
-	irqstate_t flags = px4_enter_critical_section();
+	irqstate_t flags = dp_enter_critical_section();
 	rMCTRL(channels_timer(channel)) |= (timer_io_channels[channel].sub_module_bits >> MCTRL_LDOK_SHIFT) << MCTRL_CLDOK_SHIFT
 					   ;
 	rVAL1(channels_timer(channel), timer_io_channels[channel].sub_module) = (BOARD_PWM_FREQ / rate) - 1;
 	rMCTRL(channels_timer(channel)) |= timer_io_channels[channel].sub_module_bits;
-	px4_leave_critical_section(flags);
+	dp_leave_critical_section(flags);
 	return 0;
 }
 
 static inline void io_timer_set_oneshot_mode(unsigned channel)
 {
-	irqstate_t flags = px4_enter_critical_section();
+	irqstate_t flags = dp_enter_critical_section();
 	uint16_t rvalue = rCTRL(channels_timer(channel), timer_io_channels[channel].sub_module);
 	rvalue &= ~SMCTRL_PRSC_MASK;
 	rvalue |= SMCTRL_PRSC_DIV2 | SMCTRL_LDMOD;
@@ -376,13 +349,13 @@ static inline void io_timer_set_oneshot_mode(unsigned channel)
 					   ;
 	rCTRL(channels_timer(channel), timer_io_channels[channel].sub_module)  = rvalue;
 	rMCTRL(channels_timer(channel)) |= timer_io_channels[channel].sub_module_bits;
-	px4_leave_critical_section(flags);
+	dp_leave_critical_section(flags);
 
 }
 
 static inline void io_timer_set_PWM_mode(unsigned channel)
 {
-	irqstate_t flags = px4_enter_critical_section();
+	irqstate_t flags = dp_enter_critical_section();
 	uint16_t rvalue = rCTRL(channels_timer(channel), timer_io_channels[channel].sub_module);
 	rvalue &= ~(SMCTRL_PRSC_MASK | SMCTRL_LDMOD);
 	rvalue |= SMCTRL_PRSC_DIV16;
@@ -390,7 +363,7 @@ static inline void io_timer_set_PWM_mode(unsigned channel)
 					   ;
 	rCTRL(channels_timer(channel), timer_io_channels[channel].sub_module)  = rvalue;
 	rMCTRL(channels_timer(channel)) |= timer_io_channels[channel].sub_module_bits;
-	px4_leave_critical_section(flags);
+	dp_leave_critical_section(flags);
 }
 
 void io_timer_trigger(void)
@@ -399,7 +372,7 @@ void io_timer_trigger(void)
 	struct {
 		uint32_t base;
 		uint16_t triggers;
-	} action_cache[MAX_IO_TIMERS] = {0};
+	} action_cache[MAX_IO_TIMERS] = {{0}};
 	int actions = 0;
 
 	/* Pre-calculate the list of channels to Trigger */
@@ -424,7 +397,7 @@ void io_timer_trigger(void)
 
 	/* Now do them all with the shortest delay in between */
 
-	irqstate_t flags = px4_enter_critical_section();
+	irqstate_t flags = dp_enter_critical_section();
 
 	for (actions = 0; action_cache[actions].base != 0 &&  actions < MAX_IO_TIMERS; actions++) {
 		_REG16(action_cache[actions].base, IMXRT_FLEXPWM_MCTRL_OFFSET) |= (action_cache[actions].triggers >> MCTRL_LDOK_SHIFT)
@@ -432,7 +405,7 @@ void io_timer_trigger(void)
 		_REG16(action_cache[actions].base, IMXRT_FLEXPWM_MCTRL_OFFSET) |= action_cache[actions].triggers;
 	}
 
-	px4_leave_critical_section(flags);
+	dp_leave_critical_section(flags);
 }
 
 int io_timer_init_timer(unsigned timer)
@@ -443,7 +416,7 @@ int io_timer_init_timer(unsigned timer)
 
 	if (rv == 0) {
 
-		irqstate_t flags = px4_enter_critical_section();
+		irqstate_t flags = dp_enter_critical_section();
 
 		set_timer_initalized(timer);
 
@@ -492,7 +465,7 @@ int io_timer_init_timer(unsigned timer)
 			timer_set_rate(chan, 50);
 		}
 
-		px4_leave_critical_section(flags);
+		dp_leave_critical_section(flags);
 	}
 
 	return rv;
@@ -591,11 +564,11 @@ int io_timer_channel_init(unsigned channel, io_timer_channel_mode_t mode,
 
 		io_timer_init_timer(timer);
 
-		irqstate_t flags = px4_enter_critical_section();
+		irqstate_t flags = dp_enter_critical_section();
 
 		/* Set up IO */
 		if (gpio) {
-			px4_arch_configgpio(gpio);
+			dp_arch_configgpio(gpio);
 		}
 
 		/* configure the channel */
@@ -604,7 +577,7 @@ int io_timer_channel_init(unsigned channel, io_timer_channel_mode_t mode,
 
 		channel_handlers[channel].callback = channel_handler;
 		channel_handlers[channel].context = context;
-		px4_leave_critical_section(flags);
+		dp_leave_critical_section(flags);
 	}
 
 	return rv;
@@ -666,13 +639,13 @@ int io_timer_set_enable(bool state, io_timer_channel_mode_t mode, io_timer_chann
 		}
 	}
 
-	irqstate_t flags = px4_enter_critical_section();
+	irqstate_t flags = dp_enter_critical_section();
 
 	for (unsigned actions = 0; actions < arraySize(action_cache); actions++) {
 		if (action_cache[actions].base != 0) {
 			for (unsigned int index = 0; index < action_cache[actions].io_index; index++) {
 				if (action_cache[actions].gpios[index]) {
-					px4_arch_configgpio(action_cache[actions].gpios[index]);
+					dp_arch_configgpio(action_cache[actions].gpios[index]);
 				}
 
 				_REG16(action_cache[actions].base, IMXRT_FLEXPWM_MCTRL_OFFSET) = action_cache[actions].sm_ens;
@@ -680,7 +653,7 @@ int io_timer_set_enable(bool state, io_timer_channel_mode_t mode, io_timer_chann
 		}
 	}
 
-	px4_leave_critical_section(flags);
+	dp_leave_critical_section(flags);
 	return 0;
 }
 
@@ -697,12 +670,12 @@ int io_timer_set_ccr(unsigned channel, uint16_t value)
 			rv = -EIO;
 
 		} else {
-			irqstate_t flags = px4_enter_critical_section();
+			irqstate_t flags = dp_enter_critical_section();
 			rMCTRL(channels_timer(channel)) |= (timer_io_channels[channel].sub_module_bits >> MCTRL_LDOK_SHIFT) << MCTRL_CLDOK_SHIFT
 							   ;
 			REG(channels_timer(channel), timer_io_channels[channel].sub_module, timer_io_channels[channel].val_offset) = value - 1;
 			rMCTRL(channels_timer(channel)) |= timer_io_channels[channel].sub_module_bits;
-			px4_leave_critical_section(flags);
+			dp_leave_critical_section(flags);
 		}
 	}
 
