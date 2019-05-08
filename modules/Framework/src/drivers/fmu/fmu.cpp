@@ -445,7 +445,7 @@ FMU::FMU() :
 
 	// rc input, published to ORB
 	memset(&_rc_in, 0, sizeof(_rc_in));
-	_rc_in.input_source = input_rc_s::RC_INPUT_SOURCE_FMU_PPM;
+	_rc_in.input_source = input_rc_s::RC_INPUT_SOURCE_PX4FMU_PPM;
 
 #ifdef GPIO_SBUS_INV
 	// this board has a GPIO to control SBUS inversion
@@ -756,9 +756,11 @@ FMU::set_pwm_clock(uint32_t rate_map, unsigned clock_MHz)
         uint32_t mask = up_pwm_servo_get_rate_group(group);
 
         if ((rate_map & mask) != 0) {
+            #if 0
             if (up_pwm_servo_set_rate_group_clock(group, clock_MHz) != OK) {
                 return -EINVAL;
             }
+            #endif
         }
 	}
 
@@ -824,12 +826,14 @@ FMU::update_pwm_rev_mask()
 
 		/* fill the channel reverse mask from parameters */
 		sprintf(pname, "PWM_AUX_REV%d", i + 1);
+        #if 0
 		param_t param_h = param_find(pname);
 
 		if (param_h != PARAM_INVALID) {
 			param_get(param_h, &ival);
 			_reverse_pwm_mask |= ((int16_t)(ival != 0)) << i;
 		}
+		#endif
 	}
 }
 
@@ -988,7 +992,7 @@ FMU::cycle()
 		_current_update_rate = 0;
 
 		_armed_sub = orb_subscribe(ORB_ID(actuator_armed));
-		_param_sub = orb_subscribe(ORB_ID(parameter_update));
+		//_param_sub = orb_subscribe(ORB_ID(parameter_update));
 
 		/* initialize PWM limit lib */
 		pwm_limit_init(&_pwm_limit);
@@ -1246,16 +1250,17 @@ FMU::cycle()
 		update_pwm_out_state();
 	}
 
-	orb_check(_param_sub, &updated);
+	//orb_check(_param_sub, &updated);
 
 	if (updated) {
 		parameter_update_s pupdate;
-		orb_copy(ORB_ID(parameter_update), _param_sub, &pupdate);
+		//orb_copy(ORB_ID(parameter_update), _param_sub, &pupdate);
 
 		update_pwm_rev_mask();
 
 		int32_t dsm_bind_val;
-		param_t dsm_bind_param;
+        #if 0
+        param_t dsm_bind_param;
 
 		/* see if bind parameter has been set, and reset it to -1 */
 		param_get(dsm_bind_param = param_find("RC_DSM_BIND"), &dsm_bind_val);
@@ -1265,6 +1270,7 @@ FMU::cycle()
 			dsm_bind_val = -1;
 			param_set(dsm_bind_param, &dsm_bind_val);
 		}
+        #endif
 	}
 
 	bool rc_updated = false;
@@ -1307,7 +1313,7 @@ FMU::cycle()
 
 				if (rc_updated) {
 					// we have a new SBUS frame. Publish it.
-					_rc_in.input_source = input_rc_s::RC_INPUT_SOURCE_FMU_SBUS;
+					_rc_in.input_source = input_rc_s::RC_INPUT_SOURCE_PX4FMU_SBUS;
 					fill_rc_in(raw_rc_count, raw_rc_values, _cycle_timestamp,
 						   sbus_frame_drop, sbus_failsafe, frame_drops);
 					_rc_scan_locked = true;
@@ -1346,7 +1352,7 @@ FMU::cycle()
 
 				if (rc_updated) {
 					// we have a new ST24 frame. Publish it.
-					_rc_in.input_source = input_rc_s::RC_INPUT_SOURCE_FMU_ST24;
+					_rc_in.input_source = input_rc_s::RC_INPUT_SOURCE_PX4FMU_ST24;
 					fill_rc_in(raw_rc_count, raw_rc_values, _cycle_timestamp,
 						   false, false, frame_drops, st24_rssi);
 					_rc_scan_locked = true;
@@ -1385,7 +1391,7 @@ FMU::cycle()
 
 				if (rc_updated) {
 					// we have a new SUMD frame. Publish it.
-					_rc_in.input_source = input_rc_s::RC_INPUT_SOURCE_FMU_SUMD;
+					_rc_in.input_source = input_rc_s::RC_INPUT_SOURCE_PX4FMU_SUMD;
 					fill_rc_in(raw_rc_count, raw_rc_values, _cycle_timestamp,
 						   false, false, frame_drops, sumd_rssi);
 					_rc_scan_locked = true;
@@ -1424,7 +1430,7 @@ FMU::cycle()
 
 				if (rc_updated) {
 					// we have a new SRXL frame. Publish it.
-					_rc_in.input_source = input_rc_s::RC_INPUT_SOURCE_FMU_SRXL;
+					_rc_in.input_source = input_rc_s::RC_INPUT_SOURCE_PX4FMU_SRXL;
 
 					fill_rc_in(srxl_chan_count, raw_rc_values, _cycle_timestamp,
 						   false, failsafe_state, 0);
@@ -1458,7 +1464,7 @@ FMU::cycle()
 
 				if (rc_updated) {
 					// we have a new DSM frame. Publish it.
-					_rc_in.input_source = input_rc_s::RC_INPUT_SOURCE_FMU_DSM;
+					_rc_in.input_source = input_rc_s::RC_INPUT_SOURCE_PX4FMU_DSM;
 					fill_rc_in(raw_rc_count, raw_rc_values, _cycle_timestamp,
 						   false, false, frame_drops);
 					_rc_scan_locked = true;
@@ -1489,7 +1495,7 @@ FMU::cycle()
 			    && ppm_decoded_channels > 3) {
 				// we have a new PPM frame. Publish it.
 				rc_updated = true;
-				_rc_in.input_source = input_rc_s::RC_INPUT_SOURCE_FMU_PPM;
+				_rc_in.input_source = input_rc_s::RC_INPUT_SOURCE_PX4FMU_PPM;
 				fill_rc_in(ppm_decoded_channels, ppm_buffer, _cycle_timestamp,
 					   false, false, 0);
 				_rc_scan_locked = true;
@@ -1551,7 +1557,7 @@ void FMU::work_stop()
 	}
 
 	::close(_armed_sub);
-	::close(_param_sub);
+	//::close(_param_sub);
 
 	/* make sure servos are off */
 	up_pwm_servo_deinit();
@@ -2396,7 +2402,7 @@ FMU::write(file *filp, const char *buffer, size_t len)
         }
 
 	if (_oneshot_mode) {
-		up_pwm_servo_trigger(_pwm_alt_rate_channels);
+		//up_pwm_servo_trigger(_pwm_alt_rate_channels);
 		_oneshot_delay_till = hrt_absolute_time() + widest_pulse + 50;
 	}
 
@@ -2406,317 +2412,6 @@ FMU::write(file *filp, const char *buffer, size_t len)
 void
 FMU::sensor_reset(int ms)
 {
-#if defined(CONFIG_ARCH_BOARD_FMU_V2)
-
-	if (ms < 1) {
-		ms = 1;
-	}
-
-	/* disable SPI bus */
-	stm32_configgpio(GPIO_SPI_CS_GYRO_OFF);
-	stm32_configgpio(GPIO_SPI_CS_ACCEL_MAG_OFF);
-	stm32_configgpio(GPIO_SPI_CS_BARO_OFF);
-	stm32_configgpio(GPIO_SPI_CS_MPU_OFF);
-
-	stm32_gpiowrite(GPIO_SPI_CS_GYRO_OFF, 0);
-	stm32_gpiowrite(GPIO_SPI_CS_ACCEL_MAG_OFF, 0);
-	stm32_gpiowrite(GPIO_SPI_CS_BARO_OFF, 0);
-	stm32_gpiowrite(GPIO_SPI_CS_MPU_OFF, 0);
-
-	stm32_configgpio(GPIO_SPI1_SCK_OFF);
-	stm32_configgpio(GPIO_SPI1_MISO_OFF);
-	stm32_configgpio(GPIO_SPI1_MOSI_OFF);
-
-	stm32_gpiowrite(GPIO_SPI1_SCK_OFF, 0);
-	stm32_gpiowrite(GPIO_SPI1_MISO_OFF, 0);
-	stm32_gpiowrite(GPIO_SPI1_MOSI_OFF, 0);
-
-	stm32_configgpio(GPIO_GYRO_DRDY_OFF);
-	stm32_configgpio(GPIO_MAG_DRDY_OFF);
-	stm32_configgpio(GPIO_ACCEL_DRDY_OFF);
-	stm32_configgpio(GPIO_EXTI_MPU_DRDY_OFF);
-
-	stm32_gpiowrite(GPIO_GYRO_DRDY_OFF, 0);
-	stm32_gpiowrite(GPIO_MAG_DRDY_OFF, 0);
-	stm32_gpiowrite(GPIO_ACCEL_DRDY_OFF, 0);
-	stm32_gpiowrite(GPIO_EXTI_MPU_DRDY_OFF, 0);
-
-	/* set the sensor rail off */
-	stm32_configgpio(GPIO_VDD_3V3_SENSORS_EN);
-	stm32_gpiowrite(GPIO_VDD_3V3_SENSORS_EN, 0);
-
-	/* wait for the sensor rail to reach GND */
-	usleep(ms * 1000);
-	warnx("reset done, %d ms", ms);
-
-	/* re-enable power */
-
-	/* switch the sensor rail back on */
-	stm32_gpiowrite(GPIO_VDD_3V3_SENSORS_EN, 1);
-
-	/* wait a bit before starting SPI, different times didn't influence results */
-	usleep(100);
-
-	/* reconfigure the SPI pins */
-#ifdef CONFIG_STM32_SPI1
-	stm32_configgpio(GPIO_SPI_CS_GYRO);
-	stm32_configgpio(GPIO_SPI_CS_ACCEL_MAG);
-	stm32_configgpio(GPIO_SPI_CS_BARO);
-	stm32_configgpio(GPIO_SPI_CS_MPU);
-
-	/* De-activate all peripherals,
-	 * required for some peripheral
-	 * state machines
-	 */
-	stm32_gpiowrite(GPIO_SPI_CS_GYRO, 1);
-	stm32_gpiowrite(GPIO_SPI_CS_ACCEL_MAG, 1);
-	stm32_gpiowrite(GPIO_SPI_CS_BARO, 1);
-	stm32_gpiowrite(GPIO_SPI_CS_MPU, 1);
-
-	stm32_configgpio(GPIO_SPI1_SCK);
-	stm32_configgpio(GPIO_SPI1_MISO);
-	stm32_configgpio(GPIO_SPI1_MOSI);
-
-	// // XXX bring up the EXTI pins again
-	// stm32_configgpio(GPIO_GYRO_DRDY);
-	// stm32_configgpio(GPIO_MAG_DRDY);
-	// stm32_configgpio(GPIO_ACCEL_DRDY);
-	// stm32_configgpio(GPIO_EXTI_MPU_DRDY);
-
-#endif
-#endif
-#if defined(CONFIG_ARCH_BOARD_FMU_V4)
-
-	if (ms < 1) {
-		ms = 1;
-	}
-
-	/* disable SPI bus */
-	stm32_configgpio(GPIO_SPI_CS_OFF_MPU9250);
-	stm32_configgpio(GPIO_SPI_CS_OFF_HMC5983);
-	stm32_configgpio(GPIO_SPI_CS_OFF_MS5611);
-	stm32_configgpio(GPIO_SPI_CS_OFF_ICM_20608_G);
-
-	stm32_gpiowrite(GPIO_SPI_CS_OFF_MPU9250, 0);
-	stm32_gpiowrite(GPIO_SPI_CS_OFF_HMC5983, 0);
-	stm32_gpiowrite(GPIO_SPI_CS_OFF_MS5611, 0);
-	stm32_gpiowrite(GPIO_SPI_CS_OFF_ICM_20608_G, 0);
-
-	stm32_configgpio(GPIO_SPI1_SCK_OFF);
-	stm32_configgpio(GPIO_SPI1_MISO_OFF);
-	stm32_configgpio(GPIO_SPI1_MOSI_OFF);
-
-	stm32_gpiowrite(GPIO_SPI1_SCK_OFF, 0);
-	stm32_gpiowrite(GPIO_SPI1_MISO_OFF, 0);
-	stm32_gpiowrite(GPIO_SPI1_MOSI_OFF, 0);
-
-	stm32_configgpio(GPIO_DRDY_OFF_MPU9250);
-	stm32_configgpio(GPIO_DRDY_OFF_HMC5983);
-	stm32_configgpio(GPIO_DRDY_OFF_ICM_20608_G);
-
-	stm32_gpiowrite(GPIO_DRDY_OFF_MPU9250, 0);
-	stm32_gpiowrite(GPIO_DRDY_OFF_HMC5983, 0);
-	stm32_gpiowrite(GPIO_DRDY_OFF_ICM_20608_G, 0);
-
-	/* set the sensor rail off */
-	stm32_configgpio(GPIO_VDD_3V3_SENSORS_EN);
-	stm32_gpiowrite(GPIO_VDD_3V3_SENSORS_EN, 0);
-
-	/* wait for the sensor rail to reach GND */
-	usleep(ms * 1000);
-	warnx("reset done, %d ms", ms);
-
-	/* re-enable power */
-
-	/* switch the sensor rail back on */
-	stm32_gpiowrite(GPIO_VDD_3V3_SENSORS_EN, 1);
-
-	/* wait a bit before starting SPI, different times didn't influence results */
-	usleep(100);
-
-	/* reconfigure the SPI pins */
-#ifdef CONFIG_STM32_SPI1
-	stm32_configgpio(GPIO_SPI_CS_MPU9250);
-	stm32_configgpio(GPIO_SPI_CS_HMC5983);
-	stm32_configgpio(GPIO_SPI_CS_MS5611);
-	stm32_configgpio(GPIO_SPI_CS_ICM_20608_G);
-
-	/* De-activate all peripherals,
-	 * required for some peripheral
-	 * state machines
-	 */
-	stm32_gpiowrite(GPIO_SPI_CS_MPU9250, 1);
-	stm32_gpiowrite(GPIO_SPI_CS_HMC5983, 1);
-	stm32_gpiowrite(GPIO_SPI_CS_MS5611, 1);
-	stm32_gpiowrite(GPIO_SPI_CS_ICM_20608_G, 1);
-
-	stm32_configgpio(GPIO_SPI1_SCK);
-	stm32_configgpio(GPIO_SPI1_MISO);
-	stm32_configgpio(GPIO_SPI1_MOSI);
-
-	// // XXX bring up the EXTI pins again
-	// stm32_configgpio(GPIO_GYRO_DRDY);
-	// stm32_configgpio(GPIO_MAG_DRDY);
-	// stm32_configgpio(GPIO_ACCEL_DRDY);
-	// stm32_configgpio(GPIO_EXTI_MPU_DRDY);
-
-#endif
-#endif
-
-#if defined(CONFIG_ARCH_BOARD_FMU_V4PRO)
-
-	if (ms < 1) {
-		ms = 1;
-	}
-
-/* disable SPI bus */
-	stm32_configgpio(GPIO_SPI_CS_OFF_MPU9250);
-	stm32_configgpio(GPIO_SPI_CS_OFF_LIS3MDL);
-	stm32_configgpio(GPIO_SPI_CS_OFF_MS5611);
-	stm32_configgpio(GPIO_SPI_CS_OFF_ICM_2060X);
-	stm32_configgpio(GPIO_SPI_CS_TEMPCAL_EEPROM);
-
-	stm32_gpiowrite(GPIO_SPI_CS_OFF_MPU9250, 0);
-	stm32_gpiowrite(GPIO_SPI_CS_OFF_LIS3MDL, 0);
-	stm32_gpiowrite(GPIO_SPI_CS_OFF_MS5611, 0);
-	stm32_gpiowrite(GPIO_SPI_CS_OFF_ICM_2060X, 0);
-	stm32_gpiowrite(GPIO_SPI_CS_TEMPCAL_EEPROM, 0);
-
-	stm32_configgpio(GPIO_SPI1_SCK_OFF);
-	stm32_configgpio(GPIO_SPI1_MISO_OFF);
-	stm32_configgpio(GPIO_SPI1_MOSI_OFF);
-
-	stm32_gpiowrite(GPIO_SPI1_SCK_OFF, 0);
-	stm32_gpiowrite(GPIO_SPI1_MISO_OFF, 0);
-	stm32_gpiowrite(GPIO_SPI1_MOSI_OFF, 0);
-
-	stm32_configgpio(GPIO_DRDY_OFF_MPU9250);
-	stm32_configgpio(GPIO_DRDY_OFF_LIS3MDL);
-	stm32_configgpio(GPIO_DRDY_OFF_ICM_2060X);
-
-	stm32_gpiowrite(GPIO_DRDY_OFF_MPU9250, 0);
-	stm32_gpiowrite(GPIO_DRDY_OFF_LIS3MDL, 0);
-	stm32_gpiowrite(GPIO_DRDY_OFF_ICM_2060X, 0);
-
-	/* set the sensor rail off */
-	stm32_configgpio(GPIO_VDD_3V3_SENSORS_EN);
-	stm32_gpiowrite(GPIO_VDD_3V3_SENSORS_EN, 0);
-
-	/* wait for the sensor rail to reach GND */
-	usleep(ms * 1000);
-	warnx("reset done, %d ms", ms);
-
-	/* re-enable power */
-
-	/* switch the sensor rail back on */
-	stm32_gpiowrite(GPIO_VDD_3V3_SENSORS_EN, 1);
-
-	/* wait a bit before starting SPI, different times didn't influence results */
-	usleep(100);
-
-	/* reconfigure the SPI pins */
-#ifdef CONFIG_STM32_SPI1
-	stm32_configgpio(GPIO_SPI_CS_MPU9250);
-	stm32_configgpio(GPIO_SPI_CS_LIS3MDL);
-	stm32_configgpio(GPIO_SPI_CS_MS5611);
-	stm32_configgpio(GPIO_SPI_CS_ICM_2060X);
-	stm32_configgpio(GPIO_SPI_CS_TEMPCAL_EEPROM);
-
-	stm32_configgpio(GPIO_SPI1_SCK);
-	stm32_configgpio(GPIO_SPI1_MISO);
-	stm32_configgpio(GPIO_SPI1_MOSI);
-
-	/* bring up the EXTI pins again */
-	stm32_configgpio(GPIO_DRDY_MPU9250);
-	stm32_configgpio(GPIO_DRDY_LIS3MDL);
-	stm32_configgpio(GPIO_DRDY_ICM_2060X);
-
-#endif
-#endif
-
-#if  defined(CONFIG_ARCH_BOARD_MINDPX_V2)
-
-	if (ms < 1) {
-		ms = 1;
-	}
-
-	/* disable SPI bus */
-	stm32_configgpio(GPIO_SPI_CS_GYRO_OFF);
-	stm32_configgpio(GPIO_SPI_CS_ACCEL_MAG_OFF);
-	stm32_configgpio(GPIO_SPI_CS_BARO_OFF);
-	//      stm32_configgpio(GPIO_SPI_CS_FRAM_OFF);
-	stm32_configgpio(GPIO_SPI_CS_MPU_OFF);
-
-	stm32_gpiowrite(GPIO_SPI_CS_GYRO_OFF, 0);
-	stm32_gpiowrite(GPIO_SPI_CS_ACCEL_MAG_OFF, 0);
-	stm32_gpiowrite(GPIO_SPI_CS_BARO_OFF, 0);
-	//       stm32_gpiowrite(GPIO_SPI_CS_FRAM_OFF,0);
-	stm32_gpiowrite(GPIO_SPI_CS_MPU_OFF, 0);
-
-	stm32_configgpio(GPIO_SPI4_SCK_OFF);
-	stm32_configgpio(GPIO_SPI4_MISO_OFF);
-	stm32_configgpio(GPIO_SPI4_MOSI_OFF);
-
-	stm32_gpiowrite(GPIO_SPI4_SCK_OFF, 0);
-	stm32_gpiowrite(GPIO_SPI4_MISO_OFF, 0);
-	stm32_gpiowrite(GPIO_SPI4_MOSI_OFF, 0);
-
-	stm32_configgpio(GPIO_GYRO_DRDY_OFF);
-	stm32_configgpio(GPIO_MAG_DRDY_OFF);
-	stm32_configgpio(GPIO_ACCEL_DRDY_OFF);
-	stm32_configgpio(GPIO_EXTI_MPU_DRDY_OFF);
-
-	stm32_gpiowrite(GPIO_GYRO_DRDY_OFF, 0);
-	stm32_gpiowrite(GPIO_MAG_DRDY_OFF, 0);
-	stm32_gpiowrite(GPIO_ACCEL_DRDY_OFF, 0);
-	stm32_gpiowrite(GPIO_EXTI_MPU_DRDY_OFF, 0);
-
-	//        /* set the sensor rail off */
-	//        stm32_configgpio(GPIO_VDD_3V3_SENSORS_EN);
-	//        stm32_gpiowrite(GPIO_VDD_3V3_SENSORS_EN, 0);
-	//
-	/* wait for the sensor rail to reach GND */
-	usleep(ms * 1000);
-	warnx("reset done, %d ms", ms);
-	//
-	//        /* re-enable power */
-	//
-	//        /* switch the sensor rail back on */
-	//        stm32_gpiowrite(GPIO_VDD_3V3_SENSORS_EN, 1);
-	//
-	/* wait a bit before starting SPI, different times didn't influence results */
-	usleep(100);
-
-	/* reconfigure the SPI pins */
-#ifdef CONFIG_STM32_SPI4
-	stm32_configgpio(GPIO_SPI_CS_GYRO);
-	stm32_configgpio(GPIO_SPI_CS_ACCEL_MAG);
-	stm32_configgpio(GPIO_SPI_CS_BARO);
-	//        stm32_configgpio(GPIO_SPI_CS_FRAM);
-	stm32_configgpio(GPIO_SPI_CS_MPU);
-
-	/* De-activate all peripherals,
-	* required for some peripheral
-	* state machines
-	*/
-	stm32_gpiowrite(GPIO_SPI_CS_GYRO, 1);
-	stm32_gpiowrite(GPIO_SPI_CS_ACCEL_MAG, 1);
-	stm32_gpiowrite(GPIO_SPI_CS_BARO, 1);
-	stm32_gpiowrite(GPIO_SPI_CS_FRAM, 1);
-	stm32_gpiowrite(GPIO_SPI_CS_MPU, 1);
-
-	stm32_configgpio(GPIO_SPI4_SCK);
-	stm32_configgpio(GPIO_SPI4_MISO);
-	stm32_configgpio(GPIO_SPI4_MOSI);
-
-	// // XXX bring up the EXTI pins again
-	// stm32_configgpio(GPIO_GYRO_DRDY);
-	// stm32_configgpio(GPIO_MAG_DRDY);
-	// stm32_configgpio(GPIO_ACCEL_DRDY);
-
-#endif
-#endif
-
 #if  defined(CONFIG_ARCH_BOARD_UAVRS_V1)
 
 	if (ms < 1) {
@@ -2793,57 +2488,6 @@ FMU::sensor_reset(int ms)
 void
 FMU::peripheral_reset(int ms)
 {
-#if defined(CONFIG_ARCH_BOARD_FMU_V2) || defined(CONFIG_ARCH_BOARD_FMU_V4PRO)
-
-	if (ms < 1) {
-		ms = 10;
-	}
-
-	/* set the peripheral rails off */
-	stm32_configgpio(GPIO_VDD_5V_PERIPH_EN);
-	stm32_gpiowrite(GPIO_VDD_5V_PERIPH_EN, 1);
-
-	/* wait for the peripheral rail to reach GND */
-	usleep(ms * 1000);
-	warnx("reset done, %d ms", ms);
-
-	/* re-enable power */
-
-	/* switch the peripheral rail back on */
-	stm32_gpiowrite(GPIO_VDD_5V_PERIPH_EN, 0);
-#endif
-#if defined(CONFIG_ARCH_BOARD_FMU_V4)
-
-	if (ms < 1) {
-		ms = 10;
-	}
-
-	/* set the peripheral rails off */
-	stm32_configgpio(GPIO_PERIPH_3V3_EN);
-
-	stm32_gpiowrite(GPIO_PERIPH_3V3_EN, 0);
-
-	bool last = stm32_gpioread(GPIO_SPEKTRUM_PWR_EN);
-	/* Keep Spektum on to discharge rail*/
-	stm32_gpiowrite(GPIO_SPEKTRUM_PWR_EN, 1);
-
-	/* wait for the peripheral rail to reach GND */
-	usleep(ms * 1000);
-	warnx("reset done, %d ms", ms);
-
-	/* re-enable power */
-
-	/* switch the peripheral rail back on */
-	stm32_gpiowrite(GPIO_SPEKTRUM_PWR_EN, last);
-	stm32_gpiowrite(GPIO_PERIPH_3V3_EN, 1);
-#endif
-#if defined(CONFIG_ARCH_BOARD_MINDPX_V2)
-
-	if (ms < 1) {
-		ms = 10;
-	}
-
-#endif
 #if defined(CONFIG_ARCH_BOARD_UAVRS_V1)
 
 	if (ms < 1) {
@@ -2856,133 +2500,22 @@ FMU::peripheral_reset(int ms)
 void
 FMU::gpio_reset(void)
 {
-#if defined(CONFIG_ARCH_BOARD_AEROFC_V1)
-	// _ngpio == 0, triggering a compile error with -Werror=type-limits
-	return;
-#else
-
-	/*
-	 * Setup default GPIO config - all pins as GPIOs, input if
-	 * possible otherwise output if possible.
-	 */
-	for (unsigned i = 0; i < _ngpio; i++) {
-		if (_gpio_tab[i].input != 0) {
-			stm32_configgpio(_gpio_tab[i].input);
-
-		} else if (_gpio_tab[i].output != 0) {
-			stm32_configgpio(_gpio_tab[i].output);
-		}
-	}
-
-#if defined(CONFIG_ARCH_BOARD_FMU_V1)
-	/* if we have a GPIO direction control, set it to zero (input) */
-	stm32_gpiowrite(GPIO_GPIO_DIR, 0);
-	stm32_configgpio(GPIO_GPIO_DIR);
-#endif
-#endif
 }
 
 void
 FMU::gpio_set_function(uint32_t gpios, int function)
 {
-#if defined(CONFIG_ARCH_BOARD_AEROFC_V1)
-	// _ngpio == 0, triggering a compile error with -Werror=type-limits
-	return;
-#else
-#if defined(CONFIG_ARCH_BOARD_FMU_V1)
-
-	/*
-	 * GPIOs 0 and 1 must have the same direction as they are buffered
-	 * by a shared 2-port driver.  Any attempt to set either sets both.
-	 */
-	if (gpios & 3) {
-		gpios |= 3;
-
-		/* flip the buffer to output mode if required */
-		if (GPIO_SET_OUTPUT == function ||
-		    GPIO_SET_OUTPUT_LOW == function ||
-		    GPIO_SET_OUTPUT_HIGH == function) {
-			stm32_gpiowrite(GPIO_GPIO_DIR, 1);
-		}
-	}
-
-#endif
-
-	/* configure selected GPIOs as required */
-	for (unsigned i = 0; i < _ngpio; i++) {
-		if (gpios & (1 << i)) {
-			switch (function) {
-			case GPIO_SET_INPUT:
-				stm32_configgpio(_gpio_tab[i].input);
-				break;
-
-			case GPIO_SET_OUTPUT:
-				stm32_configgpio(_gpio_tab[i].output);
-				break;
-
-			case GPIO_SET_OUTPUT_LOW:
-				stm32_configgpio((_gpio_tab[i].output & ~(GPIO_OUTPUT_SET)) | GPIO_OUTPUT_CLEAR);
-				break;
-
-			case GPIO_SET_OUTPUT_HIGH:
-				stm32_configgpio((_gpio_tab[i].output & ~(GPIO_OUTPUT_CLEAR)) | GPIO_OUTPUT_SET);
-				break;
-
-			case GPIO_SET_ALT_1:
-				if (_gpio_tab[i].alt != 0) {
-					stm32_configgpio(_gpio_tab[i].alt);
-				}
-
-				break;
-			}
-		}
-	}
-
-#if defined(CONFIG_ARCH_BOARD_FMU_V1)
-
-	/* flip buffer to input mode if required */
-	if ((GPIO_SET_INPUT == function) && (gpios & 3)) {
-		stm32_gpiowrite(GPIO_GPIO_DIR, 0);
-	}
-
-#endif
-#endif
 }
 
 void
 FMU::gpio_write(uint32_t gpios, int function)
 {
-#if defined(CONFIG_ARCH_BOARD_AEROFC_V1)
-	// _ngpio == 0, triggering a compile error with -Werror=type-limits
-	return;
-#else
-
-	int value = (function == GPIO_SET) ? 1 : 0;
-
-	for (unsigned i = 0; i < _ngpio; i++)
-		if (gpios & (1 << i)) {
-			stm32_gpiowrite(_gpio_tab[i].output, value);
-		}
-#endif
 }
 
 uint32_t
 FMU::gpio_read(void)
 {
-#if defined(CONFIG_ARCH_BOARD_AEROFC_V1)
-	// _ngpio == 0, triggering a compile error with -Werror=type-limits
-	return 0;
-#else
-
-	uint32_t bits = 0;
-
-	for (unsigned i = 0; i < _ngpio; i++)
-		if (stm32_gpioread(_gpio_tab[i].input)) {
-			bits |= (1 << i);
-		}
-
-	return bits;
-#endif
+return 0;
 }
 
 int

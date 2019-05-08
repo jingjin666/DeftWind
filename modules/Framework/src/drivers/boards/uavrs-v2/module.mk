@@ -8,7 +8,8 @@ SRCS		 = uavrs_v2_init.c \
 		   uavrs_v2_flexspi_nor_flash.c \
 		   uavrs_v2_led.c \
 		   uavrs_v2_spi.c \
-		   uavrs_v2_usb.c
+		   uavrs_v2_usb.c \
+		   uavrs_v2_timer_config.c
 		   
 
 MAXOPTIMIZATION	 = -Os

@@ -37,8 +37,10 @@
 
 SRCS		 = \
 		   perf_counter.c \
+		   conversions.c \
 		   printload.c \
 		   cpuload.c \
+		   otp.c \
 		   board_serial.c \
 		   pwm_limit/pwm_limit.c
 MAXOPTIMIZATION	 = -Os
