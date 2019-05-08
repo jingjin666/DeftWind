@@ -193,6 +193,8 @@ __EXPORT void imxrt_boardinitialize(void)
 	imxrt_spidev_initialize();
 
 	imxrt_usb_initialize();
+    
+	fmurt1052_timer_initialize();
 }
 
 #ifdef CONFIG_LIB_BOARDCTL
