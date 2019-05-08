@@ -35,12 +35,13 @@ __BEGIN_DECLS
 #define PWM_OUTPUT_BASE_DEVICE_PATH "/dev/pwm_output"
 #define PWM_OUTPUT0_DEVICE_PATH	"/dev/pwm_output0"
 
-#define PWM_OUTPUT_MAX_CHANNELS 16
+#include <uORB/topics/output_pwm.h>
+#define pwm_output_values output_pwm_s
 
-struct pwm_output_values {
-	uint32_t channel_count;
-	uint16_t values[16];
-};
+#ifndef PWM_OUTPUT_MAX_CHANNELS
+#define PWM_OUTPUT_MAX_CHANNELS output_pwm_s::PWM_OUTPUT_MAX_CHANNELS
+#endif
+
 
 /**
  * Maximum number of PWM output channels supported by the device.
@@ -163,6 +164,10 @@ struct pwm_output_rc_config {
 /** start DSM bind */
 #define DSM_BIND_START	_DP_IOC(_PWM_SERVO_BASE, 10)
 
+#define DSM2_BIND_PULSES 3	/* DSM_BIND_START ioctl parameter, pulses required to start dsm2 pairing */
+#define DSMX_BIND_PULSES 7	/* DSM_BIND_START ioctl parameter, pulses required to start dsmx pairing */
+#define DSMX8_BIND_PULSES 9 	/* DSM_BIND_START ioctl parameter, pulses required to start 8 or more channel dsmx pairing */
+
 /** power up DSM receiver */
 #define DSM_BIND_POWER_UP _DP_IOC(_PWM_SERVO_BASE, 11)
 
@@ -190,61 +195,73 @@ struct pwm_output_rc_config {
 /** get the maximum PWM value the output will send */
 #define PWM_SERVO_GET_MAX_PWM	_DP_IOC(_PWM_SERVO_BASE, 19)
 
-/** set the TRIM value the output will send */
-#define PWM_SERVO_SET_TRIM_PWM	_DP_IOC(_PWM_SERVO_BASE, 20)
-
-/** get the TRIM value the output will send */
-#define PWM_SERVO_GET_TRIM_PWM	_DP_IOC(_PWM_SERVO_BASE, 21)
-
 /** set the number of servos in (unsigned)arg - allows change of
  * split between servos and GPIO */
-#define PWM_SERVO_SET_COUNT	_DP_IOC(_PWM_SERVO_BASE, 22)
+#define PWM_SERVO_SET_COUNT	_DP_IOC(_PWM_SERVO_BASE, 20)
 
 /** set the lockdown override flag to enable outputs in HIL */
-#define PWM_SERVO_SET_DISABLE_LOCKDOWN		_DP_IOC(_PWM_SERVO_BASE, 23)
+#define PWM_SERVO_SET_DISABLE_LOCKDOWN		_DP_IOC(_PWM_SERVO_BASE, 21)
 
 /** get the lockdown override flag to enable outputs in HIL */
-#define PWM_SERVO_GET_DISABLE_LOCKDOWN		_DP_IOC(_PWM_SERVO_BASE, 24)
+#define PWM_SERVO_GET_DISABLE_LOCKDOWN		_DP_IOC(_PWM_SERVO_BASE, 22)
 
 /** force safety switch off (to disable use of safety switch) */
-#define PWM_SERVO_SET_FORCE_SAFETY_OFF		_DP_IOC(_PWM_SERVO_BASE, 25)
+#define PWM_SERVO_SET_FORCE_SAFETY_OFF		_DP_IOC(_PWM_SERVO_BASE, 23)
 
 /** force failsafe mode (failsafe values are set immediately even if failsafe condition not met) */
-#define PWM_SERVO_SET_FORCE_FAILSAFE		_DP_IOC(_PWM_SERVO_BASE, 26)
+#define PWM_SERVO_SET_FORCE_FAILSAFE		_DP_IOC(_PWM_SERVO_BASE, 24)
 
 /** make failsafe non-recoverable (termination) if it occurs */
-#define PWM_SERVO_SET_TERMINATION_FAILSAFE	_DP_IOC(_PWM_SERVO_BASE, 27)
+#define PWM_SERVO_SET_TERMINATION_FAILSAFE	_DP_IOC(_PWM_SERVO_BASE, 25)
 
 /** force safety switch on (to enable use of safety switch) */
-#define PWM_SERVO_SET_FORCE_SAFETY_ON		_DP_IOC(_PWM_SERVO_BASE, 28)
+#define PWM_SERVO_SET_FORCE_SAFETY_ON		_DP_IOC(_PWM_SERVO_BASE, 26)
+
+/** set RC config for a channel. This takes a pointer to pwm_output_rc_config */
+#define PWM_SERVO_SET_RC_CONFIG			_DP_IOC(_PWM_SERVO_BASE, 27)
+
+/** set the 'OVERRIDE OK' bit, which allows for RC control on FMU loss */
+#define PWM_SERVO_SET_OVERRIDE_OK		_DP_IOC(_PWM_SERVO_BASE, 28)
+
+/** clear the 'OVERRIDE OK' bit, which allows for RC control on FMU loss */
+#define PWM_SERVO_CLEAR_OVERRIDE_OK		_DP_IOC(_PWM_SERVO_BASE, 29)
 
 /** setup OVERRIDE_IMMEDIATE behaviour on FMU fail */
-#define PWM_SERVO_SET_OVERRIDE_IMMEDIATE	_DP_IOC(_PWM_SERVO_BASE, 32)
+#define PWM_SERVO_SET_OVERRIDE_IMMEDIATE	_DP_IOC(_PWM_SERVO_BASE, 30)
 
 /** set SBUS output frame rate in Hz */
-#define PWM_SERVO_SET_SBUS_RATE			_DP_IOC(_PWM_SERVO_BASE, 33)
+#define PWM_SERVO_SET_SBUS_RATE			_DP_IOC(_PWM_SERVO_BASE, 31)
 
-/** set auxillary output mode. These correspond to enum Mode in dpfmu/fmu.cpp */
-#define PWM_SERVO_MODE_NONE         0
-#define PWM_SERVO_MODE_1PWM         1
-#define PWM_SERVO_MODE_2PWM         2
-#define PWM_SERVO_MODE_2PWM2CAP     3
-#define PWM_SERVO_MODE_3PWM         4
-#define PWM_SERVO_MODE_3PWM1CAP     5
-#define PWM_SERVO_MODE_4PWM         6
-#define PWM_SERVO_MODE_4PWM1CAP     7
-#define PWM_SERVO_MODE_4PWM2CAP     8
-#define PWM_SERVO_MODE_5PWM         9
-#define PWM_SERVO_MODE_5PWM1CAP    10
-#define PWM_SERVO_MODE_6PWM        11
-#define PWM_SERVO_MODE_8PWM        12
-#define PWM_SERVO_MODE_14PWM       13
-#define PWM_SERVO_MODE_4CAP        14
-#define PWM_SERVO_MODE_5CAP        15
-#define PWM_SERVO_MODE_6CAP        16
-#define PWM_SERVO_ENTER_TEST_MODE  17
-#define PWM_SERVO_EXIT_TEST_MODE   18
-#define PWM_SERVO_SET_MODE         _DP_IOC(_PWM_SERVO_BASE, 34)
+/** surfaces to move regardless of the safety state */
+#define PWM_SERVO_IGNORE_SAFETY			_DP_IOC(_PWM_SERVO_BASE, 32)
+
+/** set auxillary output mode. These correspond to enum Mode in px4fmu/fmu.cpp */
+#define PWM_SERVO_MODE_NONE			0
+#define PWM_SERVO_MODE_2PWM			1
+#define PWM_SERVO_MODE_2PWM2CAP			2
+#define PWM_SERVO_MODE_3PWM			3
+#define PWM_SERVO_MODE_3PWM1CAP			4
+#define PWM_SERVO_MODE_4PWM			5
+#define PWM_SERVO_MODE_6PWM			6
+#define PWM_SERVO_MODE_8PWM			7
+#define PWM_SERVO_MODE_4CAP			8
+#define PWM_SERVO_MODE_5CAP			9
+#define PWM_SERVO_MODE_6CAP		       10
+#define PWM_SERVO_MODE_10PWM		11
+#define PWM_SERVO_MODE_12PWM		12
+#define PWM_SERVO_SET_MODE			_DP_IOC(_PWM_SERVO_BASE, 33)
+
+/** enable/disable oneshot mode */
+#define PWM_SERVO_SET_ONESHOT			_DP_IOC(_PWM_SERVO_BASE, 34)
+
+/** fetch DPIO status */
+#define PWM_IO_GET_STATUS			_DP_IOC(_PWM_SERVO_BASE, 35)
+
+/** set alternate servo update clock */
+#define PWM_SERVO_SET_UPDATE_CLOCK _DP_IOC(_PWM_SERVO_BASE, 36)
+
+/** set default servo update rate */
+#define PWM_SERVO_SET_DEFAULT_UPDATE_RATE _DP_IOC(_PWM_SERVO_BASE, 37)
 
 /*
  *

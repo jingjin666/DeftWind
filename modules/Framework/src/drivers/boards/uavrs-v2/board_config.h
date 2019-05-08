@@ -23,6 +23,8 @@
 #include "imxrt_iomuxc.h"
 
 
+#define UDID_START		0x1FFF7A10
+
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
@@ -249,7 +251,6 @@
 
 /* Use these in place of the spi_dev_e enumeration to select a specific SPI device on SPI4 */
 #define UAVRS_SPIDEV_ADIS		1
-
 
 /****************************************************************************
  * Public Types

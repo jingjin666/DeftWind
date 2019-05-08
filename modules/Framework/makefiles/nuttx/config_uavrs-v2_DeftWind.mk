@@ -15,7 +15,7 @@ MODULES			+= drivers/device
 MODULES			+= drivers/imxrt
 MODULES			+= drivers/imxrt/adc
 MODULES			+= drivers/led
-#MODULES			+= drivers/dpfmu
+MODULES			+= drivers/fmu
 
 #
 # System commands
