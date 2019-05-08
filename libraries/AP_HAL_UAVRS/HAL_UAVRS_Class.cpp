@@ -87,7 +87,7 @@ void HAL_UAVRS::run(int argc, char* const argv[], Callbacks* callbacks) const
     UAVRS_I2C::init_lock();
 
     const uint8_t send[] = {0};
-	uint8_t recv[32] = {0};
+	uint8_t recv[64] = {0};
 	bool ret;
 	uint8_t bus = 0;
 
