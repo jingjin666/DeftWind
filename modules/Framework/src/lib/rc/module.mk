@@ -1,6 +1,6 @@
 ############################################################################
 #
-#   Copyright (c) 2012-2015 PX4 Development Team. All rights reserved.
+#   Copyright (c) 2014 PX4 Development Team. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -32,15 +32,11 @@
 ############################################################################
 
 #
-# System utility library
+# Yuntec ST24 transmitter protocol decoder
+# Graupnet HoTT transmitter protocol decoder
 #
 
-SRCS		 = \
-		   perf_counter.c \
-		   printload.c \
-		   cpuload.c \
-		   board_serial.c \
-		   pwm_limit/pwm_limit.c
-MAXOPTIMIZATION	 = -Os
+SRCS		 =	st24.c \
+				sumd.c srxl.c
 
-EXTRACFLAGS	= -Wno-sign-compare
+MAXOPTIMIZATION	 = -Os
