@@ -22,11 +22,7 @@
 #define _LED_BASE		0x2800
 
 /* DP LED colour codes */
-#define LED_AMBER		1
-#define LED_RED			1	/* some boards have red rather than amber */
-#define LED_BLUE		0
-#define LED_SAFETY		2
-#define LED_GREEN		3
+#define LED_WORKSTATUS		1
 
 
 #define LED_ON			_DP_IOC(_LED_BASE, 0)

@@ -125,8 +125,8 @@
 #define IOMUX_LED       (IOMUX_PULL_NONE | IOMUX_CMOS_OUTPUT | \
                          IOMUX_DRIVE_40OHM | IOMUX_SPEED_MEDIUM | \
                          IOMUX_SLEW_SLOW)
-#define GPIO_LED        (GPIO_OUTPUT | GPIO_OUTPUT_ZERO | GPIO_PORT1 | \
-                         GPIO_PIN9 | IOMUX_LED)
+#define GPIO_LED        (GPIO_OUTPUT | GPIO_OUTPUT_ZERO | GPIO_PORT3 | \
+                         GPIO_PIN0 | IOMUX_LED)
 
 /* Buttons
  *

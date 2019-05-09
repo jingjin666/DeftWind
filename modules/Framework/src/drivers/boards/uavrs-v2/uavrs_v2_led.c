@@ -64,23 +64,7 @@ __EXPORT void led_init(void)
 
 __EXPORT void led_on(int led)
 {
-  bool ledoff = false;
-
-  switch (led)
-    {
-      case 0:  /* LED Off */
-        ledoff = true;
-        break;
-
-      case 2:  /* LED No change */
-        return;
-
-      case 1:  /* LED On */
-      case 3:  /* LED On */
-        break;
-    }
-
-  imxrt_gpio_write(GPIO_LED, ledoff); /* Low illuminates */
+  imxrt_gpio_write(GPIO_LED, true); /* High illuminates */
 }
 
 /****************************************************************************
@@ -100,18 +84,7 @@ __EXPORT void led_on(int led)
 
 __EXPORT void led_off(int led)
 {
-  switch (led)
-    {
-      case 0:  /* LED Off */
-      case 1:  /* LED Off */
-      case 3:  /* LED Off */
-        break;
-
-      case 2:  /* LED No change */
-        return;
-    }
-
-  imxrt_gpio_write(GPIO_LED, true); /* Low illuminates */
+  imxrt_gpio_write(GPIO_LED, false); /* Low illuminates */
 }
 
 /****************************************************************************
@@ -130,13 +103,10 @@ __EXPORT void led_off(int led)
  ****************************************************************************/
 __EXPORT void led_toggle(int led)
 {
-	if (led == 1) {
-		if (imxrt_gpio_read(GPIO_LED)) {
-			imxrt_gpio_write(GPIO_LED, false);
-
-		} else {
-			imxrt_gpio_write(GPIO_LED, true);
-		}
-	}
+    if (imxrt_gpio_read(GPIO_LED)) {
+    	imxrt_gpio_write(GPIO_LED, false);
+    } else {
+    	imxrt_gpio_write(GPIO_LED, true);
+    }
 }
 

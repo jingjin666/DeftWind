@@ -130,7 +130,7 @@ static int nsh_archinitialize(void)
 
 	/* initial LED state */
 	drv_led_start();
-	led_off(LED_AMBER);
+	led_on(LED_WORKSTATUS);
 
 #ifdef CONFIG_IMXRT_USDHC
 	/* Initialize SDHC-base MMC/SD card support */
