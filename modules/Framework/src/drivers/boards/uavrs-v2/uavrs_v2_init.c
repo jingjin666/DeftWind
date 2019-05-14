@@ -190,6 +190,9 @@ __EXPORT void imxrt_boardinitialize(void)
 	const uint32_t gpio[] = DP_GPIO_INIT_LIST;
 	board_gpio_init(gpio, arraySize(gpio));
 
+    /* enable power peripheral */
+    dp_arch_gpiowrite(GPIO_PMIC_STBY_REQ, 1);
+
 	imxrt_spidev_initialize();
 
 	imxrt_usb_initialize();
