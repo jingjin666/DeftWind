@@ -24,7 +24,7 @@ plane:
 	@echo "%%%% Building TARGET:$(TARGET)"
 	@ $(MAKE) -C DeftPlane $(TARGET)
 	
-.PHONY: plane_test
+.PHONY: plane-test
 plane-test:
 	@echo "%%%% Building TARGET:$(TARGET)"
 	@ $(MAKE) -C DeftPlane $(TARGET) TEST=DRIVER_TEST
