@@ -103,7 +103,7 @@ void HAL_UAVRS::run(int argc, char* const argv[], Callbacks* callbacks) const
 
     for (;;) {
         callbacks->loop();
-
+#if 0
         ret = _dev->transfer(send, 0, recv, sizeof(recv));
 
         if(ret) {
@@ -117,6 +117,7 @@ void HAL_UAVRS::run(int argc, char* const argv[], Callbacks* callbacks) const
 		} else {
 			printf("I2c transfer error.\n");
 		}
+#endif        
     }
 }
 

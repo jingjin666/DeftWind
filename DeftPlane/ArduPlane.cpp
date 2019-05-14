@@ -386,7 +386,7 @@ void Plane::raw_data_update(void)
 
 void Plane::setup() 
 {
-    printf("setup--------\r\n");
+    printf("setup--------\n");
     sleep(2);
 
 #if 0
@@ -408,8 +408,8 @@ void Plane::setup()
 
 void Plane::loop()
 {
-    printf("loop---------------\r\n");
-    hal.uartB->printf("uart test--------------------\r\n");
+    //printf("loop---------------\n");
+    //hal.uartB->printf("uart test--------------------\n");
     hal.scheduler->delay(2000);
 #if 0
     uint32_t loop_us = 1000000UL / scheduler.get_loop_rate_hz();
