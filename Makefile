@@ -23,6 +23,11 @@ endif
 plane:
 	@echo "%%%% Building TARGET:$(TARGET)"
 	@ $(MAKE) -C DeftPlane $(TARGET)
+	
+.PHONY: plane_test
+plane-test:
+	@echo "%%%% Building TARGET:$(TARGET)"
+	@ $(MAKE) -C DeftPlane $(TARGET) TEST=DRIVER_TEST
 
 #####################
 # 配置硬件平台,每次切换硬件平台时必须重新配置,再编译固件

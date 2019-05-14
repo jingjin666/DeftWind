@@ -95,6 +95,7 @@ endif
 #
 SRCSUFFIXES = *.cpp
 
+ifneq ($(TEST), DRIVER_TEST)
 MAKE_INC=$(wildcard $(SRCROOT)/make.inc)
 ifeq (,$(MAKE_INC))
 $(error You must have a make.inc file to list library dependencies)
@@ -126,6 +127,7 @@ LIBTOKENS += \
 	SITL
 endif
 
+endif
 SKETCHLIBS		:=	$(wildcard $(addprefix $(SKETCHBOOK)/libraries/,$(LIBTOKENS)))
 SKETCHLIBNAMES		:=	$(notdir $(SKETCHLIBS))
 SKETCHLIBSRCDIRS	:=	$(SKETCHLIBS) $(addsuffix /utility,$(SKETCHLIBS))

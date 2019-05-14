@@ -120,7 +120,11 @@ module_mk:
 	@echo "%%%% Building $(SKETCHBOOK)/module.mk"
 	@echo "# Auto-generated file - do not edit" > $(SKETCHBOOK)/module.mk.new
 	@echo  "MODULE_COMMAND = DeftWind" >> $(SKETCHBOOK)/module.mk.new
+ifneq ($(TEST), DRIVER_TEST)
 	@echo "SRCS = $(wildcard $(SRCROOT)/*.cpp) $(SKETCHLIBSRCSRELATIVE)" >> $(SKETCHBOOK)/module.mk.new
+else
+	@echo "SRCS = /home/jingjin/workspace/gitlab/root/DeftWind/test/driver_test.cpp $(SKETCHLIBSRCSRELATIVE)" >> $(SKETCHBOOK)/module.mk.new
+endif
 	@echo "MODULE_STACKSIZE = 4096" >> $(SKETCHBOOK)/module.mk.new
 	@echo "EXTRACXXFLAGS = -Wframe-larger-than=1300" >> $(SKETCHBOOK)/module.mk.new
 	@ cmp $(SKETCHBOOK)/module.mk $(SKETCHBOOK)/module.mk.new 2>/dev/null || mv $(SKETCHBOOK)/module.mk.new $(SKETCHBOOK)/module.mk
