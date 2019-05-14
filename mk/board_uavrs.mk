@@ -123,7 +123,7 @@ module_mk:
 ifneq ($(TEST), DRIVER_TEST)
 	@echo "SRCS = $(wildcard $(SRCROOT)/*.cpp) $(SKETCHLIBSRCSRELATIVE)" >> $(SKETCHBOOK)/module.mk.new
 else
-	@echo "SRCS = /home/jingjin/workspace/gitlab/root/DeftWind/test/driver_test.cpp $(SKETCHLIBSRCSRELATIVE)" >> $(SKETCHBOOK)/module.mk.new
+	@echo "SRCS = $(SKETCHBOOK)/test/driver_test.cpp $(SKETCHLIBSRCSRELATIVE)" >> $(SKETCHBOOK)/module.mk.new
 endif
 	@echo "MODULE_STACKSIZE = 4096" >> $(SKETCHBOOK)/module.mk.new
 	@echo "EXTRACXXFLAGS = -Wframe-larger-than=1300" >> $(SKETCHBOOK)/module.mk.new
