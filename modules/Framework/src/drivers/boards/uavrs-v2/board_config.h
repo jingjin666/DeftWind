@@ -102,25 +102,12 @@
 #define GENERAL_INPUT_IOMUX  (IOMUX_CMOS_INPUT |  IOMUX_PULL_UP_47K | IOMUX_DRIVE_HIZ)
 #define GENERAL_OUTPUT_IOMUX (IOMUX_CMOS_OUTPUT | IOMUX_PULL_KEEP | IOMUX_DRIVE_33OHM  | IOMUX_SPEED_MEDIUM | IOMUX_SLEW_FAST)
 
-/* i.MX RT 1050 GPIO Pin Definitions ****************************************/
 
-/* LEDs
- *
- * There are four LED status indicators located on the EVK Board.  The
- * functions of these LEDs include:
- *
- *   - Main Power Supply(D3)
- *     Green: DC 5V main supply is normal.
- *     Red:   J2 input voltage is over 5.6V.
- *     Off:   The board is not powered.
- *   - Reset RED LED(D15)
- *   - OpenSDA LED(D16)
- *   - USER LED(D18)
- *
- * Only a single LED, D18, is under software control.  It connects to
- * GPIO_AD_B0_09 which is shared with JTAG_TDI and ENET_RST.  This pin
- * must be configured as ALT5, GPIO1_IO09
- */
+#define IOMUX_PMIC_STBY_REQ     (IOMUX_PULL_NONE | IOMUX_CMOS_OUTPUT | \
+                                 IOMUX_DRIVE_40OHM | IOMUX_SPEED_MEDIUM | \
+                                 IOMUX_SLEW_SLOW)
+#define GPIO_PMIC_STBY_REQ      (GPIO_OUTPUT | GPIO_OUTPUT_ZERO | GPIO_PORT5 | \
+                                 GPIO_PIN2 | IOMUX_PMIC_STBY_REQ)
 
 #define IOMUX_LED       (IOMUX_PULL_NONE | IOMUX_CMOS_OUTPUT | \
                          IOMUX_DRIVE_40OHM | IOMUX_SPEED_MEDIUM | \
@@ -233,6 +220,7 @@
 /* The list of GPIO that will be initialized */
 
 #define DP_GPIO_INIT_LIST { \
+        GPIO_PMIC_STBY_REQ,     \
 		DP_ADC_GPIO,            \
 }
 
