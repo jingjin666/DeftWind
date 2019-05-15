@@ -11,7 +11,7 @@ endif
 #####################
 # ªÒ»°MK_DIR = °æ~/DeftWind/mk°ø
 #####################
-MK_DIR = $(realpath $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST)))))
+MK_DIR := $(realpath $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST)))))
 #$(info MK_DIR::$(MK_DIR))
 
 #####################
@@ -109,7 +109,10 @@ $(error You must have a make.inc in mk/ directory)
 else
 include $(GLOBAL_MAKE_INC)
 endif
-
+else
+GLOBAL_TESTS_MAKE_INC=$(wildcard $(SKETCHBOOK)/test/make.inc)
+include $(GLOBAL_TESTS_MAKE_INC)
+endif
 LIBTOKENS := $(LIBRARIES)
 # HAL and board specific libraries are included here.
 LIBTOKENS += \
@@ -127,7 +130,6 @@ LIBTOKENS += \
 	SITL
 endif
 
-endif
 SKETCHLIBS		:=	$(wildcard $(addprefix $(SKETCHBOOK)/libraries/,$(LIBTOKENS)))
 SKETCHLIBNAMES		:=	$(notdir $(SKETCHLIBS))
 SKETCHLIBSRCDIRS	:=	$(SKETCHLIBS) $(addsuffix /utility,$(SKETCHLIBS))

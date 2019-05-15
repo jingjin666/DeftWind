@@ -1,0 +1,9 @@
+LIBRARIES += AP_Common
+LIBRARIES += AP_Menu
+LIBRARIES += AP_Param
+LIBRARIES += StorageManager
+LIBRARIES += AP_BoardConfig
+LIBRARIES += AP_Scheduler
+LIBRARIES += GCS
+LIBRARIES += GCS_MAVLink
+LIBRARIES += AP_SerialManager
