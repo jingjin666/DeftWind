@@ -19,7 +19,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_BoardConfig.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -85,7 +85,7 @@ void AP_BoardConfig::px4_setup_pwm()
             hal.console->printf("RCOutput: unable to setup AUX PWM with BRD_PWM_COUNT %u\n", mode_parm);
         }
         close(fd);
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
         if (mode_table[i].num_gpios < 2) {
             // reduce change of config mistake where relay and PWM interfere
             AP_Param::set_default_by_name("RELAY_PIN", -1);
@@ -100,7 +100,7 @@ void AP_BoardConfig::px4_setup_pwm()
  */
 void AP_BoardConfig::px4_setup_uart()
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
     hal.uartC->set_flow_control((AP_HAL::UARTDriver::flow_control)px4.ser1_rtscts.get());
     if (hal.uartD != nullptr) {
         hal.uartD->set_flow_control((AP_HAL::UARTDriver::flow_control)px4.ser2_rtscts.get());
@@ -113,7 +113,7 @@ void AP_BoardConfig::px4_setup_uart()
  */
 void AP_BoardConfig::px4_setup_safety_mask()
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
     // setup channels to ignore the armed state
     int px4io_fd = open("/dev/px4io", 0);
     if (px4io_fd != -1) {
@@ -159,7 +159,7 @@ void AP_BoardConfig::px4_init_safety()
  */
 void AP_BoardConfig::px4_setup_sbus(void)
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
     if (px4.sbus_out_rate.get() >= 1) {
         static const struct {
             uint8_t value;
@@ -531,4 +531,4 @@ void AP_BoardConfig::px4_setup()
     px4_setup_drivers();
 }
 
-#endif // HAL_BOARD_PX4
+#endif // HAL_BOARD_UAVRS

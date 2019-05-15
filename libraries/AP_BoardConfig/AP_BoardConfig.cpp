@@ -22,7 +22,7 @@
 #include "AP_BoardConfig.h"
 #include <stdio.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -31,7 +31,7 @@
 #include <drivers/drv_sbus.h>
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
 # define BOARD_SAFETY_ENABLE_DEFAULT 1
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
 #define BOARD_PWM_COUNT_DEFAULT 2
@@ -74,7 +74,7 @@ extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // @Param: PWM_COUNT
     // @DisplayName: Auxiliary pin config
     // @Description: Control assigning of FMU pins to PWM output, timer capture and GPIO. All unassigned pins can be used for GPIO
@@ -84,7 +84,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_GROUPINFO("PWM_COUNT",    0, AP_BoardConfig, px4.pwm_count, BOARD_PWM_COUNT_DEFAULT),
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
     // @Param: SER1_RTSCTS
     // @DisplayName: Serial 1 flow control
     // @Description: Enable flow control on serial 1 (telemetry 1) on Pixhawk. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup. Note that the PX4v1 does not have hardware flow control pins on this port, so you should leave this disabled.
@@ -102,7 +102,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_GROUPINFO("SER2_RTSCTS",    2, AP_BoardConfig, px4.ser2_rtscts, 2),
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // @Param: SAFETYENABLE
     // @DisplayName: Enable use of safety arming switch
     // @Description: This controls the default state of the safety switch at startup. When set to 1 the safety switch will start in the safe state (flashing) at boot. When set to zero the safety switch will start in the unsafe state (solid) at startup. Note that if a safety switch is fitted the user can still control the safety state after startup using the switch. The safety state can also be controlled in software using a MAVLink message.
@@ -112,7 +112,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_GROUPINFO("SAFETYENABLE",   3, AP_BoardConfig, px4.safety_enable, 0),
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
     // @Param: SBUS_OUT
     // @DisplayName:  SBUS output rate
     // @Description: This sets the SBUS output frame rate in Hz
@@ -129,7 +129,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("SERIAL_NUM", 5, AP_BoardConfig, vehicleSerialNumber, 0),
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // @Param: SAFETY_MASK
     // @DisplayName: Channels to which ignore the safety switch state
     // @Description: A bitmask which controls what channels can move while the safety switch has not been pressed
@@ -150,7 +150,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_GROUPINFO("IMU_TARGTEMP", 8, AP_BoardConfig, _imu_target_temperature, HAL_IMU_TEMP_DEFAULT),
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // @Param: TYPE
     // @DisplayName: Board type
     // @Description: This allows selection of a PX4 or VRBRAIN board type. If set to zero then the board type is auto-detected (PX4)
@@ -160,7 +160,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_GROUPINFO("TYPE", 9, AP_BoardConfig, px4.board_type, BOARD_TYPE_DEFAULT),
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #if HAL_PX4_HAVE_PX4IO
     // @Param: IO_ENABLE
     // @DisplayName: Enable IO co-processor
@@ -179,7 +179,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 
 void AP_BoardConfig::init()
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     px4_setup();
 #endif
 
@@ -194,7 +194,7 @@ void AP_BoardConfig::init()
 // set default value for BRD_SAFETY_MASK
 void AP_BoardConfig::set_default_safety_ignore_mask(uint16_t mask)
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     px4.ignore_safety_channels.set_default(mask);
     px4_setup_safety_mask();
 #endif
@@ -202,7 +202,7 @@ void AP_BoardConfig::set_default_safety_ignore_mask(uint16_t mask)
 
 void AP_BoardConfig::init_safety()
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     px4_init_safety();
 #endif
 }

@@ -27,14 +27,14 @@ public:
     // that we're never going to boot properly:
     static bool in_sensor_config_error(void) { return _in_sensor_config_error; }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // public method to start a driver
     static bool px4_start_driver(main_fn_t main_function, const char *name, const char *arguments);
 
     // valid types for BRD_TYPE: these values need to be in sync with the
     // values from the param description
     enum px4_board_type {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
         PX4_BOARD_AUTO     = 0,
         PX4_BOARD_PX4V1    = 1,
         PX4_BOARD_PIXHAWK  = 2,
@@ -62,7 +62,7 @@ public:
     // set default value for BRD_SAFETY_MASK
     void set_default_safety_ignore_mask(uint16_t mask);
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     static enum px4_board_type get_board_type(void) {
         return px4_configured_board;
     }
@@ -71,12 +71,12 @@ public:
 private:
     AP_Int16 vehicleSerialNumber;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     struct {
         AP_Int8 pwm_count;
         AP_Int8 safety_enable;
         AP_Int32 ignore_safety_channels;
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
         AP_Int8 ser1_rtscts;
         AP_Int8 ser2_rtscts;
         AP_Int8 sbus_out_rate;
@@ -101,11 +101,11 @@ private:
     bool spi_check_register(const char *devname, uint8_t regnum, uint8_t value, uint8_t read_flag = 0x80);
     void validate_board_type(void);
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
     void px4_autodetect(void);
 #endif
 
-#endif // HAL_BOARD_PX4 || HAL_BOARD_VRBRAIN
+#endif // HAL_BOARD_UAVRS || HAL_BOARD_VRBRAIN
 
     static bool _in_sensor_config_error;
 
