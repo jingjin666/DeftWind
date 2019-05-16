@@ -18,11 +18,12 @@
 class AP_HAL::HAL {
 public:
     HAL(AP_HAL::UARTDriver* _uartA, // console
-        AP_HAL::UARTDriver* _uartB, // 1st GPS
-        AP_HAL::UARTDriver* _uartC, // telem1
-        AP_HAL::UARTDriver* _uartD, // telem2
-        AP_HAL::UARTDriver* _uartE, // 2nd GPS
-        AP_HAL::UARTDriver* _uartF, // extra1
+        AP_HAL::UARTDriver* _uartB,
+        AP_HAL::UARTDriver* _uartC,
+        AP_HAL::UARTDriver* _uartD,
+        AP_HAL::UARTDriver* _uartE,
+        AP_HAL::UARTDriver* _uartF,
+        AP_HAL::UARTDriver* _uartG,
         AP_HAL::I2CDeviceManager* _i2c_mgr,
         AP_HAL::SPIDeviceManager* _spi,
         AP_HAL::AnalogIn*   _analogin,
@@ -46,6 +47,7 @@ public:
         uartD(_uartD),
         uartE(_uartE),
         uartF(_uartF),
+        uartG(_uartG),
         i2c_mgr(_i2c_mgr),
         spi(_spi),
         analogin(_analogin),
@@ -95,6 +97,7 @@ public:
     AP_HAL::UARTDriver* uartD;
     AP_HAL::UARTDriver* uartE;
     AP_HAL::UARTDriver* uartF;
+    AP_HAL::UARTDriver* uartG;
     AP_HAL::I2CDeviceManager* i2c_mgr;
     AP_HAL::SPIDeviceManager* spi;
     AP_HAL::AnalogIn*   analogin;

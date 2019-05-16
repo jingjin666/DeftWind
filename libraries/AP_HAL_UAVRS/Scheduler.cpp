@@ -42,7 +42,7 @@ void Scheduler::init()
     // setup the timer thread - this will call tasks at 1kHz
     pthread_attr_t thread_attr;
     struct sched_param param;
-
+#if 0
     pthread_attr_init(&thread_attr);
     pthread_attr_setstacksize(&thread_attr, 2048);
 
@@ -51,7 +51,7 @@ void Scheduler::init()
     pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
 
     pthread_create(&_timer_thread_ctx, &thread_attr, &Scheduler::_timer_thread, this);
-
+#endif
     // the UART thread runs at a medium priority
     pthread_attr_init(&thread_attr);
     pthread_attr_setstacksize(&thread_attr, 2048);
@@ -61,7 +61,7 @@ void Scheduler::init()
     pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
 
     pthread_create(&_uart_thread_ctx, &thread_attr, &Scheduler::_uart_thread, this);
-
+#if 0
     // the IO thread runs at lower priority
     pthread_attr_init(&thread_attr);
     pthread_attr_setstacksize(&thread_attr, 2048);
@@ -71,7 +71,8 @@ void Scheduler::init()
     pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
 
     pthread_create(&_io_thread_ctx, &thread_attr, &Scheduler::_io_thread, this);
-
+#endif
+#if 0
     // the storage thread runs at just above IO priority
     pthread_attr_init(&thread_attr);
     pthread_attr_setstacksize(&thread_attr, 1024);
@@ -81,6 +82,7 @@ void Scheduler::init()
     pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
 
     pthread_create(&_storage_thread_ctx, &thread_attr, &Scheduler::_storage_thread, this);
+#endif    
 }
 
 void Scheduler::delay(uint16_t ms)
@@ -322,6 +324,7 @@ void *Scheduler::_uart_thread(void *arg)
         ((UARTDriver *)hal.uartD)->_timer_tick();
         ((UARTDriver *)hal.uartE)->_timer_tick();
         ((UARTDriver *)hal.uartF)->_timer_tick();
+        ((UARTDriver *)hal.uartG)->_timer_tick();
     }
     return nullptr;
 }

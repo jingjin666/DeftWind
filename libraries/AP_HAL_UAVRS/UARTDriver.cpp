@@ -43,6 +43,7 @@ void UARTDriver::begin(uint32_t b)
 
 void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
+    //::printf("begin :: _devpath[%s] rxS[%d] txS[%d]\n", _devpath, rxS, txS);
     if (strcmp(_devpath, "/dev/null") == 0) {
         // leave uninitialised
         return;
@@ -54,9 +55,7 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         min_tx_buffer = 4096;
         min_rx_buffer = 1024;
     }
-	if (strcmp(_devpath, "/dev/ttyS1") == 0) {
-        min_rx_buffer = 1024;
-    }
+
     // on PX4 we have enough memory to have a larger transmit and
     // receive buffer for all ports. This means we don't get delays
     // while waiting to write GPS config packets
@@ -101,6 +100,7 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 	if (_fd == -1) {
         _fd = open(_devpath, O_RDWR);
 		if (_fd == -1) {
+            ::printf("Failed to open %s\n", _devpath);
 			return;
 		}
 	}

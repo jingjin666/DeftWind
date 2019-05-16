@@ -57,7 +57,7 @@ static const AP_Scheduler::Task scheduler_test_tasks[]= {
 };
 
 void Plane_test::one_second_loop() {
-    printf("loop---------------\n");
+    //printf("loop---------------\n");
 }
 
 void Plane_test::setup() 

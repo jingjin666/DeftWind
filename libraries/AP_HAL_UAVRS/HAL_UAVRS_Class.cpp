@@ -13,11 +13,12 @@
 using namespace UAVRS;
 
 #define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"	// Usb Mavlink
-#define UARTB_DEFAULT_DEVICE "/dev/ttyS0"	// Telecom MicroHard P900
+#define UARTB_DEFAULT_DEVICE "/dev/ttyS1"	// Rtk com2 input rtcm data and output raw position data
 #define UARTC_DEFAULT_DEVICE "/dev/ttyS2"	// Rtk com1 ouput position data
-#define UARTD_DEFAULT_DEVICE "/dev/ttyS3"	// Rtk com2 input rtcm data and output raw position data
-#define UARTE_DEFAULT_DEVICE "/dev/ttyS4"	// Backup Gps Ublox M8N
-#define UARTF_DEFAULT_DEVICE "/dev/null"
+#define UARTD_DEFAULT_DEVICE "/dev/ttyS3"	// Backup Peripheral usart
+#define UARTE_DEFAULT_DEVICE "/dev/ttyS4"	// Backup Peripheral usart
+#define UARTF_DEFAULT_DEVICE "/dev/ttyS5"   // Telecom MicroHard P900
+#define UARTG_DEFAULT_DEVICE "/dev/ttyS7"   // Backup Gps Ublox M8N
 
 static UARTDriver uartADriver(UARTA_DEFAULT_DEVICE, "UAVRS_uartA");
 static UARTDriver uartBDriver(UARTB_DEFAULT_DEVICE, "UAVRS_uartB");
@@ -25,6 +26,7 @@ static UARTDriver uartCDriver(UARTC_DEFAULT_DEVICE, "UAVRS_uartC");
 static UARTDriver uartDDriver(UARTD_DEFAULT_DEVICE, "UAVRS_uartD");
 static UARTDriver uartEDriver(UARTE_DEFAULT_DEVICE, "UAVRS_uartE");
 static UARTDriver uartFDriver(UARTF_DEFAULT_DEVICE, "UAVRS_uartF");
+static UARTDriver uartGDriver(UARTG_DEFAULT_DEVICE, "UAVRS_uartG");
 
 static SPIDeviceManager spiDeviceManager;
 static AnalogIn analogIn;
@@ -49,9 +51,10 @@ HAL_UAVRS::HAL_UAVRS() :
         &uartADriver,
         &uartBDriver,
         &uartCDriver,
-        &uartDDriver,            /* no uartD */
-        &uartEDriver,            /* no uartE */
-        &uartFDriver,            /* no uartF */
+        &uartDDriver,            
+        &uartEDriver,            
+        &uartFDriver,
+        &uartGDriver,
         &i2c_mgr_instance,            /*i2c*/
         &spi_mgr_instance,
         &analogIn,
@@ -97,6 +100,19 @@ static AP_HAL::HAL::Callbacks* g_callbacks;
 
 static int main_loop(int argc, char **argv)
 {
+    hal.uartA->begin(115200);
+    hal.uartB->begin(115200);
+    hal.uartC->begin(115200);
+    //hal.uartD->begin(115200);
+    //hal.uartE->begin(115200);
+    hal.uartF->begin(115200);
+    hal.uartG->begin(115200);
+
+    hal.scheduler->init();
+
+    // init the I2C wrapper class
+    UAVRS_I2C::init_lock();
+
     /*
       run setup() at low priority to ensure CLI doesn't hang the
       system, and to allow initial sensor read loops to run
