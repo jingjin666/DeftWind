@@ -60,8 +60,11 @@ void Plane_test::one_second_loop() {
     //printf("loop---------------\n");
 }
 
+
 void Plane_test::setup() 
 {
+    hal.storage->init();
+    
     // initialise the main loop scheduler
     ap_scheduler.init(&scheduler_test_tasks[0], ARRAY_SIZE(scheduler_test_tasks));
 }
