@@ -82,7 +82,6 @@ void Plane::init_ardupilot()
                          "\n\nFree RAM: %u\n",
                       (unsigned)hal.util->available_memory());
 
-
     //
     // Check the EEPROM format version before loading any parameters from EEPROM
     //
@@ -124,8 +123,8 @@ void Plane::init_ardupilot()
 
     // initialise serial ports
     serial_manager.init();
+    
     gcs().chan(0).setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
-
 
     // specify callback function for CLI menu system
 #if CLI_ENABLED == ENABLED
@@ -137,6 +136,9 @@ void Plane::init_ardupilot()
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
     hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
+
+    //暂时调试到此....
+    return;
 
     // setup any board specific drivers
     BoardConfig.init();

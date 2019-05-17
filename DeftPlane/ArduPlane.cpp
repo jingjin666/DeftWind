@@ -32,6 +32,7 @@
  */
 const AP_Scheduler::Task Plane::scheduler_tasks[] = {
                            // Units:   Hz      us
+#if 0                           
     SCHED_TASK(ahrs_update,           400,    400),
     SCHED_TASK(read_radio,             50,    100),
     SCHED_TASK(check_short_failsafe,   50,    100),
@@ -49,8 +50,10 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(update_alt,             10,    200),
     SCHED_TASK(adjust_altitude_target, 10,    200),
     SCHED_TASK(afs_fs_check,           10,    100),
+#endif
     SCHED_TASK(gcs_update,             50,    500),
     SCHED_TASK(gcs_data_stream_send,   50,    500),
+#if 0    
     SCHED_TASK(update_events,          50,    150),
     SCHED_TASK(read_battery,           10,    300),
     SCHED_TASK(compass_accumulate,     50,    200),
@@ -63,7 +66,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #if OPTFLOW == ENABLED
     SCHED_TASK(update_optical_flow,    50,    50),
 #endif
+#endif
     SCHED_TASK(one_second_loop,         1,    400),
+#if 0    
     SCHED_TASK(check_long_failsafe,     3,    400),
     SCHED_TASK(read_receiver_rssi,     10,    100),
     SCHED_TASK(rpm_update,             10,    100),
@@ -85,6 +90,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(button_update,           5,    100),
     SCHED_TASK(stats_update,            1,    100),
 	SCHED_TASK(emergency_events,        10,   200),
+#endif	
 };
 
 
@@ -386,10 +392,6 @@ void Plane::raw_data_update(void)
 
 void Plane::setup() 
 {
-    printf("setup--------\n");
-    sleep(2);
-
-#if 0
     cliSerial = hal.console;
 
     // load the default values of variables listed in var_info[]
@@ -403,17 +405,12 @@ void Plane::setup()
 
     // initialise the main loop scheduler
     scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks));
-#endif
 }
 
 void Plane::loop()
 {
-    //printf("loop---------------\n");
-    //hal.uartB->printf("uart test--------------------\n");
-    hal.scheduler->delay(2000);
-#if 0
     uint32_t loop_us = 1000000UL / scheduler.get_loop_rate_hz();
-
+#if 0
     // wait for an INS sample
     ins.wait_for_sample();
 
@@ -436,7 +433,9 @@ void Plane::loop()
     perf.fast_loopTimer_us = timer;
 
     perf.mainLoop_count++;
-
+#else
+    hal.scheduler->delay_microseconds(loop_us);
+#endif
     // tell the scheduler one tick has passed
     scheduler.tick();
 
@@ -446,7 +445,6 @@ void Plane::loop()
     // the first call to the scheduler they won't run on a later
     // call until scheduler.tick() is called again
     scheduler.run(loop_us);
-#endif
 }
 
 void Plane::update_soft_armed()

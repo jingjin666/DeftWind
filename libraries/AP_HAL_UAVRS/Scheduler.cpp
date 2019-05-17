@@ -324,6 +324,7 @@ void *Scheduler::_uart_thread(void *arg)
         ((UARTDriver *)hal.uartF)->_timer_tick();
         ((UARTDriver *)hal.uartG)->_timer_tick();
     }
+    printf("_uart_thread exit\n");
     return nullptr;
 }
 

@@ -269,7 +269,7 @@ int UARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
 
     int nwrite = 0;
 
-    if (ioctl(_fd, FIONWRITE, (unsigned long)&nwrite) == 0) {
+    if (ioctl(_fd, FIONSPACE, (unsigned long)&nwrite) == 0) {
         if (_flow_control == FLOW_CONTROL_AUTO) {
             if (_first_write_time == 0) {
                 if (_total_written == 0) {

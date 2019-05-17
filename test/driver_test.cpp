@@ -57,6 +57,24 @@ static const AP_Scheduler::Task scheduler_test_tasks[]= {
 };
 
 void Plane_test::one_second_loop() {
+    int rx = 0;
+    const char *send = "123456789";
+    char recv[128] = {0};
+    
+    if(hal.uartE != nullptr) {
+        hal.uartE->write((uint8_t *)send, strlen(send));
+
+        rx = hal.uartE->available();
+        
+        if((rx > 0) && (rx <= sizeof(recv))) {
+            for(int i = 0; i < rx; i++) {
+                recv[i] = hal.uartE->read();
+            }
+            printf("recv is %s, rx is %d\n", recv, rx);
+        } else {
+            printf("rx is %d\n", rx);
+        }
+    }
     //printf("loop---------------\n");
 }
 

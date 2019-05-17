@@ -26,7 +26,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
-#define SERIALMANAGER_NUM_PORTS 6
+#define SERIALMANAGER_NUM_PORTS 7
 
  // console default baud rates and buffer sizes
 #ifdef HAL_SERIAL0_BAUD_DEFAULT
@@ -73,6 +73,11 @@
 #define AP_SERIALMANAGER_RTCM_BAUD           115200
 #define AP_SERIALMANAGER_RTCM_BUFSIZE_RX     256
 #define AP_SERIALMANAGER_RTCM_BUFSIZE_TX     256
+
+// Backup
+#define AP_SERIALMANAGER_BACKUP_BAUD           115200
+#define AP_SERIALMANAGER_BACKUP_BUFSIZE_RX     256
+#define AP_SERIALMANAGER_BACKUP_BUFSIZE_TX     256
 
 class AP_SerialManager {
 

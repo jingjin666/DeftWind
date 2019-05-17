@@ -100,13 +100,13 @@ static AP_HAL::HAL::Callbacks* g_callbacks;
 
 static int main_loop(int argc, char **argv)
 {
-    hal.uartA->begin(115200);
-    hal.uartB->begin(115200);
-    hal.uartC->begin(115200);
-    hal.uartD->begin(115200);
-    hal.uartE->begin(115200);
-    hal.uartF->begin(115200);
-    hal.uartG->begin(115200);
+    //hal.uartA->begin(115200); //USB
+    hal.uartB->begin(115200);   //RTK COM2
+    hal.uartC->begin(115200);   //RTK COM1
+    //hal.uartD->begin(115200); //BACKUP UART
+    hal.uartE->begin(115200);   //BACKUP UART
+    hal.uartF->begin(115200);   //TELECOM
+    hal.uartG->begin(115200);   //BACKUP GPS
 
     hal.scheduler->init();
 
