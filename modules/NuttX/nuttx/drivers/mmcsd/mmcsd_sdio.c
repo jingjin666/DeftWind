@@ -2557,6 +2557,7 @@ static int mmcsd_mmcinitialize(FAR struct mmcsd_state_s *priv)
 {
   uint32_t cid[4];
   uint32_t csd[4];
+  uint32_t ext_csd[128];
   int ret;
 
   /* At this point, slow, ID mode clocking has been supplied to the card
@@ -2630,6 +2631,29 @@ static int mmcsd_mmcinitialize(FAR struct mmcsd_state_s *priv)
    */
 
   (void)mmcsd_sendcmd4(priv);
+
+  /* Send CMD7 Select MMC Card */
+  mmcsd_sendcmdpoll(priv, MMCSD_CMD7S, priv->rca << 16);
+  ret = mmcsd_recvR1(priv, MMCSD_CMD7S);
+  if (ret != OK)
+    {
+      ferr("ERROR: Could not select emmc card: %d\n", ret);
+      return ret;
+    }
+
+  /* TODO: Send CMD8 To Get ExtCsd
+   * CAUTION: Do not enable this, maybe cause error!
+   *          Code not finished yet.
+   */
+#if 0
+  /* Send CMD8 To Get ExtCsd */
+  mmcsd_sendcmdpoll(priv, MMC_CMD8, 0);
+  ret = mmcsd_recvR1(priv, MMC_CMD8, ext_csd);
+  if (ret != OK)
+    {
+       ferr("ERROR: Could not read emmc ext_csd: %d\n", ret);
+    }
+  #endif
 
   /* Select high speed MMC clocking (which may depend on the DSR setting) */
 
@@ -2832,6 +2856,7 @@ static int mmcsd_cardidentify(FAR struct mmcsd_state_s *priv)
   mmcsd_sendcmdpoll(priv, MMCSD_CMD0, 0);
   up_udelay(MMCSD_IDLE_DELAY);
 
+#if 0
   /* Check for SDHC Version 2.x.  Send CMD8 to verify SD card interface
    * operating condition. CMD 8 is reserved on SD version 1.0 and MMC.
    *
@@ -2872,7 +2897,7 @@ static int mmcsd_cardidentify(FAR struct mmcsd_state_s *priv)
           return -EIO;
         }
     }
-
+#endif
   /* At this point, type is either UNKNOWN or SDV2.  Try sending
    * CMD55 and (maybe) ACMD41 for up to 1 second or until the card
    * exits the IDLE state.  CMD55 is supported by SD V1.x and SD V2.x,
@@ -2887,7 +2912,7 @@ static int mmcsd_cardidentify(FAR struct mmcsd_state_s *priv)
        * an earlier pass through through this loop.  In that case, we should
        * skip the SD-specific commands.
        */
-
+#if 0
 #ifdef CONFIG_MMCSD_MMCSUPPORT
       if (priv->type != MMCSD_CARDTYPE_MMC)
 #endif
@@ -2971,7 +2996,7 @@ static int mmcsd_cardidentify(FAR struct mmcsd_state_s *priv)
        * MMC card.  We can send the CMD1 to find out for sure.  CMD1 is supported
        * by MMC cards, but not by SD cards.
        */
-
+#endif
 #ifdef CONFIG_MMCSD_MMCSUPPORT
       if (priv->type == MMCSD_CARDTYPE_UNKNOWN || priv->type == MMCSD_CARDTYPE_MMC)
         {

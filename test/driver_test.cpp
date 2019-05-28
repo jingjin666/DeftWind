@@ -84,7 +84,7 @@ void Plane_test::setup()
     hal.storage->init();
     
     // initialise the main loop scheduler
-    ap_scheduler.init(&scheduler_test_tasks[0], ARRAY_SIZE(scheduler_test_tasks));
+    //ap_scheduler.init(&scheduler_test_tasks[0], ARRAY_SIZE(scheduler_test_tasks));
 }
 
 void Plane_test::loop()
