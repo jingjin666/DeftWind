@@ -13,6 +13,28 @@ then
 else
     echo "failed mount micro sdcard"
     set HAVE_MICROSD 0
+    echo "Trying format of microSD"
+    if mkfatfs /dev/mmcsd0
+    then
+		set MMCSD_FORMAT yes
+		echo "microSD card formatted"
+	else
+		set MMCSD_FORMAT no
+		echo "format failed"
+		exit
+    fi
+fi
+
+if [ $MMCSD_FORMAT == yes ]
+then
+	if mount -t vfat /dev/mmcsd0 /fs/microsd
+	then
+		echo "format succeeded"
+		set HAVE_MICROSD 1
+	else
+		echo "mount failed"
+		exit
+	fi
 fi
 
 #
@@ -34,11 +56,45 @@ if [ $HAVE_MICROSD == 0 ]
 then
     if usb_connected
     then
-        echo "Opening USB nsh"
+    	echo "Opening USB nsh"
     else
-        echo "booting with no microSD"
-        set HAVE_MICROSD 1
+		echo "booting with no microSD"
+		set HAVE_MICROSD 1
     fi
+fi
+
+# mount binfs so we can find the built-in apps
+if [ -f /bin/reboot ]
+then
+    echo "binfs already mounted"
+else
+    echo "Mounting binfs"
+    if mount -t binfs /dev/null /bin
+    then
+		echo "binfs mounted OK"
+    else
+		echo "binfs mounted Failed"
+		exit
+    fi
+fi
+
+if [ ! -f /bin/DeftWind ]
+then
+    echo "/bin/DeftWind not found"
+    exit
+fi
+
+if mkdir /fs/microsd/UAVRS > /dev/null
+then
+    echo "Created UAVRS directory"
+fi
+
+if uorb start
+then
+    echo "uorb started OK"
+else
+    echo "uorb started Failed"
+    exit
 fi
 
 echo Starting DeftWind
@@ -47,4 +103,7 @@ then
     echo DeftWind started OK
 else
     echo DeftWind started Failed
+    exit
 fi
+
+echo "rcS finished"
