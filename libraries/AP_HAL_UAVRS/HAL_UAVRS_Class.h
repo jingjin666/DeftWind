@@ -12,3 +12,6 @@ public:
 private:
     UAVRS::PrivateMember *_member;
 };
+
+void hal_uavrs_set_priority(uint8_t priority);
+

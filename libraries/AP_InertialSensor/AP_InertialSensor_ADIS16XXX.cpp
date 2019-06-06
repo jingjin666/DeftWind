@@ -170,12 +170,12 @@ void AP_InertialSensor_ADIS16XXX::_read_fifo()
 
 check_registers:
 	// check next register value for correctness
-	_dev->set_speed(AP_HAL::Device::SPEED_LOW);
+	_dev->set_speed(AP_HAL::Device::DEV_SPEED_LOW);
     if (!_dev->check_next_register()) {
 	    _inc_gyro_error_count(_gyro_instance);
 	    _inc_accel_error_count(_accel_instance);
 	}
-	_dev->set_speed(AP_HAL::Device::SPEED_HIGH);
+	_dev->set_speed(AP_HAL::Device::DEV_SPEED_HIGH);
 }
 
 /*
@@ -307,7 +307,7 @@ bool AP_InertialSensor_ADIS16XXX::_init()
 	// Init adis data.
 	memcpy(&_adis_chip_info, &chip_info[_adis_type], sizeof(struct adis16xxx_chip_info));
 
-	_dev->set_speed(AP_HAL::Device::SPEED_LOW);
+	_dev->set_speed(AP_HAL::Device::DEV_SPEED_LOW);
 		
 	if(!_reset()) {
 		printf("%s:: Failed to reset.\n", TAG_NAME);
@@ -339,7 +339,7 @@ bool AP_InertialSensor_ADIS16XXX::_init()
 		return false;
 	}
 
-	_dev->set_speed(AP_HAL::Device::SPEED_HIGH);
+	_dev->set_speed(AP_HAL::Device::DEV_SPEED_HIGH);
 	
 	return true;
 }

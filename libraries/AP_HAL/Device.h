@@ -34,8 +34,8 @@ public:
     };
 
     enum Speed {
-        SPEED_HIGH,
-        SPEED_LOW,
+        DEV_SPEED_HIGH,
+        DEV_SPEED_LOW,
     };
 
     FUNCTOR_TYPEDEF(PeriodicCb, void);

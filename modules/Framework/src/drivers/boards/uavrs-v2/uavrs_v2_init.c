@@ -9,7 +9,7 @@
  ****************************************************************************/
 
 #include <nuttx/config.h>
-
+#include <nuttx/arch.h>
 #include <nuttx/board.h>
 #include <arch/board/board.h>
 
@@ -114,6 +114,8 @@ fat_dma_free(FAR void *memory, size_t size)
  *
  ****************************************************************************/
 
+static struct spi_dev_s *spi1;
+
 static int nsh_archinitialize(void)
 {
 	int ret;
@@ -141,6 +143,22 @@ static int nsh_archinitialize(void)
 		return ret;
 	}
 #endif
+
+	/* Configure SPI-based devices */
+	spi1 = dp_spibus_initialize(1);
+	if (!spi1) {
+		syslog(LOG_ERR, "[boot] FAILED to initialize SPI port 1\n");
+		return -ENODEV;
+	}
+
+	/* Default SPI1 to 10MHz and de-assert the known chip selects. */
+	SPI_SETFREQUENCY(spi1, 10000000);
+	SPI_SETBITS(spi1, 8);
+	SPI_SETMODE(spi1, SPIDEV_MODE3);
+	SPI_SELECT(spi1, UAVRS_SPIDEV_BARO_MS5611, false);
+	SPI_SELECT(spi1, UAVRS_SPIDEV_MPU_9250, false);
+	up_udelay(20);
+
 	return OK;
 }
 

@@ -28,23 +28,19 @@ static UARTDriver uartEDriver(UARTE_DEFAULT_DEVICE, "UAVRS_uartE");
 static UARTDriver uartFDriver(UARTF_DEFAULT_DEVICE, "UAVRS_uartF");
 static UARTDriver uartGDriver(UARTG_DEFAULT_DEVICE, "UAVRS_uartG");
 
-static SPIDeviceManager spiDeviceManager;
 static AnalogIn analogIn;
 static Storage storageDriver;
 static GPIO gpioDriver;
 static RCInput rcinDriver;
 static RCOutput rcoutDriver;
 static Scheduler schedulerInstance;
-static Util utilInstance;
+static UAVRSUtil utilInstance;
 static OpticalFlow opticalFlowDriver;
 
 static UAVRS::I2CDeviceManager i2c_mgr_instance;
 static UAVRS::SPIDeviceManager spi_mgr_instance;
 
-
-
 extern const AP_HAL::HAL& hal;
-
 
 HAL_UAVRS::HAL_UAVRS() :
     AP_HAL::HAL(
@@ -77,7 +73,7 @@ bool uavrs_ran_overtime;
 /*
   set the priority of the main APM task
  */
-void hal_px4_set_priority(uint8_t priority)
+void hal_uavrs_set_priority(uint8_t priority)
 {
     struct sched_param param;
     param.sched_priority = priority;
@@ -92,7 +88,7 @@ void hal_px4_set_priority(uint8_t priority)
  */
 static void loop_overtime(void *)
 {
-    hal_px4_set_priority(UAVRS_OVERTIME_PRIORITY);
+    hal_uavrs_set_priority(UAVRS_OVERTIME_PRIORITY);
     uavrs_ran_overtime = true;
 }
 
@@ -117,7 +113,7 @@ static int main_loop(int argc, char **argv)
       run setup() at low priority to ensure CLI doesn't hang the
       system, and to allow initial sensor read loops to run
      */
-    hal_px4_set_priority(UAVRS_MAIN_PRIORITY);
+    hal_uavrs_set_priority(UAVRS_MAIN_PRIORITY);
 
     schedulerInstance.hal_initialized();
 
@@ -133,7 +129,7 @@ static int main_loop(int argc, char **argv)
     /*
       switch to high priority for main loop
      */
-    hal_px4_set_priority(UAVRS_MAIN_PRIORITY);
+    hal_uavrs_set_priority(UAVRS_MAIN_PRIORITY);
 
     while (!_uavrs_thread_should_exit) {
         perf_begin(perf_loop);
@@ -153,7 +149,7 @@ static int main_loop(int argc, char **argv)
               we ran over 1s in loop(), and our priority was lowered
               to let a driver run. Set it back to high priority now.
              */
-            hal_px4_set_priority(UAVRS_MAIN_PRIORITY);
+            hal_uavrs_set_priority(UAVRS_MAIN_PRIORITY);
             perf_count(perf_overrun);
             uavrs_ran_overtime = false;
         }

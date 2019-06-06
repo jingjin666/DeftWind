@@ -57,11 +57,14 @@
 #define HAL_BOARD_SUBTYPE_VRBRAIN_V54      4006
 
 #define HAL_BOARD_SUBTYPE_UAVRS_V1           6000
+#define HAL_BOARD_SUBTYPE_UAVRS_V2           6001
+
 /* InertialSensor driver types */
 #define HAL_INS_MPU60XX_SPI  2
 #define HAL_INS_MPU60XX_I2C  3
 #define HAL_INS_HIL          4
 #define HAL_INS_PX4          5
+#define HAL_INS_UAVRS        6
 #define HAL_INS_L3G4200D     7
 #define HAL_INS_VRBRAIN      8
 #define HAL_INS_MPU9250_SPI  9
@@ -90,6 +93,7 @@
 #define HAL_BARO_QURT       10
 #define HAL_BARO_BMP280_I2C 11
 #define HAL_BARO_BMP280_SPI 12
+#define HAL_BARO_UAVRS      13
 
 /* Compass driver types */
 #define HAL_COMPASS_HMC5843             1
@@ -108,6 +112,7 @@
 #define HAL_COMPASS_NAVIO2             14
 #define HAL_COMPASS_NAVIO              15
 #define HAL_COMPASS_AERO               16
+#define HAL_COMPASS_UAVRS              17
 
 /* Heat Types */
 #define HAL_LINUX_HEAT_PWM 1

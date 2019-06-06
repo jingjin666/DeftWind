@@ -230,48 +230,14 @@ bool AP_BoardConfig::px4_start_driver(main_fn_t main_function, const char *name,
 
 void AP_BoardConfig::px4_setup_drivers(void)
 {
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
-    /*
-      this works around an issue with some FMUv4 hardware (eg. copies
-      of the Pixracer) which have incorrect components leading to
-      sensor brownout on boot
-     */
-    if (px4_start_driver(fmu_main, "fmu", "sensor_reset 20")) {
-        printf("FMUv4 sensor reset complete\n");
-    }
-#endif
-
-    if (px4.board_type == PX4_BOARD_OLDDRIVERS) {
-        printf("Old drivers no longer supported\n");
-        px4.board_type = PX4_BOARD_AUTO;
-    }
-
     // run board auto-detection
     px4_autodetect();
-
-    if (px4.board_type == PX4_BOARD_PH2SLIM ||
-        px4.board_type == PX4_BOARD_PIXHAWK2) {
-        _imu_target_temperature.set_default(45);
-        if (_imu_target_temperature.get() < 0) {
-            // don't allow a value of -1 on the cube, or it could cook
-            // the IMU
-            _imu_target_temperature.set(45);
-        }
-    }
 
     px4_configured_board = (enum px4_board_type)px4.board_type.get();
 
     switch (px4_configured_board) {
-    case PX4_BOARD_PX4V1:
-    case PX4_BOARD_PIXHAWK:
-    case PX4_BOARD_PIXHAWK2:
-    case PX4_BOARD_PIXRACER:
-    case PX4_BOARD_PHMINI:
-    case PX4_BOARD_AUAV21:
-    case PX4_BOARD_PH2SLIM:
-    case PX4_BOARD_AEROFC:
-    case PX4_BOARD_PIXHAWK_PRO:
 	case PX4_BOARD_UAVRS:
+        printf("px4_setup_drivers:: PX4_BOARD_UAVRS\n");
         break;
     default:
         sensor_config_error("Unknown board type");
@@ -432,28 +398,6 @@ void AP_BoardConfig::validate_board_type(void)
        cook the IMUs if the user uses an old paramater file. We
        override the board type for that specific case
      */
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
-    if (px4.board_type == PX4_BOARD_PIXHAWK &&
-        (spi_check_register(HAL_INS_MPU60x0_EXT_NAME, MPUREG_WHOAMI, MPU_WHOAMI_MPU60X0) ||
-         spi_check_register(HAL_INS_MPU9250_EXT_NAME, MPUREG_WHOAMI, MPU_WHOAMI_MPU9250) ||
-         spi_check_register(HAL_INS_ICM20608_EXT_NAME, MPUREG_WHOAMI, MPU_WHOAMI_ICM20608) ||
-         spi_check_register(HAL_INS_ICM20608_EXT_NAME, MPUREG_WHOAMI, MPU_WHOAMI_ICM20602)) &&
-        spi_check_register(HAL_INS_LSM9DS0_EXT_A_NAME, LSMREG_WHOAMI, LSM_WHOAMI_LSM303D)) {
-        // Pixhawk2 has LSM303D and MPUxxxx on external bus. If we
-        // detect those, then force PIXHAWK2, even if the user has
-        // configured for PIXHAWK1
-#if !defined(CONFIG_ARCH_BOARD_PX4FMU_V3)
-        // force user to load the right firmware
-        sensor_config_error("Pixhawk2 requires FMUv3 firmware");        
-#endif
-        px4.board_type.set(PX4_BOARD_PIXHAWK2);
-        hal.console->printf("Forced PIXHAWK2\n");
-    }
-#endif
-
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V4PRO)
-	// Nothing to do for the moment
-#endif
 }
 
 /*
@@ -467,50 +411,7 @@ void AP_BoardConfig::px4_autodetect(void)
         return;
     }
 
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
-    // only one choice
-    px4.board_type.set(PX4_BOARD_PX4V1);
-    hal.console->printf("Detected PX4v1\n");
-
-#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
-    if ((spi_check_register(HAL_INS_MPU60x0_EXT_NAME, MPUREG_WHOAMI, MPU_WHOAMI_MPU60X0) ||
-         spi_check_register(HAL_INS_MPU9250_EXT_NAME, MPUREG_WHOAMI, MPU_WHOAMI_MPU9250) ||
-         spi_check_register(HAL_INS_ICM20608_EXT_NAME, MPUREG_WHOAMI, MPU_WHOAMI_ICM20608) ||
-         spi_check_register(HAL_INS_ICM20608_EXT_NAME, MPUREG_WHOAMI, MPU_WHOAMI_ICM20602)) &&
-        spi_check_register(HAL_INS_LSM9DS0_EXT_A_NAME, LSMREG_WHOAMI, LSM_WHOAMI_LSM303D)) {
-        // Pixhawk2 has LSM303D and MPUxxxx on external bus
-        px4.board_type.set(PX4_BOARD_PIXHAWK2);
-        hal.console->printf("Detected PIXHAWK2\n");
-    } else if ((spi_check_register(HAL_INS_ICM20608_AM_NAME, MPUREG_WHOAMI, MPU_WHOAMI_ICM20608) ||
-                spi_check_register(HAL_INS_ICM20608_AM_NAME, MPUREG_WHOAMI, MPU_WHOAMI_ICM20602)) &&
-               spi_check_register(HAL_INS_MPU9250_NAME, MPUREG_WHOAMI, MPU_WHOAMI_MPU9250)) {
-        // PHMINI has an ICM20608 and MPU9250 on sensor bus
-        px4.board_type.set(PX4_BOARD_PHMINI);
-        hal.console->printf("Detected PixhawkMini\n");
-    } else if (spi_check_register(HAL_INS_LSM9DS0_A_NAME, LSMREG_WHOAMI, LSM_WHOAMI_LSM303D) &&
-               (spi_check_register(HAL_INS_MPU60x0_NAME, MPUREG_WHOAMI, MPU_WHOAMI_MPU60X0) ||
-                spi_check_register(HAL_INS_ICM20608_NAME, MPUREG_WHOAMI, MPU_WHOAMI_ICM20608) ||
-                spi_check_register(HAL_INS_ICM20608_NAME, MPUREG_WHOAMI, MPU_WHOAMI_ICM20602) ||
-                spi_check_register(HAL_INS_MPU9250_NAME, MPUREG_WHOAMI, MPU_WHOAMI_MPU9250))) {
-
-        // classic or upgraded Pixhawk1
-        px4.board_type.set(PX4_BOARD_PIXHAWK);
-        hal.console->printf("Detected Pixhawk\n");
-    } else {
-        sensor_config_error("Unable to detect board type");
-    }
-#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
-    // only one choice
-    px4.board_type.set_and_notify(PX4_BOARD_PIXRACER);
-    hal.console->printf("Detected Pixracer\n");
-#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4PRO)
-    // only one choice
-    px4.board_type.set_and_notify(PX4_BOARD_PIXHAWK_PRO);
-    hal.console->printf("Detected Pixhawk Pro\n");	
-#elif defined(CONFIG_ARCH_BOARD_AEROFC_V1)
-    px4.board_type.set_and_notify(PX4_BOARD_AEROFC);
-    hal.console->printf("Detected Aero FC\n");
-#elif defined(CONFIG_ARCH_BOARD_UAVRS_V1)
+#if defined(CONFIG_ARCH_BOARD_UAVRS_V2)
     // UAVRS has ADIS16375 and xxx on external bus
     px4.board_type.set_and_notify(PX4_BOARD_UAVRS);
     hal.console->printf("Detected UAVRS\n");
@@ -523,11 +424,11 @@ void AP_BoardConfig::px4_autodetect(void)
  */
 void AP_BoardConfig::px4_setup()
 {
-    px4_setup_peripherals();
-    px4_setup_pwm();
-    px4_setup_safety_mask();
-    px4_setup_uart();
-    px4_setup_sbus();
+    //px4_setup_peripherals();
+    //px4_setup_pwm();
+    //px4_setup_safety_mask();
+    //px4_setup_uart();
+    //px4_setup_sbus();
     px4_setup_drivers();
 }
 

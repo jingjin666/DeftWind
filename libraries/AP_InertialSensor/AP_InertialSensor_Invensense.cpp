@@ -357,7 +357,7 @@ void AP_InertialSensor_Invensense::_fifo_reset()
 {
     uint8_t user_ctrl = _last_stat_user_ctrl;
     user_ctrl &= ~(BIT_USER_CTRL_FIFO_RESET | BIT_USER_CTRL_FIFO_EN);
-    _dev->set_speed(AP_HAL::Device::SPEED_LOW);
+    _dev->set_speed(AP_HAL::Device::DEV_SPEED_LOW);
     _register_write(MPUREG_FIFO_EN, 0);
     _register_write(MPUREG_USER_CTRL, user_ctrl);
     _register_write(MPUREG_USER_CTRL, user_ctrl | BIT_USER_CTRL_FIFO_RESET);
@@ -365,7 +365,7 @@ void AP_InertialSensor_Invensense::_fifo_reset()
     _register_write(MPUREG_FIFO_EN, BIT_XG_FIFO_EN | BIT_YG_FIFO_EN |
                     BIT_ZG_FIFO_EN | BIT_ACCEL_FIFO_EN | BIT_TEMP_FIFO_EN, true);
     hal.scheduler->delay_microseconds(1);
-    _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
+    _dev->set_speed(AP_HAL::Device::DEV_SPEED_HIGH);
     _last_stat_user_ctrl = user_ctrl | BIT_USER_CTRL_FIFO_EN;
 
     notify_accel_fifo_reset(_accel_instance);
@@ -384,7 +384,7 @@ void AP_InertialSensor_Invensense::start()
     }
 
     // initially run the bus at low speed
-    _dev->set_speed(AP_HAL::Device::SPEED_LOW);
+    _dev->set_speed(AP_HAL::Device::DEV_SPEED_LOW);
 
     // only used for wake-up in accelerometer only low power mode
     _register_write(MPUREG_PWR_MGMT_2, 0x00);
@@ -484,7 +484,7 @@ void AP_InertialSensor_Invensense::start()
     _register_write(MPUREG_INT_PIN_CFG, _register_read(MPUREG_INT_PIN_CFG) | BIT_INT_RD_CLEAR | BIT_LATCH_INT_EN);
 
     // now that we have initialised, we set the bus speed to high
-    _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
+    _dev->set_speed(AP_HAL::Device::DEV_SPEED_HIGH);
 
     _dev->get_semaphore()->give();
 
@@ -499,7 +499,7 @@ void AP_InertialSensor_Invensense::start()
     }
 
     // start the timer process to read samples
-    _dev->register_periodic_callback(1000, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_Invensense::_poll_data, void));
+    _dev->register_periodic_callback(10000, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_Invensense::_poll_data, void));
 }
 
 
@@ -627,13 +627,14 @@ bool AP_InertialSensor_Invensense::_accumulate_fast_sampling(uint8_t *samples, u
         // use temperatue to detect FIFO corruption
         int16_t t2 = int16_val(data, 3);
         if (!_check_raw_temp(t2)) {
-            debug("temp reset %d %d", _raw_temp, t2);
+            //debug("temp reset %d %d", _raw_temp, t2);
             _fifo_reset();
             ret = false;
             break;
         }
+        
         tsum += t2;
-
+      
         if ((_accum.count & 1) == 0) {
             // accel data is at 4kHz
             Vector3f a(int16_val(data, 1),
@@ -666,11 +667,11 @@ bool AP_InertialSensor_Invensense::_accumulate_fast_sampling(uint8_t *samples, u
             
             _notify_new_accel_raw_sample(_accel_instance, _accum.accel, 0, false);
             _notify_new_gyro_raw_sample(_gyro_instance, _accum.gyro);
-            
             _accum.accel.zero();
             _accum.gyro.zero();
             _accum.count = 0;
         }
+       
     }
 
     if (clipped) {
@@ -697,6 +698,7 @@ void AP_InertialSensor_Invensense::_read_fifo()
     }
 
     bytes_read = uint16_val(rx, 0);
+    //printf("bytes_read is %d\n", bytes_read);
     n_samples = bytes_read / MPU_SAMPLE_SIZE;
 
     if (n_samples == 0) {
@@ -715,9 +717,11 @@ void AP_InertialSensor_Invensense::_read_fifo()
         need_reset = true;
         n_samples = 24;
     }
-    
+    //printf("n_samples is %d\n", n_samples);
+
     while (n_samples > 0) {
         uint8_t n = MIN(n_samples, MPU_FIFO_BUFFER_LEN);
+        #if 0
         if (!_dev->set_chip_select(true)) {
             if (!_block_read(MPUREG_FIFO_R_W, rx, n * MPU_SAMPLE_SIZE)) {
                 goto check_registers;
@@ -748,6 +752,23 @@ void AP_InertialSensor_Invensense::_read_fifo()
                 break;
             }
         }
+        #else
+        if (!_block_read(MPUREG_FIFO_R_W, rx, n * MPU_SAMPLE_SIZE)) {
+            goto check_registers;
+        }
+        //printf("n is %d, _block_read size %d\n", n, n * MPU_SAMPLE_SIZE);
+
+        if (_fast_sampling) {
+            if (!_accumulate_fast_sampling(rx, n)) {
+                //debug("stop at %u of %u", n_samples, bytes_read/MPU_SAMPLE_SIZE);
+                break;
+            }
+        } else {
+            if (!_accumulate(rx, n)) {
+                break;
+            }
+        }
+        #endif
         n_samples -= n;
     }
 
@@ -755,15 +776,15 @@ void AP_InertialSensor_Invensense::_read_fifo()
         //debug("fifo reset n_samples %u", bytes_read/MPU_SAMPLE_SIZE);
         _fifo_reset();
     }
-    
+
 check_registers:
     // check next register value for correctness
-    _dev->set_speed(AP_HAL::Device::SPEED_LOW);
+    _dev->set_speed(AP_HAL::Device::DEV_SPEED_LOW);
     if (!_dev->check_next_register()) {
         _inc_gyro_error_count(_gyro_instance);
         _inc_accel_error_count(_accel_instance);
     }
-    _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
+    _dev->set_speed(AP_HAL::Device::DEV_SPEED_HIGH);
 }
 
 /*
@@ -775,6 +796,7 @@ bool AP_InertialSensor_Invensense::_check_raw_temp(int16_t t2)
         // cached copy OK
         return true;
     }
+
     uint8_t trx[2];
     if (_block_read(MPUREG_TEMP_OUT_H, trx, 2)) {
         _raw_temp = int16_val(trx, 0);
@@ -860,7 +882,8 @@ void AP_InertialSensor_Invensense::_set_filter_register(void)
  */
 bool AP_InertialSensor_Invensense::_check_whoami(void)
 {
-    uint8_t whoami = _register_read(MPUREG_WHOAMI);
+    uint8_t whoami;
+    whoami = _register_read(MPUREG_WHOAMI);
     switch (whoami) {
     case MPU_WHOAMI_6000:
         _mpu_type = Invensense_MPU6000;
@@ -889,18 +912,17 @@ bool AP_InertialSensor_Invensense::_hardware_init(void)
     if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return false;
     }
-
+    
     // setup for register checking
     _dev->setup_checked_registers(7, 20);
     
     // initially run the bus at low speed
-    _dev->set_speed(AP_HAL::Device::SPEED_LOW);
-
+    _dev->set_speed(AP_HAL::Device::DEV_SPEED_LOW);
     if (!_check_whoami()) {
         _dev->get_semaphore()->give();
         return false;
     }
-
+    
     // Chip reset
     uint8_t tries;
     for (tries = 0; tries < 5; tries++) {
@@ -950,7 +972,7 @@ bool AP_InertialSensor_Invensense::_hardware_init(void)
         }
     }
 
-    _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
+    _dev->set_speed(AP_HAL::Device::DEV_SPEED_HIGH);
     _dev->get_semaphore()->give();
 
     if (tries == 5) {

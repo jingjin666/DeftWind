@@ -207,7 +207,7 @@ void AP_Compass_LSM9DS1::read()
 bool AP_Compass_LSM9DS1::_check_id(void)
 {
     // initially run the bus at low speed
-    _dev->set_speed(AP_HAL::Device::SPEED_LOW);
+    _dev->set_speed(AP_HAL::Device::DEV_SPEED_LOW);
 
     uint8_t value = _register_read(LSM9DS1M_WHO_AM_I);
     if (value != WHO_AM_I_MAG) {
@@ -215,7 +215,7 @@ bool AP_Compass_LSM9DS1::_check_id(void)
         return false;
     }
 
-    _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
+    _dev->set_speed(AP_HAL::Device::DEV_SPEED_HIGH);
 
     return true;
 }

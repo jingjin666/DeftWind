@@ -155,9 +155,8 @@
 
 /* LPSPI1 CS:  MPU9250--GPIO_EMC_30  BARO--GPIO_EMC_14 */
 #define IOMUX_LPSPI1_CS             (IOMUX_SLEW_FAST | IOMUX_DRIVE_50OHM | IOMUX_SPEED_MEDIUM | IOMUX_PULL_UP_100K | _IOMUX_PULL_ENABLE)
-#define GPIO_LPSPI1_CS_MPU2950      (GPIO_OUTPUT | GPIO_OUTPUT_ONE | GPIO_PORT4 | GPIO_PIN30 | IOMUX_LPSPI1_CS)
+#define GPIO_LPSPI1_CS_MPU9250      (GPIO_OUTPUT | GPIO_OUTPUT_ONE | GPIO_PORT4 | GPIO_PIN30 | IOMUX_LPSPI1_CS)
 #define GPIO_LPSPI1_CS_BARO         (GPIO_OUTPUT | GPIO_OUTPUT_ONE | GPIO_PORT4 | GPIO_PIN14 | IOMUX_LPSPI1_CS)
-
 
 /* LPSPI2 CS:  GPIO_EMC_01 */
 #define IOMUX_LPSPI2_CS             (IOMUX_SLEW_FAST | IOMUX_DRIVE_50OHM | IOMUX_SPEED_MEDIUM | IOMUX_PULL_UP_100K | _IOMUX_PULL_ENABLE)
@@ -171,15 +170,21 @@
 #define IOMUX_LPSPI4_CS             (IOMUX_SLEW_FAST | IOMUX_DRIVE_50OHM | IOMUX_SPEED_MEDIUM | IOMUX_PULL_UP_100K | _IOMUX_PULL_ENABLE)
 #define GPIO_LPSPI4_CS_FM25V05      (GPIO_OUTPUT | GPIO_OUTPUT_ONE | GPIO_PORT2 | GPIO_PIN20 | IOMUX_LPSPI4_CS)
 
-/* Main IMU */
-#define DP_SPI_BUS_ADIS	3
+/* Backup IMU */
+#define UAVRS_SPI_BUS_MPU_9250		1
+/* Baro MS5611 */
+#define UAVRS_SPI_BUS_BARO_MS5611	1
+/* Use these in place of the spi_dev_e enumeration to select a specific SPI device on SPI1 */
+#define UAVRS_SPIDEV_BARO_MS5611	1
+#define UAVRS_SPIDEV_MPU_9250		2
 
-/* Backup IMU and Baro */
-#define DP_SPI_BUS_BARO_MS5611			1
-#define DP_SPI_BUS_MPU_9250			1
+/* Main IMU */
+#define UAVRS_SPI_BUS_ADIS	3
+/* Use these in place of the spi_dev_e enumeration to select a specific SPI device on SPI3 */
+#define UAVRS_SPIDEV_ADIS   1
 
 /* Mtd Storage Device */
-#define DP_SPI_BUS_RAMTRON	4
+#define UAVRS_SPI_BUS_RAMTRON	4
 
 
 /* MMCSD EN */
@@ -250,10 +255,6 @@
 		GPIO_GPIO0_INPUT, \
 }
 
-#define UAVRS_SPI_BUS_ADIS	4
-
-/* Use these in place of the spi_dev_e enumeration to select a specific SPI device on SPI4 */
-#define UAVRS_SPIDEV_ADIS		1
 
 /****************************************************************************
  * Public Types

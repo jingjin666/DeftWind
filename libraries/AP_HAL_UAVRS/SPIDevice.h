@@ -19,10 +19,10 @@
 #include <inttypes.h>
 #include <AP_HAL/HAL.h>
 #include <AP_HAL/SPIDevice.h>
+#include <drivers/device/spi.h>
 #include "Semaphores.h"
 #include "Device.h"
 #include "Scheduler.h"
-#include <platforms/dp_spi.h>
 
 
 namespace UAVRS {
@@ -62,19 +62,12 @@ public:
 
     virtual ~SPIDevice();
 
-    enum SPI_Speed {
-        SPI_SPEED_HIGH,
-        SPI_SPEED_LOW,
-    };
-
-    /* AP_HAL::Device implementation */
-
     /* See AP_HAL::Device::set_speed() */
     bool set_speed(AP_HAL::Device::Speed speed) override;
 
     // low level transfer function
     void do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len);
-
+    
     /* See AP_HAL::Device::transfer() */
     bool transfer(const uint8_t *send, uint32_t send_len,
                   uint8_t *recv, uint32_t recv_len) override;
@@ -84,15 +77,17 @@ public:
                              uint32_t len) override;
 
     /* See AP_HAL::Device::get_semaphore() */
-    AP_HAL::Semaphore *get_semaphore();
+    AP_HAL::Semaphore *get_semaphore() override;
 
     /* See AP_HAL::Device::register_periodic_callback() */
     AP_HAL::Device::PeriodicHandle register_periodic_callback(
         uint32_t period_usec, AP_HAL::Device::PeriodicCb) override;
 
-    bool adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint32_t period_usec);
-    bool set_chip_select(bool set);
+    /* See AP_HAL::Device::adjust_periodic_callback() */
+    bool adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint32_t period_usec) override;
 
+    bool set_chip_select(bool set) override;
+    
 private:
     SPIBus &bus;
     SPIDesc &device_desc;

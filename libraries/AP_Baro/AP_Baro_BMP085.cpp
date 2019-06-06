@@ -141,7 +141,7 @@ bool AP_Baro_BMP085::_read_pressure()
 
     if (!_dev->read_registers(0xF6, buf, sizeof(buf))) {
         _retry_time = AP_HAL::millis() + 1000;
-        _dev->set_speed(AP_HAL::Device::SPEED_LOW);
+        _dev->set_speed(AP_HAL::Device::DEV_SPEED_LOW);
         return false;
     }
 
@@ -165,7 +165,7 @@ void AP_Baro_BMP085::_read_temp()
     int32_t _temp_sensor;
 
     if (!_dev->read_registers(0xF6, buf, sizeof(buf))) {
-        _dev->set_speed(AP_HAL::Device::SPEED_LOW);
+        _dev->set_speed(AP_HAL::Device::DEV_SPEED_LOW);
         return;
     }
     _temp_sensor = buf[0];

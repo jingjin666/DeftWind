@@ -72,7 +72,7 @@ bool AP_Baro_BMP280::_init()
 
     _has_sample = false;
 
-    _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
+    _dev->set_speed(AP_HAL::Device::DEV_SPEED_HIGH);
 
     uint8_t whoami;
     if (!_dev->read_registers(BMP280_REG_ID, &whoami, 1)  ||

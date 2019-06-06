@@ -296,7 +296,7 @@ bool AP_Compass_LSM303D::_hardware_init()
     }
 
     // initially run the bus at low speed
-    _dev->set_speed(AP_HAL::Device::SPEED_LOW);
+    _dev->set_speed(AP_HAL::Device::DEV_SPEED_LOW);
 
     // Test WHOAMI
     uint8_t whoami = _register_read(ADDR_WHO_AM_I);
@@ -331,7 +331,7 @@ bool AP_Compass_LSM303D::_hardware_init()
         goto fail_tries;
     }
 
-    _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
+    _dev->set_speed(AP_HAL::Device::DEV_SPEED_HIGH);
     _dev->get_semaphore()->give();
 
     return true;
@@ -339,7 +339,7 @@ bool AP_Compass_LSM303D::_hardware_init()
 fail_tries:
 fail_whoami:
     _dev->get_semaphore()->give();
-    _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
+    _dev->set_speed(AP_HAL::Device::DEV_SPEED_HIGH);
     return false;
 }
 

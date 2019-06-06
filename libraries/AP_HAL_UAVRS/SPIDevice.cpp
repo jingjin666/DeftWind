@@ -1,27 +1,14 @@
 #include "SPIDevice.h"
 
-#include <assert.h>
-#include <errno.h>
-#include <fcntl.h>
+#include <arch/board/board.h>
+#include "board_config.h"
+#include <drivers/device/spi.h>
 #include <stdio.h>
-#include <sys/ioctl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <vector>
-
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/OwnPtr.h>
 
-#include "GPIO.h"
 #include "Scheduler.h"
 #include "Semaphores.h"
-#include "Util.h"
-#include <drivers/device/spi.h>
-#include "board_config.h"
-#include <nuttx/arch.h>
-
-
 
 namespace UAVRS {
 
@@ -29,7 +16,17 @@ namespace UAVRS {
 #define KHZ (1000U)
 
 SPIDesc SPIDeviceManager::device_table[] = {
-    SPIDesc("adis16375",	UAVRS_SPI_BUS_ADIS, (spi_devtype_e)UAVRS_SPIDEV_ADIS, SPIDEV_MODE3, 500*KHZ, 20*MHZ),
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_UAVRS_V2
+#if defined(UAVRS_SPIDEV_ADIS)
+        SPIDesc("adis16375",    UAVRS_SPI_BUS_ADIS, (spi_devtype_e)UAVRS_SPIDEV_ADIS, SPIDEV_MODE3, 500*KHZ, 20*MHZ),
+#endif
+#if defined(UAVRS_SPIDEV_MPU_9250)
+        SPIDesc("mpu9250",      UAVRS_SPI_BUS_MPU_9250, (spi_devtype_e)UAVRS_SPIDEV_MPU_9250, SPIDEV_MODE3, 500*KHZ, 1*MHZ),
+#endif
+#if defined(UAVRS_SPIDEV_BARO_MS5611)
+        SPIDesc("ms5611",       UAVRS_SPI_BUS_BARO_MS5611, (spi_devtype_e)UAVRS_SPIDEV_BARO_MS5611, SPIDEV_MODE3, 20*MHZ, 20*MHZ),
+#endif
+#endif
     SPIDesc(nullptr, 0, (spi_devtype_e)0, (spi_mode_e)0, 0, 0),
 };
 
@@ -39,7 +36,8 @@ SPIDevice::SPIDevice(SPIBus &_bus, SPIDesc &_device_desc)
 {
     set_device_bus(_bus.bus);
     set_device_address(_device_desc.device);
-    set_speed((AP_HAL::Device::Speed)SPI_SPEED_LOW);
+     
+    set_speed(AP_HAL::Device::DEV_SPEED_LOW);
     SPI_SELECT(bus.dev, device_desc.device, false);
     asprintf(&pname, "SPI:%s:%u:%u",
              device_desc.name,
@@ -63,10 +61,10 @@ SPIDevice::~SPIDevice()
 bool SPIDevice::set_speed(AP_HAL::Device::Speed speed)
 {
     switch (speed) {
-    case SPI_SPEED_HIGH:
+    case AP_HAL::Device::DEV_SPEED_HIGH:
         frequency = device_desc.highspeed;
         break;
-    case SPI_SPEED_LOW:
+    case AP_HAL::Device::DEV_SPEED_LOW:
         frequency = device_desc.lowspeed;
         break;
     }
@@ -93,7 +91,7 @@ void SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
       yes, this is a nasty hack. Suggestions for a better method
       appreciated.
      */
-    bool use_irq_save = up_interrupt_context();
+    bool use_irq_save = true;
     irqstate_t state;
     if (use_irq_save) {
         state = up_irq_save();
@@ -104,6 +102,7 @@ void SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
     SPI_SETMODE(bus.dev, device_desc.mode);
     SPI_SETBITS(bus.dev, 8);
     SPI_SELECT(bus.dev, device_desc.device, true);
+    //printf("len is %d, send is 0x%02x 0x%02x\n", len, send[0], send[1]);
     SPI_EXCHANGE(bus.dev, send, recv, len);
     if (!cs_forced) {
         SPI_SELECT(bus.dev, device_desc.device, false);
@@ -192,7 +191,7 @@ SPIDeviceManager::get_device(const char *name)
     }
 
     SPIDesc &desc = device_table[i];
-
+    
     // find the bus
     SPIBus *busp;
     for (busp = buses; busp; busp = (SPIBus *)busp->next) {
@@ -211,7 +210,7 @@ SPIDeviceManager::get_device(const char *name)
         busp->dev = dp_spibus_initialize(desc.bus);
         buses = busp;
     }
-
+    
     return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(new SPIDevice(*busp, desc));
 }
 

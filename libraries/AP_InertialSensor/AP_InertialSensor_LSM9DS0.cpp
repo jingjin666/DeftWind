@@ -483,14 +483,14 @@ bool AP_InertialSensor_LSM9DS0::_hardware_init()
     _dev_accel->setup_checked_registers(4, 20);
         
     for (tries = 0; tries < 5; tries++) {
-        _dev_gyro->set_speed(AP_HAL::Device::SPEED_LOW);
-        _dev_accel->set_speed(AP_HAL::Device::SPEED_LOW);
+        _dev_gyro->set_speed(AP_HAL::Device::DEV_SPEED_LOW);
+        _dev_accel->set_speed(AP_HAL::Device::DEV_SPEED_LOW);
 
         _gyro_init();
         _accel_init();
 
-        _dev_gyro->set_speed(AP_HAL::Device::SPEED_HIGH);
-        _dev_accel->set_speed(AP_HAL::Device::SPEED_HIGH);
+        _dev_gyro->set_speed(AP_HAL::Device::DEV_SPEED_HIGH);
+        _dev_accel->set_speed(AP_HAL::Device::DEV_SPEED_HIGH);
 
         hal.scheduler->delay(10);
         if (_accel_data_ready() && _gyro_data_ready()) {

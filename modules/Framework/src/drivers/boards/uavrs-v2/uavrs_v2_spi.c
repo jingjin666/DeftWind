@@ -43,7 +43,7 @@
 void weak_function imxrt_spidev_initialize(void)
 {
 #ifdef CONFIG_IMXRT_LPSPI1
-		(void)imxrt_config_gpio(GPIO_LPSPI1_CS_MPU2950);
+		(void)imxrt_config_gpio(GPIO_LPSPI1_CS_MPU9250);
 		(void)imxrt_config_gpio(GPIO_LPSPI1_CS_BARO);
 #endif
 
@@ -89,14 +89,16 @@ void weak_function imxrt_spidev_initialize(void)
 #ifdef CONFIG_IMXRT_LPSPI1
 __EXPORT void imxrt_lpspi1select(FAR struct spi_dev_s *dev, uint32_t devid, bool selected)
 {
-  spiinfo("devid: %d CS: %s\n", (int)devid, selected ? "assert" : "de-assert");
+    spiinfo("devid: %d CS: %s\n", (int)devid, selected ? "assert" : "de-assert");
 
   	switch(devid) {
-		case 0:
-			imxrt_gpio_write(GPIO_LPSPI1_CS_MPU2950, !selected);
-			break;
-		case 1:
+		case UAVRS_SPIDEV_BARO_MS5611:
 			imxrt_gpio_write(GPIO_LPSPI1_CS_BARO, !selected);
+            imxrt_gpio_write(GPIO_LPSPI1_CS_MPU9250, 1);
+			break;
+		case UAVRS_SPIDEV_MPU_9250:
+			imxrt_gpio_write(GPIO_LPSPI1_CS_MPU9250, !selected);
+            imxrt_gpio_write(GPIO_LPSPI1_CS_BARO, 1);
 			break;
 		default:
 			break;
@@ -105,49 +107,56 @@ __EXPORT void imxrt_lpspi1select(FAR struct spi_dev_s *dev, uint32_t devid, bool
 
 __EXPORT uint8_t imxrt_lpspi1status(FAR struct spi_dev_s *dev, uint32_t devid)
 {
-  return 0;
+    return 0;
 }
 #endif
 
 #ifdef CONFIG_IMXRT_LPSPI2
 __EXPORT void imxrt_lpspi2select(FAR struct spi_dev_s *dev, uint32_t devid, bool selected)
 {
-  spiinfo("devid: %d CS: %s\n", (int)devid, selected ? "assert" : "de-assert");
+    spiinfo("devid: %d CS: %s\n", (int)devid, selected ? "assert" : "de-assert");
 
-  imxrt_gpio_write(GPIO_LPSPI2_CS, !selected);
+    imxrt_gpio_write(GPIO_LPSPI2_CS, !selected);
 }
 
 __EXPORT uint8_t imxrt_lpspi2status(FAR struct spi_dev_s *dev, uint32_t devid)
 {
-  return 0;
+    return 0;
 }
 #endif
 
 #ifdef CONFIG_IMXRT_LPSPI3
 __EXPORT void imxrt_lpspi3select(FAR struct spi_dev_s *dev, uint32_t devid, bool selected)
 {
-  spiinfo("devid: %d CS: %s\n", (int)devid, selected ? "assert" : "de-assert");
+    spiinfo("devid: %d CS: %s\n", (int)devid, selected ? "assert" : "de-assert");
 
-  imxrt_gpio_write(GPIO_LPSPI3_CS_ADIS16375BM, !selected);
+    switch (devid) {
+    case UAVRS_SPIDEV_ADIS:
+        /* Making sure the other peripherals are not selected */
+        imxrt_gpio_write(GPIO_LPSPI3_CS_ADIS16375BM, !selected);
+        break;
+    default:
+        break;
+  }
 }
 
 __EXPORT uint8_t imxrt_lpspi3status(FAR struct spi_dev_s *dev, uint32_t devid)
 {
-  return 0;
+    return 0;
 }
 #endif
 
 #ifdef CONFIG_IMXRT_LPSPI4
 __EXPORT void imxrt_lpspi4select(FAR struct spi_dev_s *dev, uint32_t devid, bool selected)
 {
-  spiinfo("devid: %d CS: %s\n", (int)devid, selected ? "assert" : "de-assert");
+    spiinfo("devid: %d CS: %s\n", (int)devid, selected ? "assert" : "de-assert");
 
-  imxrt_gpio_write(GPIO_LPSPI4_CS_FM25V05, !selected);
+    imxrt_gpio_write(GPIO_LPSPI4_CS_FM25V05, !selected);
 }
 
 __EXPORT uint8_t imxrt_lpspi4status(FAR struct spi_dev_s *dev, uint32_t devid)
 {
-  return 0;
+    return 0;
 }
 #endif
 

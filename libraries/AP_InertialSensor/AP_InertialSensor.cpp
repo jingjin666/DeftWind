@@ -528,7 +528,7 @@ uint8_t AP_InertialSensor::register_gyro(uint16_t raw_sample_rate_hz,
 
     _gyro_id[_gyro_count].set((int32_t) id);
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (!saved) {
         // assume this is the same sensor and save its ID to allow seamless
         // transition from when we didn't have the IDs.
@@ -566,7 +566,7 @@ uint8_t AP_InertialSensor::register_accel(uint16_t raw_sample_rate_hz,
 
     _accel_id[_accel_count].set((int32_t) id);
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD == HAL_BOARD_SITL
         // assume this is the same sensor and save its ID to allow seamless
         // transition from when we didn't have the IDs.
         _accel_id_ok[_accel_count] = true;
@@ -686,140 +686,16 @@ AP_InertialSensor::detect_backends(void)
     _add_backend(AP_InertialSensor_SITL::detect(*this));
 #elif HAL_INS_DEFAULT == HAL_INS_HIL
     _add_backend(AP_InertialSensor_HIL::detect(*this));
-#elif HAL_INS_DEFAULT == HAL_INS_MPU60XX_SPI && defined(HAL_INS_DEFAULT_ROTATION)
-    _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_NAME),
-                                                  HAL_INS_DEFAULT_ROTATION));
-#elif HAL_INS_DEFAULT == HAL_INS_MPU60XX_SPI
-    _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_NAME)));
-#elif HAL_INS_DEFAULT == HAL_INS_MPU60XX_I2C && defined(HAL_INS_DEFAULT_ROTATION)
-    _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.i2c_mgr->get_device(HAL_INS_MPU60x0_I2C_BUS, HAL_INS_MPU60x0_I2C_ADDR),
-                                                  HAL_INS_DEFAULT_ROTATION));
-#elif HAL_INS_DEFAULT == HAL_INS_MPU60XX_I2C
-    _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.i2c_mgr->get_device(HAL_INS_MPU60x0_I2C_BUS, HAL_INS_MPU60x0_I2C_ADDR)));
-#elif HAL_INS_DEFAULT == HAL_INS_BH
-    _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.i2c_mgr->get_device(HAL_INS_MPU60x0_I2C_BUS, HAL_INS_MPU60x0_I2C_ADDR)));
-    _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME)));
-#elif HAL_INS_DEFAULT == HAL_INS_PX4 || HAL_INS_DEFAULT == HAL_INS_VRBRAIN
-
+#elif HAL_INS_DEFAULT == HAL_INS_UAVRS
     switch (AP_BoardConfig::get_board_type()) {
-    case AP_BoardConfig::PX4_BOARD_PX4V1:
-        _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_NAME)));
-        break;
-
-    case AP_BoardConfig::PX4_BOARD_PIXHAWK:
-        _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_NAME), ROTATION_ROLL_180));
-        _add_backend(AP_InertialSensor_LSM9DS0::probe(*this,
-                                                      hal.spi->get_device(HAL_INS_LSM9DS0_G_NAME),
-                                                      hal.spi->get_device(HAL_INS_LSM9DS0_A_NAME),
-                                                      ROTATION_ROLL_180,
-                                                      ROTATION_ROLL_180_YAW_270,
-                                                      ROTATION_PITCH_180));
-        break;
-
-    case AP_BoardConfig::PX4_BOARD_PIXHAWK2:
-        // older Pixhawk2 boards have the MPU6000 instead of MPU9250
-        _fast_sampling_mask.set_default(1);
-        _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_EXT_NAME), ROTATION_PITCH_180));
-        _add_backend(AP_InertialSensor_LSM9DS0::probe(*this,
-                                                      hal.spi->get_device(HAL_INS_LSM9DS0_EXT_G_NAME),
-                                                      hal.spi->get_device(HAL_INS_LSM9DS0_EXT_A_NAME),
-                                                      ROTATION_ROLL_180_YAW_270,
-                                                      ROTATION_ROLL_180_YAW_90,
-                                                      ROTATION_ROLL_180_YAW_90));
-        _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME), ROTATION_YAW_270));
-        break;
-
-    case AP_BoardConfig::PX4_BOARD_PIXRACER:
-        _fast_sampling_mask.set_default(3);
-        _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_ICM20608_NAME), ROTATION_ROLL_180_YAW_90));
-        _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME), ROTATION_ROLL_180_YAW_90));
-        break;
-
-    case AP_BoardConfig::PX4_BOARD_PIXHAWK_PRO:
-        _fast_sampling_mask.set_default(3);
-        _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_ICM20608_NAME), ROTATION_ROLL_180_YAW_90));
-        _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME), ROTATION_ROLL_180_YAW_90));
-        break;		
-
-    case AP_BoardConfig::PX4_BOARD_PHMINI:
-        // PHMINI uses ICM20608 on the ACCEL_MAG device and a MPU9250 on the old MPU6000 CS line
-        _fast_sampling_mask.set_default(3);
-        _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_ICM20608_AM_NAME), ROTATION_ROLL_180));
-        _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME), ROTATION_ROLL_180));
-        break;
-
-    case AP_BoardConfig::PX4_BOARD_AUAV21:
-        // AUAV2.1 uses ICM20608 on the ACCEL_MAG device and a MPU9250 on the old MPU6000 CS line
-        _fast_sampling_mask.set_default(3);
-        _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_ICM20608_AM_NAME), ROTATION_ROLL_180_YAW_90));
-        _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME), ROTATION_ROLL_180_YAW_90));
-        break;
-        
-    case AP_BoardConfig::PX4_BOARD_PH2SLIM:
-        _fast_sampling_mask.set_default(1);
-        _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME), ROTATION_YAW_270));
-        break;
-
-    case AP_BoardConfig::PX4_BOARD_AEROFC:
-        _fast_sampling_mask.set_default(1);
-        _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU6500_NAME), ROTATION_YAW_270));
-        break;
 	case AP_BoardConfig::PX4_BOARD_UAVRS:
 		_fast_sampling_mask.set_default(1);
-		_add_backend(AP_InertialSensor_ADIS16XXX::probe(*this, hal.spi->get_device(HAL_INS_ADIS16XXX_NAME), (enum Rotation)_imu_adis.get()));
+		//_add_backend(AP_InertialSensor_ADIS16XXX::probe(*this, hal.spi->get_device(HAL_INS_ADIS16XXX_NAME), (enum Rotation)_imu_adis.get()));
         _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME), (enum Rotation)_imu_low.get()));
 		break;
 
     default:
         break;
-    }
-    // also add any PX4 backends (eg. canbus sensors)
-    _add_backend(AP_InertialSensor_PX4::detect(*this));
-#elif HAL_INS_DEFAULT == HAL_INS_MPU9250_SPI && defined(HAL_INS_DEFAULT_ROTATION)
-    _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME), HAL_INS_DEFAULT_ROTATION));
-#elif HAL_INS_DEFAULT == HAL_INS_MPU9250_SPI
-    _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME)));
-#elif HAL_INS_DEFAULT == HAL_INS_LSM9DS0
-    _add_backend(AP_InertialSensor_LSM9DS0::probe(*this,
-                 hal.spi->get_device(HAL_INS_LSM9DS0_G_NAME),
-                 hal.spi->get_device(HAL_INS_LSM9DS0_A_NAME)));
-#elif HAL_INS_DEFAULT == HAL_INS_L3G4200D
-    _add_backend(AP_InertialSensor_L3G4200D::probe(*this, hal.i2c_mgr->get_device(HAL_INS_L3G4200D_I2C_BUS, HAL_INS_L3G4200D_I2C_ADDR)));
-#elif HAL_INS_DEFAULT == HAL_INS_RASPILOT
-    _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_NAME)));
-    _add_backend(AP_InertialSensor_LSM9DS0::probe(*this,
-                                                  hal.spi->get_device(HAL_INS_LSM9DS0_G_NAME),
-                                                  hal.spi->get_device(HAL_INS_LSM9DS0_A_NAME),
-                                                  ROTATION_NONE, ROTATION_YAW_90));
-#elif HAL_INS_DEFAULT == HAL_INS_MPU9250_I2C
-    _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.i2c_mgr->get_device(HAL_INS_MPU9250_I2C_BUS, HAL_INS_MPU9250_I2C_ADDR)));
-#elif HAL_INS_DEFAULT == HAL_INS_QFLIGHT
-    _add_backend(AP_InertialSensor_QFLIGHT::detect(*this));
-#elif HAL_INS_DEFAULT == HAL_INS_QURT
-    _add_backend(AP_InertialSensor_QURT::detect(*this));
-#elif HAL_INS_DEFAULT == HAL_INS_BBBMINI
-    AP_InertialSensor_Backend *backend = AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME));
-    if (backend) {
-        _add_backend(backend);
-        hal.console->printf("MPU9250: Onboard IMU detected\n");
-    } else {
-        hal.console->printf("MPU9250: Onboard IMU not detected\n");
-    }
-
-    backend = AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME_EXT));
-    if (backend) {
-        _add_backend(backend);
-        hal.console->printf("MPU9250: External IMU detected\n");
-    } else {
-        hal.console->printf("MPU9250: External IMU not detected\n");
-    }
-#elif HAL_INS_DEFAULT == HAL_INS_AERO
-    auto *backend = AP_InertialSensor_BMI160::probe(*this,
-                                                    hal.spi->get_device("bmi160"));
-    if (backend) {
-        _add_backend(backend);
-    } else {
-        hal.console->printf("aero: onboard IMU not detected\n");
     }
 #else
     #error Unrecognised HAL_INS_TYPE setting

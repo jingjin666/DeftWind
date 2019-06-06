@@ -178,7 +178,7 @@ static int
 ramtron_attach(void)
 {
 	/* initialize the right spi */
-	struct spi_dev_s *spi = dp_spibus_initialize(DP_SPI_BUS_RAMTRON);
+	struct spi_dev_s *spi = dp_spibus_initialize(UAVRS_SPI_BUS_RAMTRON);
 
 	if (spi == NULL) {
 		DP_ERR("failed to locate spi bus");

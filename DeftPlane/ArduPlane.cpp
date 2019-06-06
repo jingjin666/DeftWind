@@ -31,9 +31,9 @@
   they are expected to take (in microseconds)
  */
 const AP_Scheduler::Task Plane::scheduler_tasks[] = {
-                           // Units:   Hz      us
-#if 0                           
+                           // Units:   Hz      us                           
     SCHED_TASK(ahrs_update,           400,    400),
+#if 0    
     SCHED_TASK(read_radio,             50,    100),
     SCHED_TASK(check_short_failsafe,   50,    100),
     SCHED_TASK(update_speed_height,    50,    200),
@@ -410,7 +410,7 @@ void Plane::setup()
 void Plane::loop()
 {
     uint32_t loop_us = 1000000UL / scheduler.get_loop_rate_hz();
-#if 0
+
     // wait for an INS sample
     ins.wait_for_sample();
 
@@ -433,9 +433,7 @@ void Plane::loop()
     perf.fast_loopTimer_us = timer;
 
     perf.mainLoop_count++;
-#else
-    hal.scheduler->delay_microseconds(loop_us);
-#endif
+
     // tell the scheduler one tick has passed
     scheduler.tick();
 

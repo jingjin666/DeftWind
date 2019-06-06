@@ -172,8 +172,8 @@ __BEGIN_DECLS
 
 int test_spi(int argc, char *argv[])
 {
-	uint8_t send[5] = {1, 2, 3, 4, 5};
-	uint8_t recv[5] = {0};
+	uint8_t send[2] = {0xf5, 0x00};
+	uint8_t recv[2] = {0};
 	bool ret;
 	uint8_t bus = 0;
 	
@@ -203,9 +203,10 @@ int test_spi(int argc, char *argv[])
 
 	for(uint8_t i=0; i < 5; i++) {
 		ret = spi_dev->transfer_fullduplex(send, recv, sizeof(send));
+        //ret = spi_dev->transfer_singleduplex(send, 1, recv, 1);
 		if(ret) {
 			printf("Spi transfer [%d] complete.\n", i);
-			printf("%d, %d\n", recv[0], recv[1]);
+			printf("0x%02x, 0x%02x\n", recv[0], recv[1]);
 		} else {
 			printf("Spi transfer [%d] error.\n", i);
 		}

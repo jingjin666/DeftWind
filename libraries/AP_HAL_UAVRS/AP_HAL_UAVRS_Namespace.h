@@ -18,5 +18,5 @@ namespace UAVRS {
     class SPIDeviceManager;
     class Storage;
     class UARTDriver;
-    class Util;
+    class UAVRSUtil;
 }
