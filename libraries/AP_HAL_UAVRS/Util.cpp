@@ -83,7 +83,9 @@ bool UAVRSUtil::get_system_id(char buf[40])
     uint8_t serialid[12];
     memset(serialid, 0, sizeof(serialid));
     get_board_serial(serialid);
-#if defined(CONFIG_ARCH_BOARD_UAVRS_V2)
+#ifdef CONFIG_ARCH_BOARD_UAVRS_V1
+    const char *board_type = "UAVRSv1";
+#elif defined(CONFIG_ARCH_BOARD_UAVRS_V2)
     const char *board_type = "UAVRSv2";
 #else
     const char *board_type = "UAVRSv?";

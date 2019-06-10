@@ -21,7 +21,7 @@ SPIDesc SPIDeviceManager::device_table[] = {
         SPIDesc("adis16375",    UAVRS_SPI_BUS_ADIS, (spi_devtype_e)UAVRS_SPIDEV_ADIS, SPIDEV_MODE3, 500*KHZ, 20*MHZ),
 #endif
 #if defined(UAVRS_SPIDEV_MPU_9250)
-        SPIDesc("mpu9250",      UAVRS_SPI_BUS_MPU_9250, (spi_devtype_e)UAVRS_SPIDEV_MPU_9250, SPIDEV_MODE3, 500*KHZ, 1*MHZ),
+        SPIDesc("mpu9250",      UAVRS_SPI_BUS_MPU_9250, (spi_devtype_e)UAVRS_SPIDEV_MPU_9250, SPIDEV_MODE3, 1*MHZ, 8*MHZ),
 #endif
 #if defined(UAVRS_SPIDEV_BARO_MS5611)
         SPIDesc("ms5611",       UAVRS_SPI_BUS_BARO_MS5611, (spi_devtype_e)UAVRS_SPIDEV_BARO_MS5611, SPIDEV_MODE3, 20*MHZ, 20*MHZ),
