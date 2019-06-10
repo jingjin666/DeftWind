@@ -115,43 +115,15 @@
 #define GPIO_LED        (GPIO_OUTPUT | GPIO_OUTPUT_ZERO | GPIO_PORT3 | \
                          GPIO_PIN0 | IOMUX_LED)
 
-/* Buttons
- *
- * The IMXRT board has one external user button
- *
- * 1. SW8 (IRQ88)   GPIO5-00
- *
- */
-#define IOMUX_SW8       (IOMUX_SLEW_FAST | IOMUX_DRIVE_50OHM | \
+#define IOMUX_ADIS_DRDY       (IOMUX_SLEW_FAST | IOMUX_DRIVE_50OHM | \
                          IOMUX_SPEED_MEDIUM | IOMUX_PULL_UP_100K | \
                          _IOMUX_PULL_ENABLE)
-#define GPIO_SW8        (GPIO_INTERRUPT | GPIO_INT_FALLINGEDGE | \
-                         GPIO_PORT5 | GPIO_PIN0 | IOMUX_SW8)
+#define GPIO_ADIS_DRDY      (GPIO_PORT4 | GPIO_PIN13  | GPIO_INPUT | IOMUX_ADIS_DRDY)
 
-/* Ethernet Interrupt: GPIOAD_B0_10
- *
- * This pin has a week pull-up within the PHY, is open-drain, and requires
- * an external 1k ohm pull-up resistor (present on the EVK).  A falling
- * edge then indicates a change in state of the PHY.
- */
-
-#define IOMUX_ENET_INT  (IOMUX_SLEW_FAST | IOMUX_DRIVE_50OHM | \
-                         IOMUX_SPEED_MEDIUM | IOMUX_PULL_UP_100K)
-#define GPIO_ENET_INT   (GPIO_INTERRUPT | GPIO_INT_FALLINGEDGE | \
-                         GPIO_PORT1 | GPIO_PIN10 | IOMUX_ENET_INT)
-#define GPIO_ENET_IRQ   IMXRT_IRQ_GPIO1_10
-
-/* Ethernet Reset:  GPIOAD_B0_09
- *
- * The #RST uses inverted logic.  The initial value of zero will put the
- * PHY into the reset state.
- */
-
-#define IOMUX_ENET_RST  (IOMUX_SLEW_FAST | IOMUX_DRIVE_50OHM | \
-                         IOMUX_SPEED_MEDIUM | IOMUX_PULL_UP_100K | \
-                         _IOMUX_PULL_ENABLE)
-#define GPIO_ENET_RST   (GPIO_OUTPUT | GPIO_OUTPUT_ZERO | \
-                          GPIO_PORT1 | GPIO_PIN9 | IOMUX_ENET_RST)
+#define IOMUX_ADIS_RESET       (IOMUX_PULL_NONE | IOMUX_CMOS_OUTPUT | \
+                         IOMUX_DRIVE_40OHM | IOMUX_SPEED_MEDIUM | \
+                         IOMUX_SLEW_SLOW)
+#define GPIO_ADIS_RESET     (GPIO_PORT2 | GPIO_PIN3  | GPIO_OUTPUT | IOMUX_ADIS_RESET)
 
 /* LPSPI1 CS:  MPU9250--GPIO_EMC_30  BARO--GPIO_EMC_14 */
 #define IOMUX_LPSPI1_CS             (IOMUX_SLEW_FAST | IOMUX_DRIVE_50OHM | IOMUX_SPEED_MEDIUM | IOMUX_PULL_UP_100K | _IOMUX_PULL_ENABLE)

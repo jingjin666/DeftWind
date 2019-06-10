@@ -7,3 +7,4 @@ LIBRARIES += AP_Scheduler
 LIBRARIES += GCS
 LIBRARIES += GCS_MAVLink
 LIBRARIES += AP_SerialManager
+LIBRARIES += AP_Math

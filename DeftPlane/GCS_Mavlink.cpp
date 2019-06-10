@@ -127,7 +127,7 @@ void Plane::send_indicator(mavlink_channel_t chan)
     indicator.compass_status = arming.compass_checks(false);
     indicator.gps_status = arming.gps_checks(false);
     indicator.plane_battery_status = arming.battery_checks(false);
-    indicator.sdcard_status = arming.logging_checks(true);
+    indicator.sdcard_status = arming.logging_checks(false);
     indicator.radio_status = arming.manual_transmitter_checks(false);
     indicator.board_voltage_status = true;//arming.board_voltage_checks(false);
     indicator.hardware_safety_status = true;//arming.hardware_safety_check(false);

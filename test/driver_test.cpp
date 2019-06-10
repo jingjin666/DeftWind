@@ -57,6 +57,7 @@ static const AP_Scheduler::Task scheduler_test_tasks[]= {
 };
 
 void Plane_test::one_second_loop() {
+#ifdef UART_TEST    
     int rx = 0;
     const char *send = "123456789";
     char recv[128] = {0};
@@ -75,6 +76,14 @@ void Plane_test::one_second_loop() {
             printf("rx is %d\n", rx);
         }
     }
+#endif
+
+#ifdef GPIO_TEST
+    int value = hal.gpio->imu_data_ready();
+    if(value == 0)
+        printf("value is %d\n", value);
+#endif
+
     //printf("loop---------------\n");
 }
 
@@ -84,7 +93,7 @@ void Plane_test::setup()
     hal.storage->init();
     
     // initialise the main loop scheduler
-    //ap_scheduler.init(&scheduler_test_tasks[0], ARRAY_SIZE(scheduler_test_tasks));
+    ap_scheduler.init(&scheduler_test_tasks[0], ARRAY_SIZE(scheduler_test_tasks));
 }
 
 void Plane_test::loop()

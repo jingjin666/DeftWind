@@ -1,4 +1,5 @@
-
+#include <board_config.h>
+#include <platforms/dp_micro_hal.h>
 #include "GPIO.h"
 
 using namespace UAVRS;
@@ -28,10 +29,13 @@ void GPIO::write(uint8_t pin, uint8_t value)
 void GPIO::toggle(uint8_t pin)
 {}
 
-
 bool GPIO::imu_data_ready(void)
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
+    return dp_arch_gpioread(GPIO_ADIS_DRDY);
+#else
     return false;
+#endif
 }
 
 void GPIO::imu_reset(bool)

@@ -119,7 +119,11 @@ static struct spi_dev_s *spi1;
 static int nsh_archinitialize(void)
 {
 	int ret;
-	
+
+	dp_arch_configgpio(GPIO_ADIS_DRDY);
+	dp_arch_configgpio(GPIO_ADIS_RESET);
+	dp_arch_gpiowrite(GPIO_ADIS_RESET, 1);
+    
 	hrt_init();
 
 	/* configure the DMA allocator */
