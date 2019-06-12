@@ -76,7 +76,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(rpm_update,             10,    100),
     SCHED_TASK(airspeed_ratio_update,   1,    100),
     SCHED_TASK(update_mount,           50,    100),
+#endif 
     SCHED_TASK(update_trigger,         50,    100),
+#if 0
     SCHED_TASK(log_perf_info,         0.2,    100),
     SCHED_TASK(compass_save,          0.1,    200),
 	SCHED_TASK(raw_data_update,		    20,	  200),

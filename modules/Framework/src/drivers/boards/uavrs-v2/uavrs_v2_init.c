@@ -123,6 +123,9 @@ static int nsh_archinitialize(void)
 	dp_arch_configgpio(GPIO_ADIS_DRDY);
 	dp_arch_configgpio(GPIO_ADIS_RESET);
 	dp_arch_gpiowrite(GPIO_ADIS_RESET, 1);
+    dp_arch_configgpio(GPIO_CAMERA_TRIGGER_OUTPUT);
+	dp_arch_gpiowrite(GPIO_CAMERA_TRIGGER_OUTPUT, 1);
+    dp_arch_configgpio(GPIO_CAMERA_FEEDBACK_INPUT);
     
 	hrt_init();
 

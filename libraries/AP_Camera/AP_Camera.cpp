@@ -3,7 +3,7 @@
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
 #include <drivers/drv_input_capture.h>
 #include <drivers/drv_pwm_output.h>
 #include <sys/types.h>
@@ -214,6 +214,7 @@ void AP_Camera::configure(float shooting_mode, float shutter_speed, float apertu
     GCS_MAVLINK::send_to_components(&msg);
 }
 
+#include <stdio.h>
 void AP_Camera::control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id)
 {
     // take picture
@@ -340,7 +341,7 @@ bool AP_Camera::check_trigger_pin(void)
     return false;
 }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
 /*
   callback for timer capture on PX4
  */
@@ -362,30 +363,6 @@ void AP_Camera::setup_feedback_callback(void)
         return;
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    /*
-      special case for pin 53 on PX4. We can use the fast timer support
-     */
-    if (_feedback_pin == 53) {
-        int fd = open("/dev/px4fmu", 0);
-        if (fd != -1) {
-            if (ioctl(fd, PWM_SERVO_SET_MODE, PWM_SERVO_MODE_3PWM1CAP) != 0) {
-                gcs().send_text(MAV_SEVERITY_WARNING, "Camera: unable to setup 3PWM1CAP\n");
-                close(fd);
-                goto failed;
-            }   
-            if (up_input_capture_set(3, _feedback_polarity==1?Rising:Falling, 0, capture_callback, this) != 0) {
-                gcs().send_text(MAV_SEVERITY_WARNING, "Camera: unable to setup timer capture\n");
-                close(fd);
-                goto failed;
-            }
-            close(fd);
-            _timer_installed = true;
-            gcs().send_text(MAV_SEVERITY_WARNING, "Camera: setup fast trigger capture\n");
-        }
-    }
-failed:
-#endif // CONFIG_HAL_BOARD
 
     if (!_timer_installed) {
         // install a 1kHz timer to check feedback pin

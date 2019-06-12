@@ -1,33 +1,141 @@
 #include <board_config.h>
 #include <platforms/dp_micro_hal.h>
 #include "GPIO.h"
+#include <stdio.h>
+#include <drivers/drv_gpio.h>
+
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
 
 using namespace UAVRS;
+
+#define LOW     0
+#define HIGH    1
+
+extern const AP_HAL::HAL& hal;
+
 
 GPIO::GPIO()
 {}
 
 void GPIO::init()
-{}
+{
+	_gpio_fmu_fd = open(FMU_DEVICE_PATH, 0);
+    if (_gpio_fmu_fd == -1) {
+        AP_HAL::panic("Unable to open GPIO");
+    }
+}
 
 void GPIO::pinMode(uint8_t pin, uint8_t output)
-{}
+{
+    uint32_t pinmask;
+	uint8_t old_value;
+
+    switch (pin) {
+    case UAVRS_GPIO_FMU_SERVO_PIN(0) ... UAVRS_GPIO_FMU_SERVO_PIN(5):
+        pinmask = 1U<<(pin-UAVRS_GPIO_FMU_SERVO_PIN(0));
+        if (output) {
+            old_value = read(pin);
+            if (old_value) {
+                ioctl(_gpio_fmu_fd, GPIO_SET_OUTPUT_HIGH, pinmask);
+            } else {
+                ioctl(_gpio_fmu_fd, GPIO_SET_OUTPUT_LOW, pinmask);
+            }
+        } else {
+            ioctl(_gpio_fmu_fd, GPIO_SET_INPUT, pinmask);
+        }
+        break;
+	
+#ifdef GPIO_CAMERA_TRIGGER
+	case UAVRS_GPIO_CAMER_TRRIGER_RELAY_PIN:
+        pinmask = GPIO_CAMERA_TRIGGER;
+        if (output) {
+            old_value = read(pin);
+            if (old_value) {
+                ioctl(_gpio_fmu_fd, GPIO_SET_OUTPUT_HIGH, pinmask);
+            } else {
+                ioctl(_gpio_fmu_fd, GPIO_SET_OUTPUT_LOW, pinmask);
+            }
+        } else {
+            ioctl(_gpio_fmu_fd, GPIO_SET_INPUT, pinmask);
+        }
+        break;
+#endif
+        }
+}
 
 int8_t GPIO::analogPinToDigitalPin(uint8_t pin)
 {
-	return -1;
+	switch (pin) {
+	    case UAVRS_GPIO_FMU_SERVO_PIN(0) ... UAVRS_GPIO_FMU_SERVO_PIN(5):
+	        // the only pins that can be mapped are the FMU servo rail pins */
+	        return pin;
+#ifdef GPIO_CAMERA_FEEDBACK
+		case UAVRS_GPIO_CAMER_FEEDBACK_INPUT_PIN:
+			return pin;
+#endif
+    }
+
+    return -1;
 }
 
 
 uint8_t GPIO::read(uint8_t pin) {
-    return 0;
+    switch (pin) {
+    case UAVRS_GPIO_FMU_SERVO_PIN(0) ... UAVRS_GPIO_FMU_SERVO_PIN(5): {
+            uint32_t relays = 0;
+            ioctl(_gpio_fmu_fd, GPIO_GET, (unsigned long)&relays);
+            return (relays & (1U<<(pin-UAVRS_GPIO_FMU_SERVO_PIN(0))))?HIGH:LOW;
+        }
+	
+#ifdef GPIO_CAMERA_TRIGGER
+	case UAVRS_GPIO_CAMER_TRRIGER_RELAY_PIN: {
+			uint32_t relays = 0;
+			ioctl(_gpio_fmu_fd, GPIO_GET, (unsigned long)&relays);
+			return (relays & GPIO_CAMERA_TRIGGER)?HIGH:LOW;
+		}
+#endif
+
+#ifdef GPIO_CAMERA_FEEDBACK
+	case UAVRS_GPIO_CAMER_FEEDBACK_INPUT_PIN: {
+			uint32_t relays = 0;
+			ioctl(_gpio_fmu_fd, GPIO_GET, (unsigned long)&relays);
+			return (relays & GPIO_CAMERA_FEEDBACK)?HIGH:LOW;
+		}
+#endif
+    }
+    return LOW;
 }
 
 void GPIO::write(uint8_t pin, uint8_t value)
-{}
+{
+    switch (pin) {
+	    case UAVRS_GPIO_FMU_SERVO_PIN(0) ... UAVRS_GPIO_FMU_SERVO_PIN(5):
+	        ioctl(_gpio_fmu_fd, value==LOW?GPIO_CLEAR:GPIO_SET, 1U<<(pin-UAVRS_GPIO_FMU_SERVO_PIN(0)));
+	        break;
+
+#ifdef GPIO_CAMERA_TRIGGER
+		case UAVRS_GPIO_CAMER_TRRIGER_RELAY_PIN:
+	        ioctl(_gpio_fmu_fd, value==LOW?GPIO_CLEAR:GPIO_SET, GPIO_CAMERA_TRIGGER);
+			break;
+#endif
+
+#ifdef GPIO_CAMERA_FEEDBACK
+		case UAVRS_GPIO_CAMER_FEEDBACK_INPUT_PIN:
+			ioctl(_gpio_fmu_fd, value==LOW?GPIO_CLEAR:GPIO_SET, GPIO_CAMERA_FEEDBACK);
+			break;
+#endif
+    }
+}
 
 void GPIO::toggle(uint8_t pin)
-{}
+{
+    write(pin, !read(pin));
+}
 
 bool GPIO::imu_data_ready(void)
 {

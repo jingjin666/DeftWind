@@ -30,8 +30,8 @@
 # define GPIO_SERVO_7			(1<<6)		/**< servo 7 output */
 # define GPIO_SERVO_8			(1<<7)		/**< servo 8 output */
 
-# define GPIO_CAMERA_TRIGGER	(1<<10)		/**< relay CAMERA TRIGGER */
-# define GPIO_CAMERA_FEEDBACK	(1<<11)		/**< input CAMERA FEEDBACK */
+# define GPIO_CAMERA_TRIGGER	(1<<8)		/**< relay CAMERA TRIGGER */
+# define GPIO_CAMERA_FEEDBACK	(1<<9)		/**< input CAMERA FEEDBACK */
 
 
 /**
@@ -56,8 +56,8 @@
 # define GPIO_SERVO_7			(1<<6)		/**< servo 7 output */
 # define GPIO_SERVO_8			(1<<7)		/**< servo 8 output */
 
-# define GPIO_CAMERA_TRIGGER	(1<<10)		/**< relay CAMERA TRIGGER */
-# define GPIO_CAMERA_FEEDBACK	(1<<11)		/**< input CAMERA FEEDBACK */
+# define GPIO_CAMERA_TRIGGER	(1<<8)		/**< relay CAMERA TRIGGER */
+# define GPIO_CAMERA_FEEDBACK	(1<<9)		/**< input CAMERA FEEDBACK */
 
 
 /**

@@ -335,19 +335,8 @@ void AP_BoardConfig::px4_setup_peripherals(void)
         sensor_config_error("no ADC found");
     }
 
-#if HAL_PX4_HAVE_PX4IO
-    if (px4.io_enable.get() != 0) {
-        px4_setup_px4io();
-    }
-#endif
-
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
-    const char *fmu_mode = "mode_serial";
-#elif defined(CONFIG_ARCH_BOARD_AEROFC_V1)
-    const char *fmu_mode = "mode_rcin";
-#else
     const char *fmu_mode = "mode_pwm4";
-#endif
+
     if (px4_start_driver(fmu_main, "fmu", fmu_mode)) {
         printf("fmu %s started OK\n", fmu_mode);
     } else {
@@ -355,8 +344,8 @@ void AP_BoardConfig::px4_setup_peripherals(void)
     }
 
     hal.gpio->init();
-    hal.rcin->init();
-    hal.rcout->init();
+    //hal.rcin->init();
+    //hal.rcout->init();
 }
 
 /*
@@ -424,7 +413,7 @@ void AP_BoardConfig::px4_autodetect(void)
  */
 void AP_BoardConfig::px4_setup()
 {
-    //px4_setup_peripherals();
+    px4_setup_peripherals();
     //px4_setup_pwm();
     //px4_setup_safety_mask();
     //px4_setup_uart();

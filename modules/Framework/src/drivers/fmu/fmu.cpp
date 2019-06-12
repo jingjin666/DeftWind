@@ -261,7 +261,6 @@ private:
 };
 
 const FMU::GPIOConfig FMU::_gpio_tab[] = {
-#if defined(CONFIG_ARCH_BOARD_UAVRS_V1)
 	{GPIO_GPIO0_INPUT,       GPIO_GPIO0_OUTPUT,       0},
 	{GPIO_GPIO1_INPUT,       GPIO_GPIO1_OUTPUT,       0},
 	{GPIO_GPIO2_INPUT,       GPIO_GPIO2_OUTPUT,       0},
@@ -270,11 +269,8 @@ const FMU::GPIOConfig FMU::_gpio_tab[] = {
 	{GPIO_GPIO5_INPUT,       GPIO_GPIO5_OUTPUT,       0},
 	{GPIO_GPIO6_INPUT,       GPIO_GPIO6_OUTPUT,       0},
 	{GPIO_GPIO7_INPUT,       GPIO_GPIO7_OUTPUT,       0},
-	{GPIO_GPIO8_INPUT,       GPIO_GPIO8_OUTPUT,       0},
-	{GPIO_GPIO9_INPUT,       GPIO_GPIO9_OUTPUT,       0},
 	{GPIO_CAMERA_TRIGGER_INPUT,     GPIO_CAMERA_TRIGGER_OUTPUT,     0},
 	{GPIO_CAMERA_FEEDBACK_INPUT,    GPIO_CAMERA_FEEDBACK_OUTPUT,    0},
-#endif
 };
 
 const unsigned		FMU::_ngpio = sizeof(FMU::_gpio_tab) / sizeof(FMU::_gpio_tab[0]);
@@ -396,7 +392,7 @@ FMU::init()
 	if (ret != OK) {
 		return ret;
 	}
-
+#if 0
     /* try to claim the generic PWM output device node as well - it's OK if we fail at this */
     _class_instance = register_class_devname(PWM_OUTPUT_BASE_DEVICE_PATH);
 
@@ -410,7 +406,7 @@ FMU::init()
 	_safety_disabled = 0;
 
 	work_start();
-
+#endif
 	return OK;
 }
 
@@ -2258,34 +2254,84 @@ FMU::sensor_reset(int ms)
 void
 FMU::peripheral_reset(int ms)
 {
-#if defined(CONFIG_ARCH_BOARD_UAVRS_V1)
-
 	if (ms < 1) {
 		ms = 10;
 	}
-
-#endif
 }
 
 void
 FMU::gpio_reset(void)
 {
+    /*
+	 * Setup default GPIO config - all pins as GPIOs, input if
+	 * possible otherwise output if possible.
+	 */
+	for (unsigned i = 0; i < _ngpio; i++) {
+		if (_gpio_tab[i].input != 0) {
+			dp_arch_configgpio(_gpio_tab[i].input);
+
+		} else if (_gpio_tab[i].output != 0) {
+			dp_arch_configgpio(_gpio_tab[i].output);
+		}
+	}
 }
 
 void
 FMU::gpio_set_function(uint32_t gpios, int function)
 {
+    /* configure selected GPIOs as required */
+	for (unsigned i = 0; i < _ngpio; i++) {
+		if (gpios & (1 << i)) {
+			switch (function) {
+			case GPIO_SET_INPUT:
+				dp_arch_configgpio(_gpio_tab[i].input);
+				break;
+
+			case GPIO_SET_OUTPUT:
+				dp_arch_configgpio(_gpio_tab[i].output);
+				break;
+
+			case GPIO_SET_OUTPUT_LOW:
+				dp_arch_configgpio((_gpio_tab[i].output & ~(GPIO_OUTPUT_ONE)) | GPIO_OUTPUT_ZERO);
+				break;
+
+			case GPIO_SET_OUTPUT_HIGH:
+				dp_arch_configgpio((_gpio_tab[i].output & ~(GPIO_OUTPUT_ZERO)) | GPIO_OUTPUT_ONE);
+				break;
+
+			case GPIO_SET_ALT_1:
+				if (_gpio_tab[i].alt != 0) {
+					dp_arch_configgpio(_gpio_tab[i].alt);
+				}
+
+				break;
+			}
+		}
+	}
 }
 
 void
 FMU::gpio_write(uint32_t gpios, int function)
 {
+    int value = (function == GPIO_SET) ? 1 : 0;
+
+	for (unsigned i = 0; i < _ngpio; i++)
+		if (gpios & (1 << i)) {
+			dp_arch_gpiowrite(_gpio_tab[i].output, value);
+		}
 }
 
 uint32_t
 FMU::gpio_read(void)
 {
-return 0;
+    uint32_t bits = 0;
+
+	for (unsigned i = 0; i < _ngpio; i++)
+		if (dp_arch_gpioread(_gpio_tab[i].input)) {
+			bits |= (1 << i);
+		}
+
+	return bits;
 }
 
 int
