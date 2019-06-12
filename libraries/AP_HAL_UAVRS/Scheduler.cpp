@@ -42,7 +42,7 @@ void Scheduler::init()
     // setup the timer thread - this will call tasks at 1kHz
     pthread_attr_t thread_attr;
     struct sched_param param;
-#if 0
+
     pthread_attr_init(&thread_attr);
     pthread_attr_setstacksize(&thread_attr, 2048);
 
@@ -51,7 +51,7 @@ void Scheduler::init()
     pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
 
     pthread_create(&_timer_thread_ctx, &thread_attr, &Scheduler::_timer_thread, this);
-#endif
+
     // the UART thread runs at a medium priority
     pthread_attr_init(&thread_attr);
     pthread_attr_setstacksize(&thread_attr, 2048);
@@ -266,13 +266,13 @@ void *Scheduler::_timer_thread(void *arg)
         perf_begin(sched->_perf_timers);
         sched->_run_timers(true);
         perf_end(sched->_perf_timers);
-
+#if 0
         // process any pending RC output requests
         hal.rcout->timer_tick();
 
         // process any pending RC input requests
         ((RCInput *)hal.rcin)->_timer_tick();
-
+#endif
         if (uavrs_ran_overtime && AP_HAL::millis() - last_ran_overtime > 2000) {
             last_ran_overtime = AP_HAL::millis();
 #if 0
