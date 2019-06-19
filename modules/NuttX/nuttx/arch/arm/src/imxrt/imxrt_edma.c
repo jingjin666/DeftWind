@@ -409,6 +409,32 @@ static inline void imxrt_tcd_chanlink(uint8_t flags, struct imxrt_dmach_s *linkc
 }
 #endif
 
+
+/****************************************************************************
+ * Name: imxrt_tcd_reset
+ *
+ * Description:
+ *  Reset all TCD registers to the specified values.  'tcd' is an
+ *  'overlay' that may refer either to either the TCD register set or to an
+ *  in-memory TCD structure.
+ *
+ ****************************************************************************/
+
+static inline void imxrt_tcd_reset(struct imxrt_edmatcd_s *tcd)
+{
+  tcd->saddr    = 0;
+  tcd->soff     = 0;
+  tcd->attr     = 0;
+  tcd->nbytes   = 0;
+  tcd->slast    = 0;
+  tcd->daddr    = 0;
+  tcd->doff     = 0;
+  tcd->citer    = 0;
+  tcd->biter    = 0;
+  tcd->csr      = EDMA_TCD_CSR_DREQ; /* Assume last transfer */
+  tcd->dlastsga = 0;
+}
+
 /****************************************************************************
  * Name: imxrt_tcd_configure
  *
@@ -434,7 +460,17 @@ static inline void imxrt_tcd_configure(struct imxrt_edmatcd_s *tcd,
   tcd->biter    = config->iter & EDMA_TCD_BITER_BITER_MASK;
   tcd->csr      = EDMA_TCD_CSR_DREQ; /* Assume last transfer */
   tcd->dlastsga = 0;
-
+  //dmainfo("tcd->saddr 0x%08x\n", tcd->saddr);
+  //dmainfo("tcd->soff 0x%08x\n", tcd->soff);
+  //dmainfo("tcd->attr 0x%08x\n", tcd->attr);
+  //dmainfo("tcd->nbytes 0x%08x\n", tcd->nbytes);
+  //dmainfo("tcd->slast 0x%08x\n", tcd->slast);
+  //dmainfo("tcd->daddr 0x%08x\n", tcd->daddr);
+  //dmainfo("tcd->doff 0x%08x\n", tcd->doff);
+  //dmainfo("tcd->citer 0x%08x\n", tcd->citer);
+  //dmainfo("tcd->biter 0x%08x\n", tcd->biter);
+  //dmainfo("tcd->csr 0x%08x\n", tcd->csr);
+  //dmainfo("tcd->dlastsga 0x%08x\n", tcd->dlastsga);
   /* And special case flags */
 
 #ifdef CONFIG_IMXRT_EDMA_ELINK
@@ -597,7 +633,7 @@ static void imxrt_dmach_interrupt(struct imxrt_dmach_s *dmach)
       /* Clear the pending eDMA channel interrupt */
 
       regval8 = EDMA_CINT(chan);
-      putreg32(regval8, IMXRT_EDMA_CINT);
+      putreg8(regval8, IMXRT_EDMA_CINT);
 
       /* Get the eDMA TCD Control and Status register value. */
 
@@ -713,7 +749,7 @@ static int imxrt_error_interrupt(int irq, void *context, FAR void *arg)
           /* Clear the pending error interrupt status. */
 
           regval8 = EDMA_CERR(chan);
-          putreg32(regval8, IMXRT_EDMA_CERR);
+          putreg8(regval8, IMXRT_EDMA_CERR);
 
           /* Remove the bit from the sample ERR register so that perhaps we
            * can exit this loop early.
@@ -942,10 +978,10 @@ DMACH_HANDLE imxrt_dmach_alloc(uint32_t dmamux, uint8_t dchpri)
           regval8 = EDMA_CERQ(chndx);
           putreg8(regval8, IMXRT_EDMA_CERQ);
 
-          /* Set the DMAMUX register associated with this channel */
+          /* Set and Enable the DMAMUX register associated with this channel */
 
           regaddr = IMXRT_DMAMUX_CHCFG(chndx);
-          putreg32(dmamux, regaddr);
+          putreg32(dmamux|DMAMUX_CHCFG_ENBL, regaddr);
           break;
         }
     }
@@ -1044,7 +1080,7 @@ int imxrt_dmach_xfrsetup(DMACH_HANDLE *handle,
   uint16_t regval16;
 
   DEBUGASSERT(dmach != NULL);
-  dmainfo("dmach%u: %p config: %p\n", dmach, config);
+  dmainfo("dmach%u: %p config: %p\n", dmach->chan, dmach, config);
 
 #if CONFIG_IMXRT_EDMA_NTCD > 0
   /* Scatter/gather DMA is supported */
@@ -1153,7 +1189,7 @@ int imxrt_dmach_xfrsetup(DMACH_HANDLE *handle,
 
   /* Enable the DONE interrupt when the major iteration count completes. */
 
-  regaddr         = IMXRT_EDMA_TCD_CSR(dmach->chan);
+  regaddr = IMXRT_EDMA_TCD_CSR(dmach->chan);
   modifyreg16(regaddr, 0, EDMA_TCD_CSR_INTMAJOR);
 #endif
 
@@ -1230,7 +1266,7 @@ int imxrt_dmach_start(DMACH_HANDLE handle, edma_callback_t callback, void *arg)
 
   DEBUGASSERT(dmach != NULL && dmach->state == IMXRT_DMA_CONFIGURED);
   chan            = dmach->chan;
-  dmainfo("dmach%u: %p callback: %p arg: %p\n", dmach, chan, callback, arg);
+  dmainfo("dmach%u: %p callback: %p arg: %p\n", chan, dmach, callback, arg);
 
   /* Save the callback info.  This will be invoked when the DMA completes */
 
@@ -1255,7 +1291,7 @@ int imxrt_dmach_start(DMACH_HANDLE handle, edma_callback_t callback, void *arg)
       /* Enable the DMA request for this channel */
 
       regval8         = EDMA_SERQ(chan);
-      putreg8(regval8, IMXRT_EDMA_SERQ_OFFSET);
+      putreg8(regval8, IMXRT_EDMA_SERQ);
     }
 
   spin_unlock_irqrestore(flags);
@@ -1402,7 +1438,7 @@ void imxrt_dmasample(DMACH_HANDLE handle, struct imxrt_dmaregs_s *regs)
 
   /* eDMA TCD */
 
-  base           = IMXRT_EDMA_TCD_BASE(chan);
+  uint32_t base           = IMXRT_EDMA_TCD_BASE(chan);
   regs->saddr    = getreg32(base + IMXRT_EDMA_TCD_SADDR_OFFSET);
   regs->soff     = getreg16(base + IMXRT_EDMA_TCD_SOFF_OFFSET);
   regs->attr     = getreg16(base + IMXRT_EDMA_TCD_ATTR_OFFSET);

@@ -135,6 +135,7 @@ void Plane::init_ardupilot()
 
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
+    // 注册延时回调函数，当用户<调用hal.scheduler->delay && 你有超过5ms的空闲时间>，将执行此函数
     hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
 
     // setup any board specific drivers

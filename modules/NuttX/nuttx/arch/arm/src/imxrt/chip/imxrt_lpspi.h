@@ -189,6 +189,8 @@
                                                  /* Bits 14-23:  Reserved */
 #define LPSPI_SR_MBF                   (1 << 24) /* Bit 24: Module Busy Flag */
                                                  /* Bits 25-31:  Reserved */
+#define LPSPI_SR_ALL                   (LPSPI_SR_TDF|LPSPI_SR_RDF|LPSPI_SR_WCF|LPSPI_SR_FCF|LPSPI_SR_TEF|LPSPI_SR_REF|LPSPI_SR_DMF|LPSPI_SR_MBF) /* All Flags */
+
 
 /* Interrupt Enable Register */
 
@@ -202,6 +204,7 @@
 #define LPSPI_IER_REIE                 (1 << 12) /* Bit 12: Receive Error Interrupt Enable */
 #define LPSPI_IER_DMIE                 (1 << 13) /* Bit 13: Data Match Interrupt Enable */
                                                  /* Bits 14-31:  Reserved */
+#define LPSPI_IER_ALL                  (LPSPI_IER_TDIE|LPSPI_IER_RDIE|LPSPI_IER_WCIE|LPSPI_IER_FCIE|LPSPI_IER_TEIE|LPSPI_IER_REIE|LPSPI_IER_DMIE) /* All interrupts Enable */
 
 /* DMA Enable Register */
 

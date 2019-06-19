@@ -86,10 +86,13 @@
 
 #include "imxrt_lpspi.h"
 #include "imxrt_gpio.h"
+#include "imxrt_edma.h"
 #include "chip/imxrt_pinmux.h"
 #include "chip/imxrt_lpspi.h"
 #include "chip/imxrt_ccm.h"
 #include "chip/imxrt_periphclks.h"
+#include "chip/imxrt_edma.h"
+#include "chip/imxrt_dmamux.h"
 
 #if defined(CONFIG_IMXRT_LPSPI1) || defined(CONFIG_IMXRT_LPSPI2) || \
     defined(CONFIG_IMXRT_LPSPI3) || defined(CONFIG_IMXRT_LPSPI4)
@@ -106,10 +109,13 @@
 #  error "Interrupt driven SPI not yet supported"
 #endif
 
+#if 1
 #if defined(CONFIG_IMXRT_LPSPI_DMA)
 #  error "DMA mode is not yet supported"
 #endif
-
+#else
+#define CONFIG_IMXRT_LPSPI_DMA 1
+#endif
 /* Can't have both interrupt driven SPI and SPI DMA */
 
 #if defined(CONFIG_IMXRT_LPSPI_INTERRUPTS) && defined(CONFIG_IMXRT_LPSPI_DMA)
@@ -126,6 +132,16 @@ struct imxrt_lpspidev_s
   uint32_t spibase;           /* SPIn base address */
 #ifdef CONFIG_IMXRT_LPSPI_INTERRUPTS
   uint8_t spiirq;             /* SPI IRQ number */
+#endif
+#ifdef CONFIG_IMXRT_LPSPI_DMA
+  volatile uint8_t rxresult;   /* Result of the RX DMA */
+  volatile uint8_t txresult;   /* Result of the RX DMA */
+  uint8_t          rxch;       /* The RX DMA channel number */
+  uint8_t          txch;       /* The TX DMA channel number */
+  DMACH_HANDLE     rxdma;      /* DMA channel handle for RX transfers */
+  DMACH_HANDLE     txdma;      /* DMA channel handle for TX transfers */
+  sem_t            rxsem;      /* Wait for RX DMA to complete */
+  sem_t            txsem;      /* Wait for TX DMA to complete */
 #endif
   sem_t exclsem;              /* Held while chip is selected for mutual exclusion */
   uint32_t frequency;         /* Requested clock frequency */
@@ -162,6 +178,26 @@ static inline void imxrt_lpspi_master_set_delay_scaler(FAR struct
                                                        imxrt_lpspidev_s *priv,
                                                        uint32_t scaler,
                                                        enum imxrt_delay_e type);
+
+/* DMA support */
+
+#ifdef CONFIG_IMXRT_LPSPI_DMA
+static void        lpspi_dmarxwait(FAR struct imxrt_lpspidev_s *dev);
+static void        lpspi_dmatxwait(FAR struct imxrt_lpspidev_s *dev);
+static inline void spi_dmarxwakeup(FAR struct imxrt_lpspidev_s *dev);
+static inline void spi_dmatxwakeup(FAR struct imxrt_lpspidev_s *dev);
+static void        lpspi_dmarxcallback(DMACH_HANDLE handle, void *arg, bool done, int result);
+static void        lpspi_dmatxcallback(DMACH_HANDLE handle, void *arg, bool done, int result);
+
+static void        lpspi_dmarxsetup(FAR struct imxrt_lpspidev_s *dev,
+                                  FAR void *rxbuffer, FAR void *rxdummy, size_t nwords);
+
+static void        lpspi_dmatxsetup(FAR struct imxrt_lpspidev_s *dev,
+                                  FAR const void *txbuffer, FAR const void *txdummy, size_t nwords);
+
+static inline void lpspi_dmarxstart(FAR struct imxrt_lpspidev_s *dev);
+static inline void lpspi_dmatxstart(FAR struct imxrt_lpspidev_s *dev);
+#endif
 
 /* SPI methods */
 
@@ -234,8 +270,8 @@ static struct imxrt_lpspidev_s g_lpspi1dev =
   .spiirq       = IMXRT_IRQ_LPSPI1,
 #endif
 #ifdef CONFIG_IMXRT_LPSPI_DMA
-  .rxch         = DMAMAP_LPSPI1_RX,
-  .txch         = DMAMAP_LPSPI1_TX,
+  .rxch         = IMXRT_DMACHAN_LPSPI1_RX,
+  .txch         = IMXRT_DMACHAN_LPSPI1_TX,
 #endif
 };
 #endif
@@ -280,8 +316,8 @@ static struct imxrt_lpspidev_s g_lpspi2dev =
   .spiirq       = IMXRT_IRQ_LPSPI2,
 #endif
 #ifdef CONFIG_IMXRT_LPSPI_DMA
-  .rxch         = DMAMAP_LPSPI2_RX,
-  .txch         = DMAMAP_LPSPI2_TX,
+  .rxch         = IMXRT_DMACHAN_LPSPI2_RX,
+  .txch         = IMXRT_DMACHAN_LPSPI2_TX,
 #endif
 };
 #endif
@@ -325,6 +361,11 @@ static struct imxrt_lpspidev_s g_lpspi3dev =
 #ifdef CONFIG_IMXRT_LPSPI_INTERRUPTS
   .spiirq       = IMXRT_IRQ_LPSPI3,
 #endif
+#ifdef CONFIG_IMXRT_LPSPI_DMA
+  .rxch         = IMXRT_DMACHAN_LPSPI3_RX,
+  .txch         = IMXRT_DMACHAN_LPSPI3_TX,
+#endif
+
 };
 #endif
 
@@ -368,8 +409,8 @@ static struct imxrt_lpspidev_s g_lpspi4dev =
   .spiirq       = IMXRT_IRQ_LPSPI4,
 #endif
 #ifdef CONFIG_IMXRT_LPSPI_DMA
-  .rxch         = DMAMAP_LPSPI1_RX,
-  .txch         = DMAMAP_LPSPI1_TX,
+  .rxch         = IMXRT_DMACHAN_LPSPI4_RX,
+  .txch         = IMXRT_DMACHAN_LPSPI4_TX,
 #endif
 };
 #endif
@@ -824,6 +865,257 @@ static inline void imxrt_lpspi_master_set_delays(FAR struct imxrt_lpspidev_s *pr
       imxrt_lpspi_master_set_delay_scaler(priv, best_scaler, type);
     }
 }
+
+#ifdef CONFIG_IMXRT_LPSPI_DMA
+
+/************************************************************************************
+* Name: lpspi_dmarxwait
+*
+* Description:
+*   Wait for DMA to complete.
+*
+************************************************************************************/
+
+static void lpspi_dmarxwait(FAR struct imxrt_lpspidev_s *dev)
+{
+    struct imxrt_lpspidev_s *priv = (struct imxrt_lpspidev_s *)dev;
+    DEBUGASSERT(priv != NULL);
+
+    int ret;
+
+    /* Take the semaphore (perhaps waiting).  If the result is zero, then the DMA
+    * must not really have completed???
+    */
+
+    do
+    {
+        ret = nxsem_wait(&priv->rxsem);
+
+        /* The only case that an error should occur here is if the wait was
+        * awakened by a signal.
+        */
+
+        DEBUGASSERT(ret == OK || ret == -EINTR);
+    }
+    while (ret == -EINTR || priv->rxresult == 0);
+}
+
+/************************************************************************************
+* Name: lpspi_dmatxwait
+*
+* Description:
+*   Wait for DMA to complete.
+*
+************************************************************************************/
+
+static void lpspi_dmatxwait(FAR struct imxrt_lpspidev_s *dev)
+{
+    struct imxrt_lpspidev_s *priv = (struct imxrt_lpspidev_s *)dev;
+    DEBUGASSERT(priv != NULL);
+
+    int ret;
+
+    /* Take the semaphore (perhaps waiting).  If the result is zero, then the DMA
+    * must not really have completed???
+    */
+
+    do
+    {
+        ret = nxsem_wait(&priv->txsem);
+
+        /* The only case that an error should occur here is if the wait was
+        * awakened by a signal.
+        */
+
+        DEBUGASSERT(ret == OK || ret == -EINTR);
+    }
+    while (ret == -EINTR || priv->txresult == 0);
+}
+
+/************************************************************************************
+* Name: spi_dmarxwakeup
+*
+* Description:
+*   Signal that DMA is complete
+*
+************************************************************************************/
+
+static inline void spi_dmarxwakeup(FAR struct imxrt_lpspidev_s *dev)
+{
+    struct imxrt_lpspidev_s *priv = (struct imxrt_lpspidev_s *)dev;
+    DEBUGASSERT(priv != NULL);
+
+    (void)nxsem_post(&priv->rxsem);
+}
+
+/************************************************************************************
+* Name: spi_dmatxwakeup
+*
+* Description:
+*   Signal that DMA is complete
+*
+************************************************************************************/
+
+static inline void spi_dmatxwakeup(FAR struct imxrt_lpspidev_s *dev)
+{
+    struct imxrt_lpspidev_s *priv = (struct imxrt_lpspidev_s *)dev;
+    DEBUGASSERT(priv != NULL);
+
+    (void)nxsem_post(&priv->txsem);
+}
+
+/************************************************************************************
+* Name: lpspi_dmarxcallback
+*
+* Description:
+*   Called when the RX DMA completes
+*
+************************************************************************************/
+
+static void lpspi_dmarxcallback(DMACH_HANDLE handle, void *arg, bool done, int result)
+{
+    FAR struct imxrt_lpspidev_s *priv = (FAR struct imxrt_lpspidev_s *)arg;
+    DEBUGASSERT(priv != NULL);
+    
+    /* Wake-up the SPI driver */
+
+    priv->rxresult = (result==OK)?1:0;
+    spi_dmarxwakeup(priv);
+}
+
+/************************************************************************************
+* Name: lpspi_dmatxcallback
+*
+* Description:
+*   Called when the TX DMA completes
+*
+************************************************************************************/
+
+static void lpspi_dmatxcallback(DMACH_HANDLE handle, void *arg, bool done, int result)
+{
+    FAR struct imxrt_lpspidev_s *priv = (FAR struct imxrt_lpspidev_s *)arg;
+    DEBUGASSERT(priv != NULL);
+
+    /* Wake-up the SPI driver */
+
+    priv->txresult = (result==OK)?1:0;
+    spi_dmatxwakeup(priv);
+}
+
+/************************************************************************************
+* Name: lpspi_dmarxsetup
+*
+* Description:
+*   Setup to perform RX DMA
+*
+************************************************************************************/
+
+static void lpspi_dmarxsetup(FAR struct imxrt_lpspidev_s *dev, FAR void *rxbuffer,
+                           FAR void *rxdummy, size_t nwords)
+{
+    struct imxrt_lpspidev_s *priv = (struct imxrt_lpspidev_s *)dev;
+    struct imxrt_edma_xfrconfig_s config;
+
+    DEBUGASSERT(priv != NULL && rxbuffer != NULL && nwords > 0);
+
+    /* Configure the RX DMA */
+    config.saddr = priv->spibase + IMXRT_LPSPI_RDR_OFFSET;
+    config.daddr = (uint32_t) &rxbuffer[0];
+    config.soff = (int16_t)0;
+    config.doff = (int16_t)1;
+    config.iter = nwords / 1;
+    config.ssize = TCD_ATTR_SIZE_8BIT;
+    config.dsize = TCD_ATTR_SIZE_8BIT;
+    config.nbytes = 1;
+    config.ttype = eDMA_PERIPH2MEM;
+#if 1
+    if (rxbuffer)
+    {
+        config.doff = (int16_t)1;
+    }
+    else
+    {
+        rxbuffer    = rxdummy;
+        config.doff = (int16_t)0;
+    }
+#endif    
+    imxrt_dmach_xfrsetup(priv->rxdma, &config);
+}
+
+/************************************************************************************
+* Name: lpspi_dmatxsetup
+*
+* Description:
+*   Setup to perform TX DMA
+*
+************************************************************************************/
+
+static void lpspi_dmatxsetup(FAR struct imxrt_lpspidev_s *dev, FAR const void *txbuffer,
+                            FAR const void *txdummy, size_t nwords)
+{
+    struct imxrt_lpspidev_s *priv = (struct imxrt_lpspidev_s *)dev;
+    struct imxrt_edma_xfrconfig_s config;
+
+    DEBUGASSERT(priv != NULL && txbuffer != NULL && nwords > 0);
+
+    /* Configure the TX DMA */
+    config.saddr = (uint32_t) &txbuffer[0];
+    config.daddr = priv->spibase + IMXRT_LPSPI_TDR_OFFSET;
+    config.soff = (int16_t)1;
+    config.doff = (int16_t)0;
+    config.iter = nwords / 1;
+    config.ssize = TCD_ATTR_SIZE_8BIT;
+    config.dsize = TCD_ATTR_SIZE_8BIT;
+    config.nbytes = 1;
+    config.ttype = eDMA_MEM2PERIPH;
+#if 0
+    if (txbuffer)
+    {
+        config.soff = (int16_t)1;
+    }
+    else
+    {
+        txbuffer    = txdummy;
+        config.soff = (int16_t)0;
+    }
+#endif    
+    imxrt_dmach_xfrsetup(priv->txdma, &config);
+}
+
+/************************************************************************************
+ * Name: lpspi_dmarxstart
+ *
+ * Description:
+ *   Start RX DMA
+ *
+ ************************************************************************************/
+
+static inline void lpspi_dmarxstart(FAR struct imxrt_lpspidev_s *dev)
+{
+    struct imxrt_lpspidev_s *priv = (struct imxrt_lpspidev_s *)dev;
+    DEBUGASSERT(priv != NULL);
+
+    priv->rxresult = 0;
+    imxrt_dmach_start(priv->rxdma, lpspi_dmarxcallback, priv);
+}
+
+/************************************************************************************
+ * Name: lpspi_dmatxstart
+ *
+ * Description:
+ *   Start TX DMA
+ *
+ ************************************************************************************/
+
+static inline void lpspi_dmatxstart(FAR struct imxrt_lpspidev_s *dev)
+{
+    struct imxrt_lpspidev_s *priv = (struct imxrt_lpspidev_s *)dev;
+    DEBUGASSERT(priv != NULL);
+
+    priv->txresult = 0;
+    imxrt_dmach_start(priv->txdma, lpspi_dmatxcallback, priv);
+}
+#endif /* CONFIG_IMXRT_LPSPI_DMA */
 
 /************************************************************************************
  * Name: imxrt_lpspi_lock
@@ -1362,6 +1654,82 @@ static void imxrt_lpspi_exchange_nodma(FAR struct spi_dev_s *dev,
 }
 #endif /* !CONFIG_IMXRT_LPSPI_DMA || CONFIG_IMXRT_DMACAPABLE */
 
+
+/****************************************************************************
+ * Name: spi_exchange (with DMA capability)
+ *
+ * Description:
+ *   Exchange a block of data on SPI using DMA
+ *
+ * Input Parameters:
+ *   dev      - Device-specific state data
+ *   txbuffer - A pointer to the buffer of data to be sent
+ *   rxbuffer - A pointer to a buffer in which to receive data
+ *   nwords   - the length of data to be exchanged in units of words.
+ *              The wordsize is determined by the number of bits-per-word
+ *              selected for the SPI interface.  If nbits <= 8, the data is
+ *              packed into uint8_t's; if nbits >8, the data is packed into uint16_t's
+ *
+ * Returned Value:
+ *   None
+ *
+ ************************************************************************************/
+#ifdef CONFIG_IMXRT_LPSPI_DMA
+static void imxrt_lpspi_exchange(FAR struct spi_dev_s *dev, FAR const void *txbuffer,
+                         FAR void *rxbuffer, size_t nwords)
+{
+    FAR struct imxrt_lpspidev_s *priv = (FAR struct imxrt_lpspidev_s *)dev;
+
+    static uint16_t rxdummy = 0xffff;
+    static const uint16_t txdummy = 0xffff;
+    
+    /* Disable DMA */
+    imxrt_lpspi_modifyreg32(priv, IMXRT_LPSPI_DER_OFFSET, LPSPI_DER_TDDE|LPSPI_DER_RDDE, 0);
+    spiinfo("get IMXRT_LPSPI_DER_OFFSET 0x%08x\n", getreg32(priv->spibase+IMXRT_LPSPI_DER_OFFSET));
+    
+#if 0
+    /* Flush FIFO */
+    imxrt_lpspi_modifyreg32(priv, IMXRT_LPSPI_CR_OFFSET, 0, LPSPI_CR_RTF|LPSPI_CR_RRF);
+    /* Disable spi*/
+    imxrt_lpspi_modifyreg32(priv, IMXRT_LPSPI_CR_OFFSET, LPSPI_CR_MEN, 0);
+    spiinfo("get IMXRT_LPSPI_CR_OFFSET 0x%08x\n", getreg32(priv->spibase+IMXRT_LPSPI_CR_OFFSET));
+    /* Clear status */
+    imxrt_lpspi_modifyreg32(priv, IMXRT_LPSPI_SR_OFFSET, 0, LPSPI_SR_ALL);
+    /* Disable all interrupts */
+    imxrt_lpspi_modifyreg32(priv, IMXRT_LPSPI_IER_OFFSET, LPSPI_IER_ALL, 0);
+#endif
+
+    spiinfo("txbuffer=%p rxbuffer=%p nwords=%d\n", txbuffer, rxbuffer, nwords);
+    DEBUGASSERT(priv && priv->spibase);
+
+    /* Setup DMAs */
+    spiinfo("begin Setup\n");
+    lpspi_dmarxsetup(priv, rxbuffer, &rxdummy, nwords);
+    lpspi_dmatxsetup(priv, txbuffer, &txdummy, nwords);
+
+    /* Start the DMAs */
+    spiinfo("begin Start\n");
+    lpspi_dmatxstart(priv);
+    lpspi_dmarxstart(priv);
+
+    /* Enable DMA */
+    imxrt_lpspi_modifyreg32(priv, IMXRT_LPSPI_DER_OFFSET, 0, LPSPI_DER_TDDE|LPSPI_DER_RDDE);
+    spiinfo("get IMXRT_LPSPI_DER_OFFSET 0x%08x\n", getreg32(priv->spibase+IMXRT_LPSPI_DER_OFFSET));
+
+#if 0
+    /* Enable spi*/
+    imxrt_lpspi_modifyreg32(priv, IMXRT_LPSPI_CR_OFFSET, 0, LPSPI_CR_MEN);
+#endif
+
+    spiinfo("begin Wait\n");
+
+    /* Then wait for each to complete */
+    lpspi_dmatxwait(priv);
+    lpspi_dmarxwait(priv);
+}
+#endif /* CONFIG_IMXRT_LPSPI_DMA */
+
+
 /****************************************************************************
  * Name: imxrt_lpspi_sndblock
  *
@@ -1536,6 +1904,34 @@ static void imxrt_lpspi_bus_initialize(struct imxrt_lpspidev_s *priv)
   /* Initialize the SPI semaphore that enforces mutually exclusive access */
 
   nxsem_init(&priv->exclsem, 0, 1);
+
+#ifdef CONFIG_IMXRT_LPSPI_DMA
+    /* Initialize the SPI semaphores that is used to wait for DMA completion.
+    * This semaphore is used for signaling and, hence, should not have
+    * priority inheritance enabled.
+    */
+    if (priv->rxch && priv->txch)
+    {
+      nxsem_init(&priv->rxsem, 0, 0);
+      nxsem_init(&priv->txsem, 0, 0);
+
+      nxsem_setprotocol(&priv->rxsem, SEM_PRIO_NONE);
+      nxsem_setprotocol(&priv->txsem, SEM_PRIO_NONE);
+
+      priv->rxdma = imxrt_dmach_alloc(DMAMUX_CHCFG_SOURCE(priv->rxch), EDMA_DCHPRI_ECP);
+      priv->txdma = imxrt_dmach_alloc(DMAMUX_CHCFG_SOURCE(priv->txch), EDMA_DCHPRI_ECP);
+      DEBUGASSERT(priv->rxdma && priv->txdma);
+    }
+    else
+    {
+      priv->rxdma = NULL;
+      priv->txdma = NULL;
+    }
+
+    /* Disable DMA */
+
+    imxrt_lpspi_putreg32(priv, IMXRT_LPSPI_DER_OFFSET, 0);
+#endif
 
   /* Enable LPSPI */
 

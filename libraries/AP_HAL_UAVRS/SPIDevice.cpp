@@ -94,7 +94,7 @@ void SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
     bool use_irq_save = true;
     irqstate_t state;
     if (use_irq_save) {
-        state = up_irq_save();
+        state = dp_enter_critical_section();
     }
     perf_begin(perf);
     SPI_LOCK(bus.dev, true);
@@ -110,7 +110,7 @@ void SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
     SPI_LOCK(bus.dev, false);
     perf_end(perf);
     if (use_irq_save) {
-        up_irq_restore(state);
+        dp_leave_critical_section(state);
     }
 }
 
