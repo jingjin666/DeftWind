@@ -203,6 +203,30 @@
 	 (1 << ADC_PLANE_BATTERY_VOLTAGE_CHANNEL)       | \
 	 (1 << ADC_STEERING_GEAR_BATTERY_VOLTAGE_CHANNEL))
 
+#define IOMUX_PGOOD       (IOMUX_SLEW_FAST | IOMUX_DRIVE_50OHM | \
+                         IOMUX_SPEED_MEDIUM | IOMUX_PULL_UP_100K | \
+                         _IOMUX_PULL_ENABLE)
+/* INS_PGOOD
+ * GPIO_SD_B1_01
+ * GPIO3_IO01
+ */                         
+#define GPIO_INS_PGOOD        (GPIO_INPUT | GPIO_PORT3 | GPIO_PIN1 | IOMUX_PGOOD)
+#define BOARD_INS_PGOOD     dp_arch_gpioread(GPIO_INS_PGOOD)
+
+/* P900_PGOOD
+ * GPIO_SD_B1_04
+ * GPIO3_IO04
+ */
+#define GPIO_P900_PGOOD        (GPIO_INPUT | GPIO_PORT3 | GPIO_PIN4 | IOMUX_PGOOD)
+#define BOARD_P900_PGOOD     dp_arch_gpioread(GPIO_P900_PGOOD)
+
+/* RTK_PGOOD
+ * GPIO_EMC_35
+ * GPIO3_IO21
+ */
+#define GPIO_RTK_PGOOD        (GPIO_INPUT | GPIO_PORT3 | GPIO_PIN21 | IOMUX_PGOOD)
+#define BOARD_RTK_PGOOD     dp_arch_gpioread(GPIO_RTK_PGOOD)
+
 /* USB OTG VBUS
  * GPIO_AD_B0_15
  * ADC1_IN4
@@ -225,6 +249,9 @@
 #define DP_GPIO_INIT_LIST { \
         GPIO_PMIC_STBY_REQ,     \
 		DP_ADC_GPIO,            \
+		GPIO_INS_PGOOD,         \
+		GPIO_P900_PGOOD,        \
+		GPIO_RTK_PGOOD,         \
 }
 
 #define DP_GPIO_PWM_INIT_LIST { \

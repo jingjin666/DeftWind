@@ -103,7 +103,6 @@ private:
 	adc_msg_s		*_samples;		/**< sample buffer */
 
 	orb_advert_t		_to_system_power;
-	//orb_advert_t		_to_adc_report;
 
 	/** work trampoline */
 	static void		_tick_trampoline(void *arg);
@@ -122,8 +121,6 @@ private:
 
 	// update system_power ORB topic, only on FMUv2
 	void update_system_power(hrt_abstime now);
-
-	//void update_adc_report(hrt_abstime now);
 };
 
 ADC::ADC(adc_chan_t channels) :
@@ -133,7 +130,6 @@ ADC::ADC(adc_chan_t channels) :
 	_channel_count(0),
 	_samples(nullptr),
 	_to_system_power(nullptr)
-	//_to_adc_report(nullptr)
 {
 	_debug_enabled = true;
 
@@ -318,31 +314,9 @@ ADC::_tick()
 		_samples[i].am_data = _sample(_samples[i].am_channel);
 	}
 
-	//update_adc_report(now);
 	update_system_power(now);
 }
-/*
-void
-ADC::update_adc_report(hrt_abstime now)
-{
-	adc_report_s adc = {};
-	adc.timestamp = now;
 
-	unsigned max_num = _channel_count;
-
-	if (max_num > (sizeof(adc.channel_id) / sizeof(adc.channel_id[0]))) {
-		max_num = (sizeof(adc.channel_id) / sizeof(adc.channel_id[0]));
-	}
-
-	for (unsigned i = 0; i < max_num; i++) {
-		adc.channel_id[i] = _samples[i].am_channel;
-		adc.channel_value[i] = _samples[i].am_data * 3.3f / 4096.0f;
-	}
-
-	int instance;
-	orb_publish_auto(ORB_ID(adc_report), &_to_adc_report, &adc, &instance, ORB_PRIO_HIGH);
-}
-*/
 void
 ADC::update_system_power(hrt_abstime now)
 {
@@ -372,12 +346,26 @@ ADC::update_system_power(hrt_abstime now)
     system_power.periph_5V_OC  = 0;
     system_power.hipower_5V_OC = 0;
 
+#if defined(BOARD_INS_PGOOD)
+    // INS pins are supported
+    system_power.ins_valid = BOARD_INS_PGOOD;
+#endif
+
+#if defined(BOARD_P900_PGOOD)
+    // P900 pins are supported
+    system_power.p900_valid = BOARD_P900_PGOOD;
+#endif
+
+#if defined(BOARD_RTK_PGOOD)
+    // RTK pins are supported
+    system_power.rtk_valid = BOARD_RTK_PGOOD;
+#endif
+
     /* lazily publish */
     if (_to_system_power != nullptr) {
-        DP_LOG("system_power \n", system_power.usb_connected);
-        //orb_publish(ORB_ID(system_power), _to_system_power, &system_power);
+        orb_publish(ORB_ID(system_power), _to_system_power, &system_power);
     } else {
-        //_to_system_power = orb_advertise(ORB_ID(system_power), &system_power);
+        _to_system_power = orb_advertise(ORB_ID(system_power), &system_power);
     }
 #endif
 }

@@ -15,7 +15,6 @@
 #include <errno.h>
 #include "GPIO.h"
 
-
 using namespace UAVRS;
 
 #define ANLOGIN_DEBUGGING 0
@@ -40,12 +39,7 @@ static const struct {
     float scaling;
 } pin_scaling[] = {
     { 4,   6.6f/4096  },    // VCC 5V rail sense
-    { 10,   3.3f/4096  },    // 3DR Brick current, usually 10.1:1
-                            // scaled from battery voltage
-    { 12,   3.3f/4096  },    // 3DR Brick voltage, usually 17:1 scaled
 };
-
-
 
 AnalogSource::AnalogSource(int16_t pin, float initial_value) :
 	_pin(pin),
@@ -70,8 +64,6 @@ void AnalogSource::set_stop_pin(uint8_t p)
     _stop_pin = p; 
 }
 
-
-
 float AnalogSource::read_average() 
 {
     if (_sum_count == 0) {
@@ -86,8 +78,6 @@ float AnalogSource::read_average()
     hal.scheduler->resume_timer_procs();
     return _value;
 }
-
-
 
 float AnalogSource::read_latest() 
 {
@@ -109,7 +99,6 @@ float AnalogSource::_pin_scaler(void)
     }
     return scaling;
 }
-
 
 /*
   return voltage in Volts
@@ -153,8 +142,6 @@ void AnalogSource::set_pin(uint8_t pin)
     hal.scheduler->resume_timer_procs();
 }
 
-
-
 /*
   apply a reading in ADC counts
  */
@@ -177,9 +164,6 @@ void AnalogSource::_add_value(float v, float vcc5V)
     }
 }
 
-
-
-
 AnalogIn::AnalogIn() :
     _current_stop_pin_i(0),
 	_board_voltage(0),
@@ -193,12 +177,9 @@ void AnalogIn::init()
     if (_adc_fd == -1) {
         AP_HAL::panic("Unable to open " ADC0_DEVICE_PATH);
 	}
-    _battery_handle   = orb_subscribe(ORB_ID(battery_status));
-    _servorail_handle = orb_subscribe(ORB_ID(servorail_status));
     _system_power_handle = orb_subscribe(ORB_ID(system_power));
+    printf("_system_power_handle is %d\n", _system_power_handle);
 }
-
-
 
 /*
   move to the next stop pin
@@ -232,8 +213,6 @@ void AnalogIn::next_stop_pin(void)
         }
     }
 }
-
-
 
 /*
   called at 1kHz
@@ -294,33 +273,13 @@ void AnalogIn::_timer_tick(void)
         }
     }
 
-    // check for new servorail data on FMUv2
-    if (_servorail_handle != -1) {
-        struct servorail_status_s servorail;
-        bool updated = false;
-        if (orb_check(_servorail_handle, &updated) == 0 && updated) {
-            orb_copy(ORB_ID(servorail_status), _servorail_handle, &servorail);
-                if (servorail.timestamp != _servorail_timestamp) {
-                    _servorail_timestamp = servorail.timestamp;
-                    _servorail_voltage = servorail.voltage_v;
-                    for (uint8_t j=0; j<UAVRS_ANALOG_MAX_CHANNELS; j++) {
-                        UAVRS::AnalogSource *c = _channels[j];
-                        if (c == nullptr) continue;
-                        if (c->_pin == UAVRS_ANALOG_ORB_SERVO_VOLTAGE_PIN) {
-                            c->_add_value(servorail.voltage_v / UAVRS_VOLTAGE_SCALING, 0);
-                        }
-                        if (c->_pin == UAVRS_ANALOG_ORB_SERVO_VRSSI_PIN) {
-                            c->_add_value(servorail.rssi_v / UAVRS_VOLTAGE_SCALING, 0);
-                        }
-                    }
-                }
-       }
-    }
     if (_system_power_handle != -1) {
         struct system_power_s system_power;
         bool updated = false;
         if (orb_check(_system_power_handle, &updated) == 0 && updated) {
             orb_copy(ORB_ID(system_power), _system_power_handle, &system_power);
+            Debug("_system_power:: ins %d, p900 %d, rtk %d\n",
+                  system_power.ins_valid,system_power.p900_valid,system_power.rtk_valid);
             uint16_t flags = 0;
             if (system_power.usb_connected) flags |= MAV_POWER_STATUS_USB_CONNECTED;
             if (system_power.brick_valid)   flags |= MAV_POWER_STATUS_BRICK_VALID;

@@ -5,3 +5,6 @@ uint8 brick_valid		# brick power is good when 1
 uint8 servo_valid		# servo power is good when 1
 uint8 periph_5V_OC		# peripheral overcurrent when 1
 uint8 hipower_5V_OC		# hi power peripheral overcurrent when 1
+uint8 ins_valid			# ins power is good overcurrent when 1
+uint8 p900_valid		# p900 power is good overcurrent when 1
+uint8 rtk_valid			# rtk power is good overcurrent when 1

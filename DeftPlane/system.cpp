@@ -145,14 +145,17 @@ void Plane::init_ardupilot()
 
     startup_ground();
 
-    //暂时调试到此....
-    return;
-    
 #if HAL_WITH_UAVCAN
     BoardConfig_CAN.init();
 #endif
 
     relay.init();
+
+    // initialise battery monitoring
+    battery.init();
+
+    //暂时调试到此....
+    return;
 
     // initialise notify system
     notify.init(false);
