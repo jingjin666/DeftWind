@@ -61,7 +61,7 @@ void Scheduler::init()
     pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
 
     pthread_create(&_uart_thread_ctx, &thread_attr, &Scheduler::_uart_thread, this);
-#if 0
+
     // the IO thread runs at lower priority
     pthread_attr_init(&thread_attr);
     pthread_attr_setstacksize(&thread_attr, 2048);
@@ -71,7 +71,7 @@ void Scheduler::init()
     pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
 
     pthread_create(&_io_thread_ctx, &thread_attr, &Scheduler::_io_thread, this);
-#endif
+
     // the storage thread runs at just above IO priority
     pthread_attr_init(&thread_attr);
     pthread_attr_setstacksize(&thread_attr, 1024);

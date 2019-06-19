@@ -629,6 +629,10 @@ void Plane::one_second_loop()
     // send a heartbeat
     gcs().send_message(MSG_HEARTBEAT);
 
+#ifdef SCHEDULER_DEBUG
+    static int _cnt = 0;
+    printf("one_second_loop>>>>>>>>>>>>>> %d\n", _cnt++);
+#endif
     // make it possible to change control channel ordering at runtime
     set_control_channels();
 

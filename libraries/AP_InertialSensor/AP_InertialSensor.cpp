@@ -690,8 +690,8 @@ AP_InertialSensor::detect_backends(void)
     switch (AP_BoardConfig::get_board_type()) {
 	case AP_BoardConfig::PX4_BOARD_UAVRS:
 		_fast_sampling_mask.set_default(1);
-		//_add_backend(AP_InertialSensor_ADIS16XXX::probe(*this, hal.spi->get_device(HAL_INS_ADIS16XXX_NAME), (enum Rotation)_imu_adis.get()));
-        _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME), (enum Rotation)_imu_low.get()));
+		_add_backend(AP_InertialSensor_ADIS16XXX::probe(*this, hal.spi->get_device(HAL_INS_ADIS16XXX_NAME), (enum Rotation)_imu_adis.get()));
+        //_add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME), (enum Rotation)_imu_low.get()));
 		break;
 
     default:

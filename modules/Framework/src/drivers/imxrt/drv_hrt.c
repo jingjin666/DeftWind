@@ -105,8 +105,8 @@ __EXPORT uint32_t	latency_counters[LATENCY_BUCKET_COUNT + 1];
 * reading a time and writing a deadline to the timer cannot
 * result in missing the deadline.
 */
-#define HRT_INTERVAL_MIN	5
-#define HRT_INTERVAL_MAX	4294000000
+#define HRT_INTERVAL_MIN	50
+#define HRT_INTERVAL_MAX	50000
 
 /*
 * Period of the free-running counter, in microseconds.
@@ -274,6 +274,11 @@ static void hrt_tim_init(void)
 	/* disable and configure the timer */
 
 	rCR = 0;
+
+    /* Software reset */
+    rCR |= GPT_CR_SWR;
+    /* Wait reset finished */
+    while((rCR & GPT_CR_SWR) == GPT_CR_SWR);
 
 	rCR = GPT_CR_OM1_DIS | GPT_CR_OM2_DIS | GPT_CR_OM3_DIS |
 	      GPT_CR_IM_BOTH | GPT_CR_FRR | GPT_CR_CLKSRC_IPG | GPT_CR_ENMOD;
@@ -474,6 +479,13 @@ hrt_tim_isr(int irq, void *context, void *arg)
 
 	/* was this a timer tick? */
 	if (status & STATUS_HRT) {
+#ifdef SCHEDULER_DEBUG
+        static int hrt_cnts = 0;
+        if(hrt_cnts++ > 4000) {
+            DP_INFO("hrt_tim_isr %d\n", hrt_cnts);
+            hrt_cnts = 0;
+        }
+#endif
 
 		/* do latency calculations */
 		hrt_latency_update();
