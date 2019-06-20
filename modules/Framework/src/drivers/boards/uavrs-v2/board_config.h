@@ -265,6 +265,8 @@
 		GPIO_GPIO0_INPUT, \
 }
 
+/* RC Chanle SBUS [UART7] */
+#define RC_SERIAL_PORT      "/dev/ttyS6"
 
 /****************************************************************************
  * Public Types
