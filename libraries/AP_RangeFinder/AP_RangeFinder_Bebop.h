@@ -16,7 +16,6 @@
 
 #include "RangeFinder.h"
 #include "RangeFinder_Backend.h"
-#include <AP_HAL_Linux/Thread.h>
 
 /*
  * the size of the buffer sent over spi
@@ -107,7 +106,6 @@ private:
     int _launch_purge();
     void _loop(void);
 
-    Linux::Thread *_thread;
     unsigned short get_threshold_at(int i_capture);
     int _apply_averaging_filter(void);
     int _search_local_maxima(void);

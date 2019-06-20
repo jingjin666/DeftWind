@@ -80,26 +80,9 @@ DataFlash_File::DataFlash_File(DataFlash_Class &front,
     _writebuf(0),
     _writebuf_raw_data(0),
     _writebuf_pos_data(0),
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
-    // V1 gets IO errors with larger than 512 byte writes
-    _writebuf_chunk(512),
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V45)
-    _writebuf_chunk(512),
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V51)
-    _writebuf_chunk(512),
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V52)
-    _writebuf_chunk(512),
-#elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
-    _writebuf_chunk(512),
-#elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
-    _writebuf_chunk(512),
-#elif defined(CONFIG_ARCH_BOARD_VRHERO_V10)
-    _writebuf_chunk(512),
-#else
     _writebuf_chunk(4096),
     _writebuf_chunk_raw_data(4096),
 	_writebuf_chunk_pos_data(512),//single camera information size
-#endif
     _last_write_time(0),
     _perf_write(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "DF_write")),
     _perf_fsync(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "DF_fsync")),
@@ -127,7 +110,7 @@ void DataFlash_File::Init()
         return;
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
     // try to cope with an existing lowercase log directory
     // name. NuttX does not handle case insensitive VFAT well
     DIR *d = opendir("/fs/microsd/UAVRS");
@@ -2295,7 +2278,7 @@ void DataFlash_File::ListAvailableLogs(AP_HAL::BetterStream *port)
     port->printf("\n");
 }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 void DataFlash_File::flush(void)
 {
     uint32_t tnow = AP_HAL::millis();
@@ -2487,7 +2470,7 @@ void DataFlash_File::_io_timer(void)
           chunk, ensuring the directory entry is updated after each
           write.
          */
-#if CONFIG_HAL_BOARD != HAL_BOARD_SITL && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE && CONFIG_HAL_BOARD != HAL_BOARD_QURT
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
         ::fsync(_write_fd);
 		//printf("Log fsync %d\n", nwritten);
 #endif

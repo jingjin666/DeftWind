@@ -25,10 +25,6 @@
 #include <AP_Proximity/AP_Proximity.h>
 #include <stdint.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-#include <uORB/topics/esc_status.h>
-#endif
-
 #include "DFMessageWriter.h"
 
 class DataFlash_Backend;
@@ -196,7 +192,7 @@ public:
 
     bool logging_started(void);
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     // currently only DataFlash_File support this:
     void flush(void);
 #endif

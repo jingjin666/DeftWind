@@ -83,7 +83,7 @@ private:
 
 void DataFlashTest_AllTypes::flush_dataflash(DataFlash_Class &_dataflash)
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     _dataflash.flush();
 #else
     // flush is not available on e.g. px4 as it would be a somewhat

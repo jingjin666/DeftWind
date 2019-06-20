@@ -111,7 +111,7 @@ public:
 	
     void Log_Fill_Format(const struct LogStructure *structure, struct log_Format &pkt);
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     // currently only DataFlash_File support this:
     virtual void flush(void) { }
 #endif

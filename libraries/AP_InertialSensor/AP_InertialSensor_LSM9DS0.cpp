@@ -19,7 +19,6 @@
 
 #include <utility>
 
-#include <AP_HAL_Linux/GPIO.h>
 
 extern const AP_HAL::HAL &hal;
 

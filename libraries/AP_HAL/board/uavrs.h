@@ -10,6 +10,13 @@
 #define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_UAVRS_V2
 
 #define HAL_HAVE_BOARD_VOLTAGE 1
+#define HAL_BOARD_LOG_DIRECTORY "/fs/microsd/UAVRS/LOGS"
+#define HAL_BOARD_RAW_DATA_DIRECTORY "/fs/microsd/UAVRS/RAW_DATA"
+#define HAL_BOARD_POS_DATA_DIRECTORY "/fs/microsd/UAVRS/POS_DATA"
+
+
+#define HAL_OS_POSIX_IO 1
+
 
 /* 此处暂时关闭安全开关选项
  ** 打开会让UAVRSUtil::safety_switch_state 处理uorb异常
