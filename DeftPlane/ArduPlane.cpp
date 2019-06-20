@@ -60,9 +60,6 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(ice_update,             10,    100),
     SCHED_TASK(compass_cal_update,     50,    50),
     SCHED_TASK(accel_cal_update,       10,    50),
-#if OPTFLOW == ENABLED
-    SCHED_TASK(update_optical_flow,    50,    50),
-#endif
     SCHED_TASK(one_second_loop,         1,    400),
     SCHED_TASK(check_long_failsafe,     3,    400),
     SCHED_TASK(read_receiver_rssi,     10,    100),
@@ -109,39 +106,39 @@ void Plane::get_p900_id()
     if(get_p900_status == 0){
         get_p900_status = 1;
         //enter command mode
-        hal.uartC->write("+++");
+        hal.uartF->write("+++");
         return;
     }
 
     if(get_p900_status == 1){
         get_p900_status = 2;
-        hal.uartC->write("ATE0\r");
+        hal.uartF->write("ATE0\r");
         return;
     }
 
     if(get_p900_status == 2){
         get_p900_status = 3;
         //clear uart
-        nbytes = hal.uartC->available();
+        nbytes = hal.uartF->available();
         for(uint16_t i=0; i<nbytes; i++){
-            uint8_t c = hal.uartC->read();
+            uint8_t c = hal.uartF->read();
             printf("%c", c);
         }
         //get id
-        hal.uartC->write("ATS104?\r");
+        hal.uartF->write("ATS104?\r");
         return;
     }
 
     
     memset(return_p900_id, 0, sizeof(return_p900_id));
-    nbytes = hal.uartC->available();
+    nbytes = hal.uartF->available();
 
     printf("----nbytes:%d\r\n", nbytes);
 
     uint8_t j = 0;
     bool start_flag = false;
     for(uint16_t i=0; i<nbytes; i++){
-        uint8_t c = hal.uartC->read();
+        uint8_t c = hal.uartF->read();
         if(c >= '0' && c <= '9')
         {
             start_flag = true;
@@ -160,7 +157,7 @@ void Plane::get_p900_id()
 
     if(get_p900_status == 3){
         get_p900_status = 0;
-        hal.uartC->write("ATA\r");
+        hal.uartF->write("ATA\r");
     }
     gcs_get_p900_id_flag = false;
     p900_read_mutex = false;
@@ -186,7 +183,7 @@ void Plane::set_p900_id()
     if(set_p900_status == 0){
         set_p900_status = 1;
         //enter command mode
-        hal.uartC->write("+++");
+        hal.uartF->write("+++");
         return;
     }
 
@@ -194,19 +191,19 @@ void Plane::set_p900_id()
         set_p900_status = 2;
         char tmp[30] = {0};
         sprintf(tmp, "ATS104=%s\r", p900_id);
-        hal.uartC->write(tmp);
+        hal.uartF->write(tmp);
         return;
     }
 
     if(set_p900_status == 2){
         set_p900_status = 3;
-        hal.uartC->write("AT&W\r");
+        hal.uartF->write("AT&W\r");
         return;
     }
 
     if(set_p900_status == 3){
         set_p900_status = 0;
-        hal.uartC->write("ATA\r");
+        hal.uartF->write("ATA\r");
     }
 
     gcs_set_p900_id_flag = false;
