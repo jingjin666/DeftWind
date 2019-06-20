@@ -267,6 +267,8 @@
 
 /* RC Chanle SBUS [UART7] */
 #define RC_SERIAL_PORT      "/dev/ttyS6"
+#define INVERT_RC_INPUT(_s)     while(0)
+
 
 /****************************************************************************
  * Public Types

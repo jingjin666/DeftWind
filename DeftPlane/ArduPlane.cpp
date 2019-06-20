@@ -33,7 +33,6 @@
 const AP_Scheduler::Task Plane::scheduler_tasks[] = {
                            // Units:   Hz      us                           
     SCHED_TASK(ahrs_update,           400,    400),
-#if 0    
     SCHED_TASK(read_radio,             50,    100),
     SCHED_TASK(check_short_failsafe,   50,    100),
     SCHED_TASK(update_speed_height,    50,    200),
@@ -47,19 +46,13 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(navigate,               10,    150),
     SCHED_TASK(update_compass,         10,    200),
     SCHED_TASK(read_airspeed,          10,    100),
-#endif
     SCHED_TASK(update_alt,             10,    200),
-#if 0
     SCHED_TASK(adjust_altitude_target, 10,    200),
     SCHED_TASK(afs_fs_check,           10,    100),
-#endif
     SCHED_TASK(gcs_update,             50,    500),
     SCHED_TASK(gcs_data_stream_send,   50,    500),
-#if 0
     SCHED_TASK(update_events,          50,    150),
-#endif
     SCHED_TASK(read_battery,           10,    300),
-#if 0
     SCHED_TASK(compass_accumulate,     50,    200),
     SCHED_TASK(barometer_accumulate,   50,    150),
     SCHED_TASK(update_notify,          50,    300),
@@ -70,17 +63,13 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #if OPTFLOW == ENABLED
     SCHED_TASK(update_optical_flow,    50,    50),
 #endif
-#endif
     SCHED_TASK(one_second_loop,         1,    400),
-#if 0    
     SCHED_TASK(check_long_failsafe,     3,    400),
     SCHED_TASK(read_receiver_rssi,     10,    100),
     SCHED_TASK(rpm_update,             10,    100),
     SCHED_TASK(airspeed_ratio_update,   1,    100),
     SCHED_TASK(update_mount,           50,    100),
-#endif 
     SCHED_TASK(update_trigger,         50,    100),
-#if 0
     SCHED_TASK(log_perf_info,         0.2,    100),
     SCHED_TASK(compass_save,          0.1,    200),
 	SCHED_TASK(raw_data_update,		    20,	  200),
@@ -96,7 +85,6 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(button_update,           5,    100),
     SCHED_TASK(stats_update,            1,    100),
 	SCHED_TASK(emergency_events,        10,   200),
-#endif	
 };
 
 

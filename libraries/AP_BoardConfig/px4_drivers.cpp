@@ -344,7 +344,7 @@ void AP_BoardConfig::px4_setup_peripherals(void)
     }
 
     hal.gpio->init();
-    //hal.rcin->init();
+    hal.rcin->init();
     //hal.rcout->init();
 }
 

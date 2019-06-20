@@ -269,10 +269,11 @@ void *Scheduler::_timer_thread(void *arg)
 #if 0
         // process any pending RC output requests
         hal.rcout->timer_tick();
+#endif
 
         // process any pending RC input requests
         ((RCInput *)hal.rcin)->_timer_tick();
-#endif
+
         if (uavrs_ran_overtime && AP_HAL::millis() - last_ran_overtime > 2000) {
             last_ran_overtime = AP_HAL::millis();
 #if 0

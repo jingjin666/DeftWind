@@ -141,21 +141,9 @@ void Plane::init_ardupilot()
     // setup any board specific drivers
     BoardConfig.init();
 
-    barometer.init();
-
-    startup_ground();
-
 #if HAL_WITH_UAVCAN
     BoardConfig_CAN.init();
 #endif
-
-    relay.init();
-
-    // initialise battery monitoring
-    battery.init();
-
-    //暂时调试到此....
-    return;
 
     // initialise notify system
     notify.init(false);

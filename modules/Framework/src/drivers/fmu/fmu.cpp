@@ -392,7 +392,7 @@ FMU::init()
 	if (ret != OK) {
 		return ret;
 	}
-#if 0
+
     /* try to claim the generic PWM output device node as well - it's OK if we fail at this */
     _class_instance = register_class_devname(PWM_OUTPUT_BASE_DEVICE_PATH);
 
@@ -406,7 +406,7 @@ FMU::init()
 	_safety_disabled = 0;
 
 	work_start();
-#endif
+
 	return OK;
 }
 
