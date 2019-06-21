@@ -19,7 +19,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_BoardConfig.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -60,11 +60,9 @@ void AP_BoardConfig::px4_setup_pwm()
         { 4, PWM_SERVO_MODE_4PWM, 2 },
         { 6, PWM_SERVO_MODE_6PWM, 0 },
         { 7, PWM_SERVO_MODE_3PWM1CAP, 2 },
-#if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if defined(CONFIG_ARCH_BOARD_UAVRS_V2)
         { 8, PWM_SERVO_MODE_12PWM, 0 },
-#endif
-#if defined(CONFIG_ARCH_BOARD_UAVRS_V1)
-        { 8, PWM_SERVO_MODE_12PWM, 0 },
+        { 15, PWM_SERVO_MODE_15PWM, 0 },
 #endif
     };
     uint8_t mode_parm = (uint8_t)px4.pwm_count.get();
@@ -74,38 +72,19 @@ void AP_BoardConfig::px4_setup_pwm()
             break;
         }
     }
+    
     if (i == ARRAY_SIZE(mode_table)) {
         hal.console->printf("RCOutput: invalid BRD_PWM_COUNT %u\n", mode_parm);
     } else {
-        int fd = open("/dev/px4fmu", 0);
+        int fd = open("/dev/fmu", 0);
         if (fd == -1) {
-            AP_HAL::panic("Unable to open /dev/px4fmu");
+            AP_HAL::panic("Unable to open /dev/fmu");
         }
         if (ioctl(fd, PWM_SERVO_SET_MODE, mode_table[i].mode_value) != 0) {
             hal.console->printf("RCOutput: unable to setup AUX PWM with BRD_PWM_COUNT %u\n", mode_parm);
         }
         close(fd);
-#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
-        if (mode_table[i].num_gpios < 2) {
-            // reduce change of config mistake where relay and PWM interfere
-            AP_Param::set_default_by_name("RELAY_PIN", -1);
-            AP_Param::set_default_by_name("RELAY_PIN2", -1);
-        }
-#endif
     }
-}
-
-/*
-  setup flow control on UARTs
- */
-void AP_BoardConfig::px4_setup_uart()
-{
-#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
-    hal.uartC->set_flow_control((AP_HAL::UARTDriver::flow_control)px4.ser1_rtscts.get());
-    if (hal.uartD != nullptr) {
-        hal.uartD->set_flow_control((AP_HAL::UARTDriver::flow_control)px4.ser2_rtscts.get());
-    }
-#endif
 }
 
 /*
@@ -115,25 +94,13 @@ void AP_BoardConfig::px4_setup_safety_mask()
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
     // setup channels to ignore the armed state
-    int px4io_fd = open("/dev/px4io", 0);
-    if (px4io_fd != -1) {
-        if (ioctl(px4io_fd, PWM_SERVO_IGNORE_SAFETY, (uint16_t)px4.ignore_safety_channels) != 0) {
-            hal.console->printf("IGNORE_SAFETY failed\n");
-        }
-    }
-    int px4fmu_fd = open("/dev/px4fmu", 0);
-    if (px4fmu_fd != -1) {
+    int fmu_fd = open("/dev/fmu", 0);
+    if (fmu_fd != -1) {
         uint16_t mask = px4.ignore_safety_channels;
-        if (px4io_fd != -1) {
-            mask >>= 8;
-        }
-        if (ioctl(px4fmu_fd, PWM_SERVO_IGNORE_SAFETY, (uint16_t)mask) != 0) {
+        if (ioctl(fmu_fd, PWM_SERVO_IGNORE_SAFETY, (uint16_t)mask) != 0) {
             hal.console->printf("IGNORE_SAFETY failed\n");
         }
-        close(px4fmu_fd);
-    }
-    if (px4io_fd != -1) {
-        close(px4io_fd);
+        close(fmu_fd);
     }
 #endif
 }
@@ -345,7 +312,7 @@ void AP_BoardConfig::px4_setup_peripherals(void)
 
     hal.gpio->init();
     hal.rcin->init();
-    //hal.rcout->init();
+    hal.rcout->init();
 }
 
 /*
@@ -414,10 +381,9 @@ void AP_BoardConfig::px4_autodetect(void)
 void AP_BoardConfig::px4_setup()
 {
     px4_setup_peripherals();
-    //px4_setup_pwm();
-    //px4_setup_safety_mask();
-    //px4_setup_uart();
-    //px4_setup_sbus();
+    px4_setup_pwm();
+    px4_setup_safety_mask();
+    px4_setup_sbus();
     px4_setup_drivers();
 }
 

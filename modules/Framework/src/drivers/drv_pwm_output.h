@@ -38,15 +38,12 @@ __BEGIN_DECLS
 #include <uORB/topics/output_pwm.h>
 #define pwm_output_values output_pwm_s
 
-#ifndef PWM_OUTPUT_MAX_CHANNELS
-#define PWM_OUTPUT_MAX_CHANNELS output_pwm_s::PWM_OUTPUT_MAX_CHANNELS
-#endif
-
-
 /**
  * Maximum number of PWM output channels supported by the device.
  */
-//#define PWM_OUTPUT_MAX_CHANNELS	16
+#ifndef PWM_OUTPUT_MAX_CHANNELS
+#define PWM_OUTPUT_MAX_CHANNELS output_pwm_s::PWM_OUTPUT_MAX_CHANNELS
+#endif
 
 /* Use defaults unless the board override the defaults by providing
  * DP_PWM_ALTERNATE_RANGES and a replacement set of
@@ -235,20 +232,21 @@ struct pwm_output_rc_config {
 /** surfaces to move regardless of the safety state */
 #define PWM_SERVO_IGNORE_SAFETY			_DP_IOC(_PWM_SERVO_BASE, 32)
 
-/** set auxillary output mode. These correspond to enum Mode in px4fmu/fmu.cpp */
+/** set auxillary output mode. These correspond to enum Mode in fmu.cpp */
 #define PWM_SERVO_MODE_NONE			0
 #define PWM_SERVO_MODE_2PWM			1
-#define PWM_SERVO_MODE_2PWM2CAP			2
+#define PWM_SERVO_MODE_2PWM2CAP	    2
 #define PWM_SERVO_MODE_3PWM			3
-#define PWM_SERVO_MODE_3PWM1CAP			4
+#define PWM_SERVO_MODE_3PWM1CAP		4
 #define PWM_SERVO_MODE_4PWM			5
 #define PWM_SERVO_MODE_6PWM			6
 #define PWM_SERVO_MODE_8PWM			7
 #define PWM_SERVO_MODE_4CAP			8
 #define PWM_SERVO_MODE_5CAP			9
-#define PWM_SERVO_MODE_6CAP		       10
+#define PWM_SERVO_MODE_6CAP		    10
 #define PWM_SERVO_MODE_10PWM		11
 #define PWM_SERVO_MODE_12PWM		12
+#define PWM_SERVO_MODE_15PWM		15
 #define PWM_SERVO_SET_MODE			_DP_IOC(_PWM_SERVO_BASE, 33)
 
 /** enable/disable oneshot mode */

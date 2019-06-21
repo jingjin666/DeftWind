@@ -266,10 +266,9 @@ void *Scheduler::_timer_thread(void *arg)
         perf_begin(sched->_perf_timers);
         sched->_run_timers(true);
         perf_end(sched->_perf_timers);
-#if 0
+
         // process any pending RC output requests
         hal.rcout->timer_tick();
-#endif
 
         // process any pending RC input requests
         ((RCInput *)hal.rcin)->_timer_tick();

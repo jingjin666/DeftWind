@@ -62,6 +62,7 @@ extern int test_usart(int argc, char *argv[]);
 extern int test_led(int argc, char *argv[]);
 extern int test_i2c(int argc, char *argv[]);
 extern int test_spi(int argc, char *argv[]);
+extern int test_servo(int argc, char *argv[]);
 __END_DECLS
 
 #endif /* __DP_SYSTEMCMDS_TESTS_H */

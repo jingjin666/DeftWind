@@ -99,6 +99,7 @@ public:
 		MODE_6CAP,
 		MODE_10PWM,
 		MODE_12PWM,
+		MODE_15PWM,
 	};
 	FMU();
 	virtual ~FMU();
@@ -261,14 +262,21 @@ private:
 };
 
 const FMU::GPIOConfig FMU::_gpio_tab[] = {
-	{GPIO_GPIO0_INPUT,       GPIO_GPIO0_OUTPUT,       0},
-	{GPIO_GPIO1_INPUT,       GPIO_GPIO1_OUTPUT,       0},
-	{GPIO_GPIO2_INPUT,       GPIO_GPIO2_OUTPUT,       0},
-	{GPIO_GPIO3_INPUT,       GPIO_GPIO3_OUTPUT,       0},
-	{GPIO_GPIO4_INPUT,       GPIO_GPIO4_OUTPUT,       0},
-	{GPIO_GPIO5_INPUT,       GPIO_GPIO5_OUTPUT,       0},
-	{GPIO_GPIO6_INPUT,       GPIO_GPIO6_OUTPUT,       0},
-	{GPIO_GPIO7_INPUT,       GPIO_GPIO7_OUTPUT,       0},
+	{GPIO_GPIO0_INPUT,        GPIO_GPIO0_OUTPUT,       0},
+	{GPIO_GPIO1_INPUT,        GPIO_GPIO1_OUTPUT,       0},
+	{GPIO_GPIO2_INPUT,        GPIO_GPIO2_OUTPUT,       0},
+	{GPIO_GPIO3_INPUT,        GPIO_GPIO3_OUTPUT,       0},
+	{GPIO_GPIO4_INPUT,        GPIO_GPIO4_OUTPUT,       0},
+	{GPIO_GPIO5_INPUT,        GPIO_GPIO5_OUTPUT,       0},
+	{GPIO_GPIO6_INPUT,        GPIO_GPIO6_OUTPUT,       0},
+	{GPIO_GPIO7_INPUT,        GPIO_GPIO7_OUTPUT,       0},
+	{GPIO_GPIO8_INPUT,        GPIO_GPIO8_OUTPUT,       0},
+	{GPIO_GPIO9_INPUT,        GPIO_GPIO9_OUTPUT,       0},
+	{GPIO_GPIO10_INPUT,       GPIO_GPIO10_OUTPUT,      0},
+	{GPIO_GPIO11_INPUT,       GPIO_GPIO11_OUTPUT,      0},
+	{GPIO_GPIO12_INPUT,       GPIO_GPIO12_OUTPUT,      0},
+	{GPIO_GPIO13_INPUT,       GPIO_GPIO13_OUTPUT,      0},
+	{GPIO_GPIO14_INPUT,       GPIO_GPIO14_OUTPUT,      0},
 	{GPIO_CAMERA_TRIGGER_INPUT,     GPIO_CAMERA_TRIGGER_OUTPUT,     0},
 	{GPIO_CAMERA_FEEDBACK_INPUT,    GPIO_CAMERA_FEEDBACK_OUTPUT,    0},
 };
@@ -342,11 +350,6 @@ FMU::FMU() :
 	// rc input, published to ORB
 	memset(&_rc_in, 0, sizeof(_rc_in));
 	_rc_in.input_source = input_rc_s::RC_INPUT_SOURCE_PX4FMU_PPM;
-
-#ifdef GPIO_SBUS_INV
-	// this board has a GPIO to control SBUS inversion
-	stm32_configgpio(GPIO_SBUS_INV);
-#endif
 
 	// If there is no safety button, disable it on boot.
 #ifndef GPIO_BTN_SAFETY
@@ -467,16 +470,11 @@ FMU::set_mode(Mode mode)
 		_pwm_initialized = false;
 		break;
 
-#if defined(CONFIG_ARCH_BOARD_AEROCORE) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V51) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V52) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V54) || defined(CONFIG_ARCH_BOARD_VRCORE_V10) || defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51) || defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52) || defined(CONFIG_ARCH_BOARD_UAVRS_V1)
-
 	case MODE_8PWM: // AeroCore PWMs as 8 PWM outs
 		DEVICE_DEBUG("MODE_8PWM");
 		_pwm_mask = 0xff;
 		_pwm_initialized = false;
 		break;
-#endif
-
-#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V51) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V52) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V54) || defined(CONFIG_ARCH_BOARD_VRCORE_V10) || defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51) || defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52) || defined(CONFIG_ARCH_BOARD_UAVRS_V1)
 
 	case MODE_10PWM:
 		DEVICE_DEBUG("MODE_10PWM");
@@ -491,7 +489,13 @@ FMU::set_mode(Mode mode)
 		_pwm_mask = 0xfff;
 		_pwm_initialized = false;
 		break;
-#endif
+
+    case MODE_15PWM:
+        DEVICE_DEBUG("MODE_15PWM");
+
+        _pwm_mask = 0x7fff;
+        _pwm_initialized = false;
+        break;
 
 	case MODE_NONE:
 		DEVICE_DEBUG("MODE_NONE");
@@ -758,14 +762,6 @@ void FMU::set_rc_scan_state(RC_SCAN newState)
 
 void FMU::rc_io_invert(bool invert)
 {
-	INVERT_RC_INPUT(invert);
-
-#ifdef GPIO_RC_OUT
-	if (!invert) {
-		// set FMU_RC_OUTPUT high to pull RC_INPUT up
-		stm32_gpiowrite(GPIO_RC_OUT, 1);
-	}
-#endif
 }
 #endif
 
@@ -962,6 +958,10 @@ FMU::cycle()
 				num_outputs = 12;
 				break;
 
+			case MODE_15PWM:
+				num_outputs = 15;
+				break;
+
 			default:
 				num_outputs = 0;
 				break;
@@ -1003,7 +1003,6 @@ FMU::cycle()
 	_cycle_timestamp = hrt_absolute_time();
 
 #ifdef GPIO_BTN_SAFETY
-
 	if (_cycle_timestamp - _last_safety_check >= (unsigned int)1e5) {
 		_last_safety_check = _cycle_timestamp;
 
@@ -1043,7 +1042,6 @@ FMU::cycle()
 
 		update_pwm_out_state();
 	}
-
 #else
 	// slave safety from IO
 	if (_cycle_timestamp - _last_safety_check >= (unsigned int)1e5) {
@@ -1467,6 +1465,7 @@ FMU::ioctl(file *filp, int cmd, unsigned long arg)
 	case MODE_8PWM:
 	case MODE_10PWM:
 	case MODE_12PWM:
+    case MODE_15PWM:
 		ret = pwm_ioctl(filp, cmd, arg);
 		break;
 
@@ -1719,6 +1718,14 @@ FMU::pwm_ioctl(file *filp, int cmd, unsigned long arg)
 			break;
 		}
 
+	case PWM_SERVO_SET(14):
+	case PWM_SERVO_SET(13):
+    case PWM_SERVO_SET(12):
+        if (_mode < MODE_15PWM) {
+			ret = -EINVAL;
+			break;
+		}
+
 	case PWM_SERVO_SET(11):
 	case PWM_SERVO_SET(10):
 		if (_mode < MODE_12PWM) {
@@ -1765,13 +1772,21 @@ FMU::pwm_ioctl(file *filp, int cmd, unsigned long arg)
 	case PWM_SERVO_SET(1):
 	case PWM_SERVO_SET(0):
 		if (arg <= 2100) {
+            //DP_INFO("PWM_SERVO_SET(%d) %d\n", cmd - PWM_SERVO_SET(0), arg);
 			pwm_output_set(cmd - PWM_SERVO_SET(0), arg);
-
 		} else {
 			ret = -EINVAL;
 		}
 
 		break;
+
+    case PWM_SERVO_GET(14):
+    case PWM_SERVO_GET(13):
+    case PWM_SERVO_GET(12):
+        if (_mode < MODE_15PWM) {
+            ret = -EINVAL;
+            break;
+        }
 
 	case PWM_SERVO_GET(11):
 	case PWM_SERVO_GET(10):
@@ -1833,12 +1848,18 @@ FMU::pwm_ioctl(file *filp, int cmd, unsigned long arg)
 	case PWM_SERVO_GET_RATEGROUP(9):
 	case PWM_SERVO_GET_RATEGROUP(10):
 	case PWM_SERVO_GET_RATEGROUP(11):
+    case PWM_SERVO_GET_RATEGROUP(12):
+    case PWM_SERVO_GET_RATEGROUP(13):
+    case PWM_SERVO_GET_RATEGROUP(14):
 		*(uint32_t *)arg = up_pwm_servo_get_rate_group(cmd - PWM_SERVO_GET_RATEGROUP(0));
 		break;
 
 	case PWM_SERVO_GET_COUNT:
 	case MIXERIOCGETOUTPUTCOUNT:
 		switch (_mode) {
+        case MODE_15PWM:
+            *(unsigned *)arg = 15;
+            break;
 
 		case MODE_12PWM:
 			*(unsigned *)arg = 12;
@@ -1918,6 +1939,10 @@ FMU::pwm_ioctl(file *filp, int cmd, unsigned long arg)
 				set_mode(MODE_12PWM);
 				break;
 
+            case 15:
+                set_mode(MODE_15PWM);
+                break;
+
 			default:
 				ret = -EINVAL;
 				break;
@@ -1966,6 +1991,10 @@ FMU::pwm_ioctl(file *filp, int cmd, unsigned long arg)
 
 			case PWM_SERVO_MODE_12PWM:
 				ret = set_mode(MODE_12PWM);
+				break;
+
+			case PWM_SERVO_MODE_15PWM:
+				ret = set_mode(MODE_15PWM);
 				break;
 
 			case PWM_SERVO_MODE_4CAP:
@@ -2178,77 +2207,6 @@ FMU::write(file *filp, const char *buffer, size_t len)
 void
 FMU::sensor_reset(int ms)
 {
-#if  defined(CONFIG_ARCH_BOARD_UAVRS_V1)
-
-	if (ms < 1) {
-		ms = 1;
-	}
-
-    /* disable SPI bus */
-	stm32_configgpio(GPIO_SPI_CS_BARO_OFF);
-	stm32_configgpio(GPIO_SPI_CS_MPU_OFF);
-	stm32_configgpio(GPIO_SPI_CS_ADIS_OFF);	
-
-	stm32_gpiowrite(GPIO_SPI_CS_BARO_OFF, 0);
-	stm32_gpiowrite(GPIO_SPI_CS_MPU_OFF, 0);
-	stm32_gpiowrite(GPIO_SPI_CS_ADIS_OFF, 0);
-
-	stm32_configgpio(GPIO_SPI4_SCK_OFF);
-	stm32_configgpio(GPIO_SPI4_MISO_OFF);
-	stm32_configgpio(GPIO_SPI4_MOSI_OFF);
-
-	stm32_gpiowrite(GPIO_SPI4_SCK_OFF, 0);
-	stm32_gpiowrite(GPIO_SPI4_MISO_OFF, 0);
-	stm32_gpiowrite(GPIO_SPI4_MOSI_OFF, 0);
-
-	stm32_configgpio(GPIO_SPI3_SCK_OFF);
-	stm32_configgpio(GPIO_SPI3_MISO_OFF);
-	stm32_configgpio(GPIO_SPI3_MOSI_OFF);
-
-	stm32_gpiowrite(GPIO_SPI3_SCK_OFF, 0);
-	stm32_gpiowrite(GPIO_SPI3_MISO_OFF, 0);
-	stm32_gpiowrite(GPIO_SPI3_MOSI_OFF, 0);
-
-	/* wait for the sensor rail to reach GND */
-	usleep(ms * 1000);
-	warnx("reset done, %d ms", ms);
-
-	/* re-enable power */
-
-	/* wait a bit before starting SPI, different times didn't influence results */
-	usleep(100);
-
-	/* reconfigure the SPI pins */
-#ifdef CONFIG_STM32_SPI4
-	stm32_configgpio(GPIO_SPI_CS_ADIS);	
-
-	/* De-activate all peripherals,
-	 * required for some peripheral
-	 * state machines
-	 */
-	stm32_gpiowrite(GPIO_SPI_CS_ADIS, 1);
-
-	stm32_configgpio(GPIO_SPI4_SCK);
-	stm32_configgpio(GPIO_SPI4_MISO);
-	stm32_configgpio(GPIO_SPI4_MOSI);
-#endif
-
-#ifdef CONFIG_STM32_SPI3
-	stm32_configgpio(GPIO_SPI_CS_BARO);
-	stm32_configgpio(GPIO_SPI_CS_MPU);
-
-	/* De-activate all peripherals,
-	 * required for some peripheral
-	 * state machines
-	 */
-	stm32_gpiowrite(GPIO_SPI_CS_BARO, 1);
-	stm32_gpiowrite(GPIO_SPI_CS_MPU, 1);
-
-	stm32_configgpio(GPIO_SPI3_SCK);
-	stm32_configgpio(GPIO_SPI3_MISO);
-	stm32_configgpio(GPIO_SPI3_MOSI);
-#endif
-#endif
 }
 
 void
@@ -2613,7 +2571,7 @@ fmu_new_mode(PortMode new_mode)
 		break;
 
 	case PORT_FULL_PWM:
-		servo_mode = FMU::MODE_12PWM;
+		servo_mode = FMU::MODE_15PWM;
 		break;
 
 	case PORT_PWM4:

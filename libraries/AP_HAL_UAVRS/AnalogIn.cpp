@@ -178,7 +178,7 @@ void AnalogIn::init()
         AP_HAL::panic("Unable to open " ADC0_DEVICE_PATH);
 	}
     _system_power_handle = orb_subscribe(ORB_ID(system_power));
-    printf("_system_power_handle is %d\n", _system_power_handle);
+    Debug("_system_power_handle is %d\n", _system_power_handle);
 }
 
 /*

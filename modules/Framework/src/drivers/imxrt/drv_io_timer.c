@@ -331,8 +331,7 @@ static int allocate_channel(unsigned channel, io_timer_channel_mode_t mode)
 static int timer_set_rate(unsigned channel, unsigned rate)
 {
 	irqstate_t flags = dp_enter_critical_section();
-	rMCTRL(channels_timer(channel)) |= (timer_io_channels[channel].sub_module_bits >> MCTRL_LDOK_SHIFT) << MCTRL_CLDOK_SHIFT
-					   ;
+	rMCTRL(channels_timer(channel)) |= (timer_io_channels[channel].sub_module_bits >> MCTRL_LDOK_SHIFT) << MCTRL_CLDOK_SHIFT;
 	rVAL1(channels_timer(channel), timer_io_channels[channel].sub_module) = (BOARD_PWM_FREQ / rate) - 1;
 	rMCTRL(channels_timer(channel)) |= timer_io_channels[channel].sub_module_bits;
 	dp_leave_critical_section(flags);
@@ -345,12 +344,10 @@ static inline void io_timer_set_oneshot_mode(unsigned channel)
 	uint16_t rvalue = rCTRL(channels_timer(channel), timer_io_channels[channel].sub_module);
 	rvalue &= ~SMCTRL_PRSC_MASK;
 	rvalue |= SMCTRL_PRSC_DIV2 | SMCTRL_LDMOD;
-	rMCTRL(channels_timer(channel)) |= (timer_io_channels[channel].sub_module_bits >> MCTRL_LDOK_SHIFT) << MCTRL_CLDOK_SHIFT
-					   ;
+	rMCTRL(channels_timer(channel)) |= (timer_io_channels[channel].sub_module_bits >> MCTRL_LDOK_SHIFT) << MCTRL_CLDOK_SHIFT;
 	rCTRL(channels_timer(channel), timer_io_channels[channel].sub_module)  = rvalue;
 	rMCTRL(channels_timer(channel)) |= timer_io_channels[channel].sub_module_bits;
 	dp_leave_critical_section(flags);
-
 }
 
 static inline void io_timer_set_PWM_mode(unsigned channel)
@@ -671,8 +668,7 @@ int io_timer_set_ccr(unsigned channel, uint16_t value)
 
 		} else {
 			irqstate_t flags = dp_enter_critical_section();
-			rMCTRL(channels_timer(channel)) |= (timer_io_channels[channel].sub_module_bits >> MCTRL_LDOK_SHIFT) << MCTRL_CLDOK_SHIFT
-							   ;
+			rMCTRL(channels_timer(channel)) |= (timer_io_channels[channel].sub_module_bits >> MCTRL_LDOK_SHIFT) << MCTRL_CLDOK_SHIFT;
 			REG(channels_timer(channel), timer_io_channels[channel].sub_module, timer_io_channels[channel].val_offset) = value - 1;
 			rMCTRL(channels_timer(channel)) |= timer_io_channels[channel].sub_module_bits;
 			dp_leave_critical_section(flags);
