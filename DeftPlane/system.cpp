@@ -126,7 +126,6 @@ void Plane::init_ardupilot()
 
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
-    // 注册延时回调函数，当用户<调用hal.scheduler->delay && 你有超过5ms的空闲时间>，将执行此函数
     hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
 
     // setup any board specific drivers
@@ -180,11 +179,6 @@ void Plane::init_ardupilot()
 
     if (g.compass_enabled==true) {
         bool compass_ok = compass.init() && compass.read();
-#if HIL_SUPPORT
-    if (g.hil_mode != 0) {
-        compass_ok = true;
-    }
-#endif
         if (!compass_ok) {
             cliSerial->printf("Compass initialisation failed!\n");
             g.compass_enabled = false;
@@ -636,17 +630,6 @@ void Plane::check_short_failsafe()
 
 void Plane::startup_INS_ground(void)
 {
-#if HIL_SUPPORT
-    if (g.hil_mode == 1) {
-        while (barometer.get_last_update() == 0) {
-            // the barometer begins updating when we get the first
-            // HIL_STATE message
-            gcs().send_text(MAV_SEVERITY_WARNING, "Waiting for first HIL_STATE message");
-            hal.scheduler->delay(1000);
-        }
-    }
-#endif
-
     if (ins.gyro_calibration_timing() != AP_InertialSensor::GYRO_CAL_NEVER) {
         gcs().send_text(MAV_SEVERITY_ALERT, "Beginning INS calibration. Do not move plane");
         hal.scheduler->delay(100);

@@ -194,8 +194,6 @@ public:
     uint8_t get_primary_accel(void) const { return _primary_accel; }
     uint8_t get_primary_gyro(void) const { return _primary_gyro; }
 
-    // enable HIL mode
-    void set_hil_mode(void) { _hil_mode = true; }
 
     // get the gyro filter rate in Hz
     uint8_t get_gyro_filter_hz(void) const { return _gyro_filter_cutoff; }
@@ -402,9 +400,6 @@ private:
 
     // has wait_for_sample() found a sample?
     bool _have_sample:1;
-
-    // are we in HIL mode?
-    bool _hil_mode:1;
 
     // are gyros or accels currently being calibrated
     bool _calibrating:1;

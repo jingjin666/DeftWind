@@ -78,12 +78,6 @@ void Plane::send_heartbeat(mavlink_channel_t chan)
         base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
     }
 
-#if HIL_SUPPORT
-    if (g.hil_mode == 1) {
-        base_mode |= MAV_MODE_FLAG_HIL_ENABLED;
-    }
-#endif
-
     // we are armed if we are not initialising
     if (control_mode != INITIALISING && arming.is_armed()) {
         base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
@@ -328,30 +322,12 @@ void Plane::send_vfr_hud(mavlink_channel_t chan)
 /*
   keep last HIL_STATE message to allow sending SIM_STATE
  */
-#if HIL_SUPPORT
-static mavlink_hil_state_t last_hil_state;
-#endif
 
 // report simulator state
 void Plane::send_simstate(mavlink_channel_t chan)
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     sitl.simstate_send(chan);
-#elif HIL_SUPPORT
-    if (g.hil_mode == 1) {
-        mavlink_msg_simstate_send(chan,
-                                  last_hil_state.roll,
-                                  last_hil_state.pitch,
-                                  last_hil_state.yaw,
-                                  last_hil_state.xacc*0.001f*GRAVITY_MSS,
-                                  last_hil_state.yacc*0.001f*GRAVITY_MSS,
-                                  last_hil_state.zacc*0.001f*GRAVITY_MSS,
-                                  last_hil_state.rollspeed,
-                                  last_hil_state.pitchspeed,
-                                  last_hil_state.yawspeed,
-                                  last_hil_state.lat,
-                                  last_hil_state.lon);
-    }
 #endif
 }
 
@@ -563,15 +539,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         send_system_time(plane.gps);
         break;
 
-    case MSG_SERVO_OUT:
-#if HIL_SUPPORT
-        if (plane.g.hil_mode == 1) {
-            CHECK_PAYLOAD_SIZE(RC_CHANNELS_SCALED);
-            plane.send_servo_out(chan);
-        }
-#endif
-        break;
-
     case MSG_RADIO_IN:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS);
         send_radio_in(plane.receiver_rssi);
@@ -579,11 +546,7 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
 
     case MSG_SERVO_OUTPUT_RAW:
         CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
-#if HIL_SUPPORT
-        send_servo_output_raw(plane.g.hil_mode);
-#else
         send_servo_output_raw(false);
-#endif
         break;
 
     case MSG_VFR_HUD:
@@ -882,19 +845,6 @@ GCS_MAVLINK_Plane::data_stream_send(void)
     if (plane.gcs_out_of_time) return;
 
     if (plane.in_mavlink_delay) {
-#if HIL_SUPPORT
-        if (plane.g.hil_mode == 1) {
-            // in HIL we need to keep sending servo values to ensure
-            // the simulator doesn't pause, otherwise our sensor
-            // calibration could stall
-            if (stream_trigger(STREAM_RAW_CONTROLLER)) {
-                send_message(MSG_SERVO_OUT);
-            }
-            if (stream_trigger(STREAM_RC_CHANNELS)) {
-                send_message(MSG_SERVO_OUTPUT_RAW);
-            }
-        }
-#endif
         // don't send any other stream types while in the delay callback
         return;
     }
@@ -925,12 +875,6 @@ GCS_MAVLINK_Plane::data_stream_send(void)
         // sent with GPS read
         send_message(MSG_LOCATION);
         send_message(MSG_LOCAL_POSITION);
-    }
-
-    if (plane.gcs_out_of_time) return;
-
-    if (stream_trigger(STREAM_RAW_CONTROLLER)) {
-        send_message(MSG_SERVO_OUT);
     }
 
     if (plane.gcs_out_of_time) return;

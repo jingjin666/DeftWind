@@ -12,7 +12,6 @@
 #include "AP_InertialSensor.h"
 #include "AP_InertialSensor_BMI160.h"
 #include "AP_InertialSensor_Backend.h"
-#include "AP_InertialSensor_HIL.h"
 #include "AP_InertialSensor_L3G4200D.h"
 #include "AP_InertialSensor_LSM9DS0.h"
 #include "AP_InertialSensor_Invensense.h"
@@ -447,7 +446,6 @@ AP_InertialSensor::AP_InertialSensor() :
     _primary_gyro(0),
     _primary_accel(0),
     _log_raw_bit(-1),
-    _hil_mode(false),
     _calibrating(false),
     _backends_detected(false),
     _dataflash(nullptr),
@@ -678,14 +676,9 @@ AP_InertialSensor::detect_backends(void)
 
     _backends_detected = true;
 
-    if (_hil_mode) {
-        _add_backend(AP_InertialSensor_HIL::detect(*this));
-        return;
-    }
+    
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     _add_backend(AP_InertialSensor_SITL::detect(*this));
-#elif HAL_INS_DEFAULT == HAL_INS_HIL
-    _add_backend(AP_InertialSensor_HIL::detect(*this));
 #elif HAL_INS_DEFAULT == HAL_INS_UAVRS
     switch (AP_BoardConfig::get_board_type()) {
 	case AP_BoardConfig::PX4_BOARD_UAVRS:
@@ -854,11 +847,6 @@ failed:
  */
 bool AP_InertialSensor::accel_calibrated_ok_all() const
 {
-    // calibration is not applicable for HIL mode
-    if (_hil_mode) {
-        return true;
-    }
-
     // check each accelerometer has offsets saved
     for (uint8_t i=0; i<get_accel_count(); i++) {
         if (!_accel_id_ok[i]) {
@@ -1073,86 +1061,84 @@ void AP_InertialSensor::update(void)
     // wait_for_sample(), and a wait is implied
     wait_for_sample();
 
-    if (!_hil_mode) {
+    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+        // mark sensors unhealthy and let update() in each backend
+        // mark them healthy via _publish_gyro() and
+        // _publish_accel()
+        _gyro_healthy[i] = false;
+        _accel_healthy[i] = false;
+        _delta_velocity_valid[i] = false;
+        _delta_angle_valid[i] = false;
+    }
+    for (uint8_t i=0; i<_backend_count; i++) {
+       _backends[i]->update();
+    }
+
+    // clear accumulators
+    for (uint8_t i = 0; i < INS_MAX_INSTANCES; i++) {
+        _delta_velocity_acc[i].zero();
+        _delta_velocity_acc_dt[i] = 0;
+        _delta_angle_acc[i].zero();
+        _delta_angle_acc_dt[i] = 0;
+    }
+
+    if (!_startup_error_counts_set) {
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            // mark sensors unhealthy and let update() in each backend
-            // mark them healthy via _publish_gyro() and
-            // _publish_accel()
-            _gyro_healthy[i] = false;
-            _accel_healthy[i] = false;
-            _delta_velocity_valid[i] = false;
-            _delta_angle_valid[i] = false;
-        }
-        for (uint8_t i=0; i<_backend_count; i++) {
-            _backends[i]->update();
+            _accel_startup_error_count[i] = _accel_error_count[i];
+            _gyro_startup_error_count[i] = _gyro_error_count[i];
         }
 
-        // clear accumulators
-        for (uint8_t i = 0; i < INS_MAX_INSTANCES; i++) {
-            _delta_velocity_acc[i].zero();
-            _delta_velocity_acc_dt[i] = 0;
-            _delta_angle_acc[i].zero();
-            _delta_angle_acc_dt[i] = 0;
+        if (_startup_ms == 0) {
+           _startup_ms = AP_HAL::millis();
+        } else if (AP_HAL::millis()-_startup_ms > 2000) {
+           _startup_error_counts_set = true;
         }
+    }
 
-        if (!_startup_error_counts_set) {
-            for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-                _accel_startup_error_count[i] = _accel_error_count[i];
-                _gyro_startup_error_count[i] = _gyro_error_count[i];
-            }
-
-            if (_startup_ms == 0) {
-                _startup_ms = AP_HAL::millis();
-            } else if (AP_HAL::millis()-_startup_ms > 2000) {
-                _startup_error_counts_set = true;
-            }
+    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+        if (_accel_error_count[i] < _accel_startup_error_count[i]) {
+            _accel_startup_error_count[i] = _accel_error_count[i];
         }
-
-        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            if (_accel_error_count[i] < _accel_startup_error_count[i]) {
-                _accel_startup_error_count[i] = _accel_error_count[i];
-            }
-            if (_gyro_error_count[i] < _gyro_startup_error_count[i]) {
-                _gyro_startup_error_count[i] = _gyro_error_count[i];
-            }
+        if (_gyro_error_count[i] < _gyro_startup_error_count[i]) {
+            _gyro_startup_error_count[i] = _gyro_error_count[i];
         }
+    }
 
-        // adjust health status if a sensor has a non-zero error count
-        // but another sensor doesn't.
-        bool have_zero_accel_error_count = false;
-        bool have_zero_gyro_error_count = false;
-        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            if (_accel_healthy[i] && _accel_error_count[i] <= _accel_startup_error_count[i]) {
-                have_zero_accel_error_count = true;
-            }
-            if (_gyro_healthy[i] && _gyro_error_count[i] <= _gyro_startup_error_count[i]) {
-                have_zero_gyro_error_count = true;
-            }
+    // adjust health status if a sensor has a non-zero error count
+    // but another sensor doesn't.
+    bool have_zero_accel_error_count = false;
+    bool have_zero_gyro_error_count = false;
+    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+        if (_accel_healthy[i] && _accel_error_count[i] <= _accel_startup_error_count[i]) {
+           have_zero_accel_error_count = true;
         }
+        if (_gyro_healthy[i] && _gyro_error_count[i] <= _gyro_startup_error_count[i]) {
+           have_zero_gyro_error_count = true;
+        }
+    }
 
-        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            if (_gyro_healthy[i] && _gyro_error_count[i] > _gyro_startup_error_count[i] && have_zero_gyro_error_count) {
-                // we prefer not to use a gyro that has had errors
-                _gyro_healthy[i] = false;
-            }
-            if (_accel_healthy[i] && _accel_error_count[i] > _accel_startup_error_count[i] && have_zero_accel_error_count) {
-                // we prefer not to use a accel that has had errors
-                _accel_healthy[i] = false;
-            }
-        }
+    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+       if (_gyro_healthy[i] && _gyro_error_count[i] > _gyro_startup_error_count[i] && have_zero_gyro_error_count) {
+           // we prefer not to use a gyro that has had errors
+           _gyro_healthy[i] = false;
+       }
+       if (_accel_healthy[i] && _accel_error_count[i] > _accel_startup_error_count[i] && have_zero_accel_error_count) {
+           // we prefer not to use a accel that has had errors
+           _accel_healthy[i] = false;
+       }
+    }
 
-        // set primary to first healthy accel and gyro
-        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            if (_gyro_healthy[i] && _use[i]) {
-                _primary_gyro = i;
-                break;
-            }
+    // set primary to first healthy accel and gyro
+    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+        if (_gyro_healthy[i] && _use[i]) {
+            _primary_gyro = i;
+            break;
         }
-        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            if (_accel_healthy[i] && _use[i]) {
-                _primary_accel = i;
-                break;
-            }
+    }
+    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+        if (_accel_healthy[i] && _use[i]) {
+            _primary_accel = i;
+            break;
         }
     }
 
@@ -1219,36 +1205,32 @@ void AP_InertialSensor::wait_for_sample(void)
     }
 
 check_sample:
-    if (!_hil_mode) {
-        // we also wait for at least one backend to have a sample of both
-        // accel and gyro. This normally completes immediately.
-        bool gyro_available = false;
-        bool accel_available = false;
-        while (true) {
-            for (uint8_t i=0; i<_backend_count; i++) {
-                _backends[i]->accumulate();
-            }
 
-            for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-                gyro_available |= _new_gyro_data[i];
-                accel_available |= _new_accel_data[i];
-            }
-
-            if (gyro_available && accel_available) {
-                break;
-            }
-
-            hal.scheduler->delay_microseconds(100);
+    // we also wait for at least one backend to have a sample of both
+    // accel and gyro. This normally completes immediately.
+    bool gyro_available = false;
+    bool accel_available = false;
+    while (true) {
+        for (uint8_t i=0; i<_backend_count; i++) {
+            _backends[i]->accumulate();
         }
+
+        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+            gyro_available |= _new_gyro_data[i];
+            accel_available |= _new_accel_data[i];
+        }
+
+        if (gyro_available && accel_available) {
+            break;
+        }
+
+        hal.scheduler->delay_microseconds(100);
     }
+
 
     now = AP_HAL::micros();
-    if (_hil_mode && _hil.delta_time > 0) {
-        _delta_time = _hil.delta_time;
-        _hil.delta_time = 0;
-    } else {
-        _delta_time = (now - _last_sample_usec) * 1.0e-6f;
-    }
+   
+    _delta_time = (now - _last_sample_usec) * 1.0e-6f;
     _last_sample_usec = now;
 
 #if 0

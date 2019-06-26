@@ -135,8 +135,7 @@ public:
         k_param_stall_prevention,
         k_param_optflow,
         k_param_cli_enabled,
-        k_param_trim_rc_at_start, // unused
-        k_param_hil_mode,
+        k_param_trim_rc_at_start, // unuse
         k_param_land_disarm_delay,  // unused - moved to AP_Landing
         k_param_glide_slope_threshold,
         k_param_rudder_only,
@@ -509,10 +508,6 @@ public:
     AP_Int16 pitch_trim_cd;
     AP_Int16 FBWB_min_altitude_cm;
     AP_Int8  hil_servos;
-#if HIL_SUPPORT
-    AP_Int8  hil_mode;
-#endif
-
     AP_Int8 compass_enabled;
     AP_Int8 flap_1_percent;
     AP_Int8 flap_1_speed;
