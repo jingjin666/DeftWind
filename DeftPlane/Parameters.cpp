@@ -1130,12 +1130,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: ../libraries/AP_AdvancedFailsafe/AP_AdvancedFailsafe.cpp
     GOBJECT(afs,  "AFS_", AP_AdvancedFailsafe),
 
-#if OPTFLOW == ENABLED
-    // @Group: FLOW
-    // @Path: ../libraries/AP_OpticalFlow/OpticalFlow.cpp
-    GOBJECT(optflow,   "FLOW", OpticalFlow),
-#endif
-
     // @Group: MIS_
     // @Path: ../libraries/AP_Mission/AP_Mission.cpp
     GOBJECT(mission, "MIS_",       AP_Mission),

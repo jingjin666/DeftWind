@@ -186,13 +186,6 @@ void Plane::init_ardupilot()
             ahrs.set_compass(&compass);
         }
     }
-    
-#if OPTFLOW == ENABLED
-    // make optflow available to libraries
-    if (optflow.enabled()) {
-        ahrs.set_optflow(&optflow);
-    }
-#endif
 
     // give AHRS the airspeed sensor
     ahrs.set_airspeed(&airspeed);
@@ -243,13 +236,6 @@ void Plane::init_ardupilot()
     // set the correct flight mode
     // ---------------------------
     reset_control_switch();
-
-    // initialise sensor
-#if OPTFLOW == ENABLED
-    if (optflow.enabled()) {
-        optflow.init();
-    }
-#endif
 
     // disable safety if requested
     BoardConfig.init_safety();

@@ -16,14 +16,13 @@
  */
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
-#include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 
 #include "ap_version.h"
 #include "GCS.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
 #include <drivers/drv_pwm_output.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -1453,43 +1452,6 @@ void GCS_MAVLINK::handle_set_mode(mavlink_message_t* msg, set_mode_fn set_mode)
     // send ACK or NAK
     mavlink_msg_command_ack_send_buf(msg, chan, MAVLINK_MSG_ID_SET_MODE, result);
 }
-
-#if AP_AHRS_NAVEKF_AVAILABLE
-/*
-  send OPTICAL_FLOW message
- */
-void GCS_MAVLINK::send_opticalflow(AP_AHRS_NavEKF &ahrs, const OpticalFlow &optflow)
-{
-    // exit immediately if no optical flow sensor or not healthy
-    if (!optflow.healthy()) {
-        return;
-    }
-
-    // get rates from sensor
-    const Vector2f &flowRate = optflow.flowRate();
-    const Vector2f &bodyRate = optflow.bodyRate();
-    float hagl = 0;
-
-    if (ahrs.have_inertial_nav()) {
-
-        ahrs.get_hagl(hagl);
-    }
-
-    // populate and send message
-    mavlink_msg_optical_flow_send(
-        chan,
-        AP_HAL::millis(),
-        0, // sensor id is zero
-        flowRate.x,
-        flowRate.y,
-        bodyRate.x,
-        bodyRate.y,
-        optflow.quality(),
-        hagl,  // ground distance (in meters) set to zero
-        flowRate.x,
-        flowRate.y);
-}
-#endif
 
 /*
   send AUTOPILOT_VERSION packet

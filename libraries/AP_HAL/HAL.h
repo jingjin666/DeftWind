@@ -10,7 +10,6 @@
 #include "Storage.h"
 #include "UARTDriver.h"
 #include "system.h"
-#include "OpticalFlow.h"
 #if HAL_WITH_UAVCAN
 #include "CAN.h"
 #endif
@@ -34,7 +33,6 @@ public:
         AP_HAL::RCOutput*   _rcout,
         AP_HAL::Scheduler*  _scheduler,
         AP_HAL::Util*       _util,
-        AP_HAL::OpticalFlow *_opticalflow,
 #if HAL_WITH_UAVCAN
         AP_HAL::CANManager* _can_mgr[MAX_NUMBER_OF_CAN_DRIVERS])
 #else
@@ -57,8 +55,7 @@ public:
         rcin(_rcin),
         rcout(_rcout),
         scheduler(_scheduler),
-        util(_util),
-        opticalflow(_opticalflow)
+        util(_util)
     {
 #if HAL_WITH_UAVCAN
         if (_can_mgr == nullptr) {
@@ -108,7 +105,6 @@ public:
     AP_HAL::RCOutput*   rcout;
     AP_HAL::Scheduler*  scheduler;
     AP_HAL::Util        *util;
-    AP_HAL::OpticalFlow *opticalflow;
 #if HAL_WITH_UAVCAN
     AP_HAL::CANManager* can_mgr[MAX_NUMBER_OF_CAN_DRIVERS];
 #else

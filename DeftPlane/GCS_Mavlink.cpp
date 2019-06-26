@@ -646,15 +646,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
 #endif // MOUNT == ENABLED
         break;
 
-    case MSG_OPTICAL_FLOW:
-#if OPTFLOW == ENABLED
-        if (plane.optflow.enabled()) {        
-            CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
-            send_opticalflow(plane.ahrs, plane.optflow);
-        }
-#endif
-        break;
-
     case MSG_EKF_STATUS_REPORT:
 #if AP_AHRS_NAVEKF_AVAILABLE
         CHECK_PAYLOAD_SIZE(EKF_STATUS_REPORT);
@@ -920,7 +911,6 @@ GCS_MAVLINK_Plane::data_stream_send(void)
         send_message(MSG_BATTERY2);
         send_message(MSG_BATTERY_STATUS);
         send_message(MSG_MOUNT_STATUS);
-        send_message(MSG_OPTICAL_FLOW);
         send_message(MSG_EKF_STATUS_REPORT);
         send_message(MSG_GIMBAL_REPORT);
         send_message(MSG_VIBRATION);

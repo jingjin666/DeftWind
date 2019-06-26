@@ -58,7 +58,6 @@ enum ap_message {
     MSG_BATTERY2,
     MSG_CAMERA_FEEDBACK,
     MSG_MOUNT_STATUS,
-    MSG_OPTICAL_FLOW,
     MSG_GIMBAL_REPORT,
     MSG_MAG_CAL_PROGRESS,
     MSG_MAG_CAL_REPORT,
@@ -168,9 +167,6 @@ public:
     void send_sensor_offsets(const AP_InertialSensor &ins, const Compass &compass, AP_Baro &barometer);
     void send_ahrs(AP_AHRS &ahrs);
     void send_battery2(const AP_BattMonitor &battery);
-#if AP_AHRS_NAVEKF_AVAILABLE
-    void send_opticalflow(AP_AHRS_NavEKF &ahrs, const OpticalFlow &optflow);
-#endif
     void send_autopilot_version(uint8_t major_version, uint8_t minor_version, uint8_t patch_version, uint8_t version_type) const;
     void send_local_position(const AP_AHRS &ahrs) const;
     void send_vibration(const AP_InertialSensor &ins) const;

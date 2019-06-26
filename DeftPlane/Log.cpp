@@ -196,11 +196,7 @@ void Plane::Log_Write_Attitude(void)
     }
 
 #if AP_AHRS_NAVEKF_AVAILABLE
- #if OPTFLOW == ENABLED
-    DataFlash.Log_Write_EKF(ahrs,optflow.enabled());
- #else
     DataFlash.Log_Write_EKF(ahrs,false);
- #endif
     DataFlash.Log_Write_AHRS2(ahrs);
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -403,29 +399,6 @@ struct PACKED log_Optflow {
     float body_y;
 };
 
-#if OPTFLOW == ENABLED
-// Write an optical flow packet
-void Plane::Log_Write_Optflow()
-{
-    // exit immediately if not enabled
-    if (!optflow.enabled()) {
-        return;
-    }
-    const Vector2f &flowRate = optflow.flowRate();
-    const Vector2f &bodyRate = optflow.bodyRate();
-    struct log_Optflow pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_OPTFLOW_MSG),
-        time_us         : AP_HAL::micros64(),
-        surface_quality : optflow.quality(),
-        flow_x           : flowRate.x,
-        flow_y           : flowRate.y,
-        body_x           : bodyRate.x,
-        body_y           : bodyRate.y
-    };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
-}
-#endif
-
 struct PACKED log_Arm_Disarm {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -557,10 +530,6 @@ const struct LogStructure Plane::log_structure[] = {
       "QTUN", "Qffffhhfffff", "TimeUS,AngBst,ThrOut,DAlt,Alt,DCRt,CRt,DVx,DVy,DAx,DAy,TMix" },
     { LOG_AOA_SSA_MSG, sizeof(log_AOA_SSA),
       "AOA", "Qff", "TimeUS,AOA,SSA" },
-#if OPTFLOW == ENABLED
-    { LOG_OPTFLOW_MSG, sizeof(log_Optflow),
-      "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY" },
-#endif
     { LOG_PIQR_MSG, sizeof(log_PID), \
       "PIQR", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
     { LOG_PIQP_MSG, sizeof(log_PID), \
@@ -628,11 +597,6 @@ void Plane::Log_Write_Control_Tuning() {}
 void Plane::Log_Write_Nav_Tuning() {}
 void Plane::Log_Write_Status() {}
 void Plane::Log_Write_Sonar() {}
-
- #if OPTFLOW == ENABLED
-void Plane::Log_Write_Optflow() {}
- #endif
-
 void Plane::Log_Write_Current() {}
 void Plane::Log_Arm_Disarm() {}
 void Plane::Log_Write_GPS(uint8_t instance) {}

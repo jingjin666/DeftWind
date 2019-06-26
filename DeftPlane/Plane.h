@@ -87,8 +87,6 @@
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 
 #include <AP_Rally/AP_Rally.h>
-
-#include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
 #include <AP_RSSI/AP_RSSI.h>                   // RSSI Library
 #include <AP_Parachute/AP_Parachute.h>
 #include <AP_ADSB/AP_ADSB.h>
@@ -316,11 +314,6 @@ private:
     // Camera
 #if CAMERA == ENABLED
     AP_Camera camera{&relay, MASK_LOG_CAMERA, current_loc, gps, ahrs};
-#endif
-
-#if OPTFLOW == ENABLED
-    // Optical flow sensor
-    OpticalFlow optflow{ahrs};
 #endif
 
     // Rally Ponints

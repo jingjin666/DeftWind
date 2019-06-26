@@ -35,7 +35,6 @@ static RCInput rcinDriver;
 static RCOutput rcoutDriver;
 static Scheduler schedulerInstance;
 static UAVRSUtil utilInstance;
-static OpticalFlow opticalFlowDriver;
 
 static UAVRS::I2CDeviceManager i2c_mgr_instance;
 static UAVRS::SPIDeviceManager spi_mgr_instance;
@@ -61,7 +60,6 @@ HAL_UAVRS::HAL_UAVRS() :
         &rcoutDriver,
         &schedulerInstance,
         &utilInstance,
-        &opticalFlowDriver,
         nullptr)
 {}
 
