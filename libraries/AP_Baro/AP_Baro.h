@@ -154,9 +154,6 @@ public:
     // return number of registered sensors
     uint8_t num_instances(void) const { return _num_sensors; }
 
-    // enable HIL mode
-    void set_hil_mode(void) { _hil_mode = true; }
-
     // set baro drift amount
     void set_baro_drift_altitude(float alt) { _alt_offset = alt; }
 
@@ -208,7 +205,6 @@ private:
     DerivativeFilterFloat_Size7         _climb_rate_filter;
     AP_Float                            _specific_gravity; // the specific gravity of fluid for an ROV 1.00 for freshwater, 1.024 for salt water
     AP_Float                            _user_ground_temperature; // user override of the ground temperature used for EAS2TAS
-    bool                                _hil_mode:1;
     float                               _guessed_ground_temperature; // currently ground temperature estimate using our best abailable source
 
     // when did we last notify the GCS of new pressure reference?

@@ -25,18 +25,10 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
-#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #include "AP_Baro_SITL.h"
-#include "AP_Baro_BMP085.h"
-#include "AP_Baro_BMP280.h"
-#include "AP_Baro_HIL.h"
 #include "AP_Baro_MS5611.h"
-#include "AP_Baro_qflight.h"
-#if HAL_WITH_UAVCAN
-#include "AP_Baro_UAVCAN.h"
-#endif
 
 #define INTERNAL_TEMPERATURE_CLAMP 35.0f
 
@@ -97,34 +89,6 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Description: This sets the specific gravity of the fluid when flying an underwater ROV.
     // @Values: 1.0:Freshwater,1.024:Saltwater
     AP_GROUPINFO_FRAME("SPEC_GRAV", 8, AP_Baro, _specific_gravity, 1.0, AP_PARAM_FRAME_SUB),
-
-#if BARO_MAX_INSTANCES > 1
-    // @Param: ABS_PRESS2
-    // @DisplayName: Absolute Pressure
-    // @Description: calibrated ground pressure in Pascals
-    // @Units: Pa
-    // @Increment: 1
-    // @ReadOnly: True
-    // @Volatile: True
-    // @User: Advanced
-    AP_GROUPINFO("ABS_PRESS2", 9, AP_Baro, sensors[1].ground_pressure, 0),
-
-    // Slot 10 used to be TEMP2
-#endif
-
-#if BARO_MAX_INSTANCES > 2
-    // @Param: ABS_PRESS3
-    // @DisplayName: Absolute Pressure
-    // @Description: calibrated ground pressure in Pascals
-    // @Units: Pa
-    // @Increment: 1
-    // @ReadOnly: True
-    // @Volatile: True
-    // @User: Advanced
-    AP_GROUPINFO("ABS_PRESS3", 11, AP_Baro, sensors[2].ground_pressure, 0),
-
-    // Slot 12 used to be TEMP3
-#endif
 
     AP_GROUPEND
 };
@@ -382,25 +346,9 @@ void AP_Baro::init(void)
         _user_ground_temperature.notify();
     }
 
-    if (_hil_mode) {
-        drivers[0] = new AP_Baro_HIL(*this);
-        _num_drivers = 1;
-        return;
-    }
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     ADD_BACKEND(new AP_Baro_SITL(*this));
     return;
-#endif
-    
-#if HAL_WITH_UAVCAN
-    bool added;
-    do {
-        added = _add_backend(AP_Baro_UAVCAN::probe(*this));
-        if (_num_drivers == BARO_MAX_DRIVERS || _num_sensors == BARO_MAX_INSTANCES) {
-            return;
-        }
-    } while (added);
 #endif
 
 #if HAL_BARO_DEFAULT == HAL_BARO_UAVRS
@@ -413,16 +361,7 @@ void AP_Baro::init(void)
     default:
         break;
     }
-#elif HAL_BARO_DEFAULT == HAL_BARO_HIL
-    drivers[0] = new AP_Baro_HIL(*this);
-    _num_drivers = 1;
 #endif
-
-    // can optionally have baro on I2C too
-    if (_ext_bus >= 0) {
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(hal.i2c_mgr->get_device(_ext_bus, HAL_BARO_MS5611_I2C_ADDR))));
-    }
 
     if (_num_drivers == 0 || _num_sensors == 0 || drivers[0] == nullptr) {
         AP_BoardConfig::sensor_config_error("Baro: unable to initialise driver");
@@ -443,10 +382,8 @@ void AP_Baro::update(void)
         _alt_offset_active = _alt_offset;
     }
 
-    if (!_hil_mode) {
-        for (uint8_t i=0; i<_num_drivers; i++) {
-            drivers[i]->backend_update(i);
-        }
+    for (uint8_t i=0; i<_num_drivers; i++) {
+        drivers[i]->backend_update(i);
     }
 
     for (uint8_t i=0; i<_num_sensors; i++) {

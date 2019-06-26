@@ -90,15 +90,6 @@ void Plane::init_ardupilot()
     // initialise stats module
     g2.stats.init();
 
-#if HIL_SUPPORT
-    if (g.hil_mode == 1) {
-        // set sensors to HIL mode
-        ins.set_hil_mode();
-        compass.set_hil_mode();
-        barometer.set_hil_mode();
-    }
-#endif
-
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
     set_control_channels();
