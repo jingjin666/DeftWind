@@ -26,8 +26,6 @@
 #include <utility>
 #include "AP_Airspeed.h"
 #include "AP_Airspeed_MS4525.h"
-#include "AP_Airspeed_MS5525.h"
-#include "AP_Airspeed_SDP3X.h"
 #include "AP_Airspeed_analog.h"
 #if HAL_WITH_UAVCAN
 #include "AP_Airspeed_UAVCAN_MS4525.h"
@@ -40,8 +38,11 @@ extern const AP_HAL::HAL &hal;
  #define ARSPD_DEFAULT_TYPE TYPE_ANALOG
  #define ARSPD_DEFAULT_PIN 1
 #else
- #define ARSPD_DEFAULT_TYPE TYPE_UAVCAN_MS4525
- #define ARSPD_DEFAULT_PIN 65
+ #define ARSPD_DEFAULT_TYPE TYPE_I2C_MS4525
+ #define ARSPD_DEFAULT_PIN  65
+
+ #define ARSPD_DEFAULT_TYPE2 TYPE_UAVCAN_MS4525
+ #define ARSPD_DEFAULT_PIN2 65
 #endif
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
@@ -133,7 +134,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Description: Type of 2nd airspeed sensor
     // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-SDP3X
     // @User: Standard
-    AP_GROUPINFO_FLAGS("2_TYPE", 11, AP_Airspeed, param[1].type, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("2_TYPE", 11, AP_Airspeed, param[1].type, ARSPD_DEFAULT_TYPE2, AP_PARAM_FLAG_ENABLE),
 
     // @Param: 2_USE
     // @DisplayName: Enable use of 2nd airspeed sensor
@@ -160,7 +161,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @DisplayName: Airspeed pin for 2nd airspeed sensor
     // @Description: The pin number that the airspeed sensor is connected to for analog sensors. Set to 15 on the Pixhawk for the analog airspeed port. 
     // @User: Advanced
-    AP_GROUPINFO("2_PIN",  15, AP_Airspeed, param[1].pin, 0),
+    AP_GROUPINFO("2_PIN",  15, AP_Airspeed, param[1].pin, ARSPD_DEFAULT_PIN2),
 
     // @Param: 2_AUTOCAL
     // @DisplayName: Automatic airspeed ratio calibration for 2nd airspeed sensor
@@ -234,18 +235,6 @@ void AP_Airspeed::init()
             break;
         case TYPE_ANALOG:
             sensor[i] = new AP_Airspeed_Analog(*this, i);
-            break;
-        case TYPE_I2C_MS5525:
-            sensor[i] = new AP_Airspeed_MS5525(*this, i, AP_Airspeed_MS5525::MS5525_ADDR_AUTO);
-            break;
-        case TYPE_I2C_MS5525_ADDRESS_1:
-            sensor[i] = new AP_Airspeed_MS5525(*this, i, AP_Airspeed_MS5525::MS5525_ADDR_1);
-            break;
-        case TYPE_I2C_MS5525_ADDRESS_2:
-            sensor[i] = new AP_Airspeed_MS5525(*this, i, AP_Airspeed_MS5525::MS5525_ADDR_2);
-            break;
-        case TYPE_I2C_SDP3X:
-            sensor[i] = new AP_Airspeed_SDP3X(*this, i);
             break;
 #if HAL_WITH_UAVCAN
 		case TYPE_UAVCAN_MS4525:

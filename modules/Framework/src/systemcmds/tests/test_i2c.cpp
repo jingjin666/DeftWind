@@ -213,23 +213,21 @@ else {
 	}
 
 	if(i2c_dev == nullptr) {
-		i2c_dev = new I2CDevice(bus, 0xA0, false);
+		i2c_dev = new I2CDevice(bus, 0x28, false);
 	}
 
 	for(uint8_t i=0; i < 8; i++) {
-		ret = i2c_dev->transfer(send, 0, recv, sizeof(recv));
-		if(ret) {
-			for(uint8_t i = 0; i < sizeof(recv); i++) {
-				printf("0x%02X ", recv[i]);
-				if((i + 1) % 16 == 0) {
-					printf("\n");
-				}
-			}
-			printf("\n");
-		} else {
-			printf("I2c transfer [%d] error.\n", i);
-		}
-		sleep(1);
+        uint8_t cmd = 0;
+            i2c_dev->transfer(&cmd, 1, nullptr, 0);
+            ::usleep(10000);
+            uint8_t data[4];
+
+            if (!i2c_dev->transfer(nullptr, 0, data, sizeof(data))) {
+                return false;
+            }
+            printf("0x%02X 0x%02X 0x%02X 0x%02X\r\n", data[0], data[1], data[2], data[3]);
+
+            ::sleep(1);
 	}
 	return 0;
 }

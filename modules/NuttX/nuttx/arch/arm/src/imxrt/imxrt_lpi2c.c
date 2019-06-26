@@ -1166,11 +1166,11 @@ static inline void imxrt_lpi2c_sendstart(FAR struct imxrt_lpi2c_priv_s *priv,
 
   if ((priv->flags & I2C_M_READ) != 0)
     {
-      addr = address | 0x01;
+      addr = (address << 1) | 0x01;
     }
   else
     {
-      addr = address;
+      addr = (address << 1);
     }
 
   imxrt_lpi2c_putreg(priv, IMXRT_LPI2C_MTDR_OFFSET,
