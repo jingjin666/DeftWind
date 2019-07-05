@@ -342,6 +342,15 @@ __EXPORT extern uint32_t up_pwm_servo_get_rate_group(unsigned group);
 __EXPORT extern int	up_pwm_servo_set_rate_group_update(unsigned group, unsigned rate);
 
 /**
+ * Set the update clock for a given rate group.
+ *
+ * @param group		The rate group whose update rate will be changed.
+ * @param clock_MHz	the clock in MHz
+ * @return		OK if the group was adjusted, -ERANGE if an unsupported update clock is set.
+ */
+__EXPORT extern int	up_pwm_servo_set_rate_group_clock(unsigned group, unsigned clock_MHz);
+
+/**
  * Trigger all timer's channels in Oneshot mode to fire
  * the oneshot with updated values.
  * Nothing is done if not in oneshot mode.
@@ -365,5 +374,12 @@ __EXPORT extern int	up_pwm_servo_set(unsigned channel, servo_position_t value);
  *			outputs are not armed or not configured.
  */
 __EXPORT extern servo_position_t up_pwm_servo_get(unsigned channel);
+
+/**
+ * trigger immediate output for channels in the channel_mask
+ *
+ * @param channel_mask	The channels to trigger
+ */
+__EXPORT extern int up_pwm_servo_trigger(uint32_t channel_mask);
 
 __END_DECLS

@@ -35,11 +35,11 @@
 #include <stdarg.h>
 #include <fcntl.h>
 #include <errno.h>
-#include <px4_config.h>
-#include <px4_posix.h>
+#include <dp_config.h>
+#include <dp_posix.h>
 #include "uORBUtils.hpp"
 #include "uORBManager.hpp"
-#include "px4_config.h"
+#include "dp_config.h"
 #include "uORBDevices.hpp"
 
 

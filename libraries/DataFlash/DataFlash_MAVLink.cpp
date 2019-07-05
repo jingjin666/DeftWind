@@ -577,7 +577,7 @@ bool DataFlash_MAVLink::send_log_block(struct dm_block &block)
 #endif
     
 #if DF_MAVLINK_DISABLE_INTERRUPTS
-    irqstate_t istate = irqsave();
+    irqstate_t istate = dp_enter_critical_section();
 #endif
 
 // DM_packing: 267039 events, 0 overruns, 8440834us elapsed, 31us avg, min 31us max 32us 0.488us rms
@@ -599,7 +599,7 @@ bool DataFlash_MAVLink::send_log_block(struct dm_block &block)
     hal.util->perf_end(_perf_packing);
 
 #if DF_MAVLINK_DISABLE_INTERRUPTS
-    irqrestore(istate);
+    dp_leave_critical_section(istate);
 #endif
 
     block.last_sent = AP_HAL::millis();

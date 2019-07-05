@@ -8,9 +8,6 @@
 #include <systemlib/perf_counter.h>
 #include <AP_HAL/AP_HAL.h>
 
-
-
-
 #define UAVRS_SCHEDULER_MAX_TIMER_PROCS 8
 
 #define UAVRS_MAIN_PRIORITY_BOOST 241

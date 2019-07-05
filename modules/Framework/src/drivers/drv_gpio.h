@@ -14,8 +14,31 @@
 #define _DRV_GPIO_H
 
 #include <sys/ioctl.h>
+#ifdef CONFIG_ARCH_BOARD_UAVRS_V1
+/*
+ * UAVRSv1 GPIO numbers.
+ *
+ * There are no alternate functions on this board.
+ */
+# define GPIO_SERVO_1			(1<<0)		/**< servo 1 output */
+# define GPIO_SERVO_2			(1<<1)		/**< servo 2 output */
+# define GPIO_SERVO_3			(1<<2)		/**< servo 3 output */
+# define GPIO_SERVO_4			(1<<3)		/**< servo 4 output */
+# define GPIO_SERVO_5			(1<<4)		/**< servo 5 output */
+# define GPIO_SERVO_6			(1<<5)		/**< servo 6 output */
+# define GPIO_SERVO_7			(1<<6)		/**< servo 7 output */
+# define GPIO_SERVO_8			(1<<7)		/**< servo 8 output */
 
-#ifdef CONFIG_ARCH_BOARD_UAVRS_V2
+# define GPIO_CAMERA_TRIGGER	(1<<10)		/**< relay CAMERA TRIGGER */
+# define GPIO_CAMERA_FEEDBACK	(1<<11)		/**< input CAMERA FEEDBACK */
+
+/**
+ * Device paths for things that support the GPIO ioctl protocol.
+ */
+# define FMU_DEVICE_PATH	"/dev/fmu"
+
+#elif defined(CONFIG_ARCH_BOARD_UAVRS_V2)
+
 /*
  * UAVRSv2 GPIO numbers.
  *

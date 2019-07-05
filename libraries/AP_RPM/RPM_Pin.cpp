@@ -119,11 +119,11 @@ void AP_RPM_Pin::update(void)
         float dt_avg;
 
         // disable interrupts to prevent race with irq_handler
-        irqstate_t istate = irqsave();
+        irqstate_t istate = dp_enter_critical_section();
         dt_avg = irq_state[state.instance].dt_sum / irq_state[state.instance].dt_count;
         irq_state[state.instance].dt_count = 0;
         irq_state[state.instance].dt_sum = 0;
-        irqrestore(istate);
+        dp_leave_critical_section(istate);
 
         const float scaling = ap_rpm._scaling[state.instance];
         float maximum = ap_rpm._maximum[state.instance];

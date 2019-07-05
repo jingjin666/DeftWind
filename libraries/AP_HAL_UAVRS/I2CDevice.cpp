@@ -5,14 +5,12 @@
 #include "Util.h"
 #include "Scheduler.h"
 
-
 namespace UAVRS{
 
 uint8_t UAVRS::UAVRS_I2C::instance;
 pthread_mutex_t UAVRS::UAVRS_I2C::instance_lock;
 
 DeviceBus I2CDevice::businfo[I2CDevice::num_buses];
-
 
 /*
   constructor for I2C wrapper class

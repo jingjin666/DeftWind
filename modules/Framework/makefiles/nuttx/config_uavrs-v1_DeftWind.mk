@@ -12,23 +12,23 @@ MODULES		+= $(DEFTWIND_MODULE_DIR)
 #
 MODULES			+= drivers/boards/uavrs-v1
 MODULES			+= drivers/device
-#MODULES			+= drivers/stm32
-#MODULES			+= drivers/stm32/adc
+MODULES			+= drivers/stm32
+MODULES			+= drivers/stm32/adc
 MODULES			+= drivers/led
-#MODULES			+= drivers/dpfmu
+MODULES			+= drivers/fmu
 
 #
 # System commands
 #
-#MODULES			+= systemcmds/bl_update
-#MODULES			+= systemcmds/mixer
-#MODULES			+= systemcmds/perf
-#MODULES			+= systemcmds/reboot
-#MODULES			+= systemcmds/top
-#MODULES			+= systemcmds/nshterm
-#MODULES   		+= systemcmds/mtd
-#MODULES   		+= systemcmds/ver
-#MODULES      += systemcmds/usb_connected
+MODULES			+= systemcmds/bl_update
+MODULES			+= systemcmds/mixer
+MODULES			+= systemcmds/perf
+MODULES			+= systemcmds/reboot
+MODULES			+= systemcmds/top
+MODULES			+= systemcmds/nshterm
+MODULES   		+= systemcmds/mtd
+MODULES   		+= systemcmds/ver
+MODULES         += systemcmds/usb_connected
 MODULES			+= systemcmds/tests
 
 #

@@ -472,7 +472,7 @@ void NavEKF2_core::UpdateFilter(bool predict)
 
     // start the timer used for load measurement
 #if EK2_DISABLE_INTERRUPTS
-    irqstate_t istate = irqsave();
+    irqstate_t istate = dp_enter_critical_section();
 #endif
     hal.util->perf_begin(_perf_UpdateFilter);
 
@@ -523,7 +523,7 @@ void NavEKF2_core::UpdateFilter(bool predict)
     // stop the timer used for load measurement
     hal.util->perf_end(_perf_UpdateFilter);
 #if EK2_DISABLE_INTERRUPTS
-    irqrestore(istate);
+    dp_leave_critical_section(istate);
 #endif
 }
 

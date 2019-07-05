@@ -18,7 +18,9 @@ __BEGIN_DECLS
 #define dp_leave_critical_section(flags)  	leave_critical_section(flags)
 
 #if defined(CONFIG_ARCH_BOARD_UAVRS_V1)
-include <stm32.h>
+#include <stm32.h>
+#define GPIO_OUTPUT_ONE_ GPIO_OUTPUT_SET
+#define GPIO_OUTPUT_ZERO_ GPIO_OUTPUT_CLEAR
 #define dp_arch_configgpio(pinset)             		stm32_configgpio(pinset)
 #define dp_arch_unconfiggpio(pinset)           	stm32_unconfiggpio(pinset)
 #define dp_arch_gpioread(pinset)               		stm32_gpioread(pinset)
@@ -33,6 +35,8 @@ include <stm32.h>
 #define dp_spibus_initialize(bus_num_1based)		stm32_spibus_initialize(bus_num_1based)
 #elif defined(CONFIG_ARCH_BOARD_UAVRS_V2)
 #include <chip.h>
+#define GPIO_OUTPUT_ONE_ GPIO_OUTPUT_ONE
+#define GPIO_OUTPUT_ZERO_ GPIO_OUTPUT_ZERO
 #define dp_arch_configgpio(pinset)             		imxrt_config_gpio(pinset)
 #define dp_arch_unconfiggpio(pinset)
 #define dp_arch_gpioread(pinset)              	 	imxrt_gpio_read(pinset)

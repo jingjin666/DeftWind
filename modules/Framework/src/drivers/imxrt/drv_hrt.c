@@ -513,7 +513,7 @@ hrt_absolute_time(void)
 
 	/*
 	 * Counter state.  Marked volatile as they may change
-	 * inside this routine but outside the irqsave/restore
+	 * inside this routine but outside the dp_enter_critical_section/dp_leave_critical_section
 	 * pair.  Discourage the compiler from moving loads/stores
 	 * to these outside of the protected range.
 	 */
@@ -577,7 +577,7 @@ abstime_to_ts(struct timespec *ts, hrt_abstime abstime)
  * Compare a time value with the current time as atomic operation.
  */
 hrt_abstime
-hrt_elapsed_time_atomic(const volatile hrt_abstime *then)
+hrt_elapsed_time(const volatile hrt_abstime *then)
 {
 	irqstate_t flags = dp_enter_critical_section();
 

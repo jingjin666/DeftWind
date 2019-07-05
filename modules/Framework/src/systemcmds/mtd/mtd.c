@@ -38,6 +38,12 @@
 
 #include <board_config.h>
 
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_UAVRS_V1
+    #define SPI_BUS_RAMTRON PX4_SPI_BUS_RAMTRON
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_UAVRS_V2
+    #define SPI_BUS_RAMTRON UAVRS_SPI_BUS_RAMTRON
+#endif
+
 __EXPORT int mtd_main(int argc, char *argv[]);
 
 #ifndef CONFIG_MTD
@@ -178,7 +184,7 @@ static int
 ramtron_attach(void)
 {
 	/* initialize the right spi */
-	struct spi_dev_s *spi = dp_spibus_initialize(UAVRS_SPI_BUS_RAMTRON);
+	struct spi_dev_s *spi = dp_spibus_initialize(SPI_BUS_RAMTRON);
 
 	if (spi == NULL) {
 		DP_ERR("failed to locate spi bus");

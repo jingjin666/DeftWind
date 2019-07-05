@@ -262,6 +262,20 @@ private:
 };
 
 const FMU::GPIOConfig FMU::_gpio_tab[] = {
+#ifdef CONFIG_ARCH_BOARD_UAVRS_V1
+    {GPIO_GPIO0_INPUT,       GPIO_GPIO0_OUTPUT,       0},
+    {GPIO_GPIO1_INPUT,       GPIO_GPIO1_OUTPUT,       0},
+    {GPIO_GPIO2_INPUT,       GPIO_GPIO2_OUTPUT,       0},
+    {GPIO_GPIO3_INPUT,       GPIO_GPIO3_OUTPUT,       0},
+    {GPIO_GPIO4_INPUT,       GPIO_GPIO4_OUTPUT,       0},
+    {GPIO_GPIO5_INPUT,       GPIO_GPIO5_OUTPUT,       0},
+    {GPIO_GPIO6_INPUT,       GPIO_GPIO6_OUTPUT,       0},
+    {GPIO_GPIO7_INPUT,       GPIO_GPIO7_OUTPUT,       0},
+    {GPIO_GPIO8_INPUT,       GPIO_GPIO8_OUTPUT,       0},
+    {GPIO_GPIO9_INPUT,       GPIO_GPIO9_OUTPUT,       0},
+    {GPIO_CAMERA_TRIGGER_INPUT,     GPIO_CAMERA_TRIGGER_OUTPUT,     0},
+    {GPIO_CAMERA_FEEDBACK_INPUT,    GPIO_CAMERA_FEEDBACK_OUTPUT,    0},
+#elif defined(CONFIG_ARCH_BOARD_UAVRS_V2)
 	{GPIO_GPIO0_INPUT,        GPIO_GPIO0_OUTPUT,       0},
 	{GPIO_GPIO1_INPUT,        GPIO_GPIO1_OUTPUT,       0},
 	{GPIO_GPIO2_INPUT,        GPIO_GPIO2_OUTPUT,       0},
@@ -279,6 +293,7 @@ const FMU::GPIOConfig FMU::_gpio_tab[] = {
 	{GPIO_GPIO14_INPUT,       GPIO_GPIO14_OUTPUT,      0},
 	{GPIO_CAMERA_TRIGGER_INPUT,     GPIO_CAMERA_TRIGGER_OUTPUT,     0},
 	{GPIO_CAMERA_FEEDBACK_INPUT,    GPIO_CAMERA_FEEDBACK_OUTPUT,    0},
+#endif	
 };
 
 const unsigned		FMU::_ngpio = sizeof(FMU::_gpio_tab) / sizeof(FMU::_gpio_tab[0]);
@@ -2250,11 +2265,11 @@ FMU::gpio_set_function(uint32_t gpios, int function)
 				break;
 
 			case GPIO_SET_OUTPUT_LOW:
-				dp_arch_configgpio((_gpio_tab[i].output & ~(GPIO_OUTPUT_ONE)) | GPIO_OUTPUT_ZERO);
+				dp_arch_configgpio((_gpio_tab[i].output & ~(GPIO_OUTPUT_ONE_)) | GPIO_OUTPUT_ZERO_);
 				break;
 
 			case GPIO_SET_OUTPUT_HIGH:
-				dp_arch_configgpio((_gpio_tab[i].output & ~(GPIO_OUTPUT_ZERO)) | GPIO_OUTPUT_ONE);
+				dp_arch_configgpio((_gpio_tab[i].output & ~(GPIO_OUTPUT_ZERO_)) | GPIO_OUTPUT_ONE_);
 				break;
 
 			case GPIO_SET_ALT_1:
