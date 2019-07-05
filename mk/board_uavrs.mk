@@ -97,7 +97,7 @@ uavrs-v1-clean:
 	@echo "%%%% Cleaning target"
 	rm -rf $(DP_ROOT)/Archives
 	rm -rf $(DP_ROOT)/Build $(DP_ROOT)/Images/*.dp $(DP_ROOT)/Images/*.bin $(DP_ROOT)/Images/*.hex
-	rm -f $(SRCROOT)/*.o
+	rm -f $(SRCROOT)/*.o $(SRCROOT)/*.d
 		
 #####################
 # 伪目标uavrs-v2-clean
@@ -108,7 +108,7 @@ uavrs-v2-clean:
 	@echo "%%%% Cleaning target"
 	rm -rf $(DP_ROOT)/Archives
 	rm -rf $(DP_ROOT)/Build $(DP_ROOT)/Images/*.dp $(DP_ROOT)/Images/*.bin $(DP_ROOT)/Images/*.hex
-	rm -f $(SRCROOT)/*.o
+	rm -f $(SRCROOT)/*.o $(SRCROOT)/*.d
 
 #####################
 # 生成【~/DeftWind/module.mk】
