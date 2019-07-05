@@ -20,15 +20,15 @@ MODULES			+= drivers/fmu
 #
 # System commands
 #
-#MODULES			+= systemcmds/bl_update
+#MODULES		+= systemcmds/bl_update
 MODULES			+= systemcmds/mixer
 MODULES			+= systemcmds/perf
 MODULES			+= systemcmds/reboot
 MODULES			+= systemcmds/top
-#MODULES			+= systemcmds/nshterm
-MODULES   		+= systemcmds/mtd
-MODULES   		+= systemcmds/ver
-MODULES      += systemcmds/usb_connected
+#MODULES		+= systemcmds/nshterm
+MODULES   	+= systemcmds/mtd
+MODULES   	+= systemcmds/ver
+MODULES     += systemcmds/usb_connected
 MODULES			+= systemcmds/tests
 
 #

@@ -186,25 +186,25 @@ static int io_timer_handler(uint16_t timer_index)
 	return 0;
 }
 
-int io_timer_handler0(int irq, void *context)
+int io_timer_handler0(int irq, void *context, void *arg)
 {
 
 	return io_timer_handler(0);
 }
 
-int io_timer_handler1(int irq, void *context)
+int io_timer_handler1(int irq, void *context, void *arg)
 {
 	return io_timer_handler(1);
 
 }
 
-int io_timer_handler2(int irq, void *context)
+int io_timer_handler2(int irq, void *context, void *arg)
 {
 	return io_timer_handler(2);
 
 }
 
-int io_timer_handler3(int irq, void *context)
+int io_timer_handler3(int irq, void *context, void *arg)
 {
 	return io_timer_handler(3);
 

@@ -156,4 +156,47 @@ __EXPORT uint8_t stm32_spi4status(FAR struct spi_dev_s *dev, uint32_t devid)
 {
 	return SPI_STATUS_PRESENT;
 }
+
+/*****************************************************************************
+ * Name: stm32_spi2register
+ *
+ * Description:
+ *   Registers media change callback
+ ****************************************************************************/
+
+__EXPORT int stm32_spi2register(struct spi_dev_s *dev, spi_mediachange_t callback,
+                       void *arg)
+{
+	spiinfo("INFO: Registering spi2 device\n");
+	return OK;
+}
+
+/*****************************************************************************
+ * Name: stm32_spi3register
+ *
+ * Description:
+ *   Registers media change callback
+ ****************************************************************************/
+
+__EXPORT int stm32_spi3register(struct spi_dev_s *dev, spi_mediachange_t callback,
+                       void *arg)
+{
+	spiinfo("INFO: Registering spi3 device\n");
+	return OK;
+}
+
+/*****************************************************************************
+* Name: stm32_spi4register
+*
+* Description:
+*	Registers media change callback
+****************************************************************************/
+
+__EXPORT int stm32_spi4register(struct spi_dev_s *dev, spi_mediachange_t callback,
+					  void *arg)
+{
+	spiinfo("INFO: Registering spi4 device\n");
+	return OK;
+}
+
 #endif

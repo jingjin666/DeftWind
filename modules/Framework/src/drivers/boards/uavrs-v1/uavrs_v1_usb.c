@@ -55,7 +55,7 @@
 #include <stm32.h>
 #include "board_config.h"
 
-#ifdef CONFIG_STM32_OTGHS
+#ifdef CONFIG_STM32_OTGFS
 
 /************************************************************************************
  * Pre-processor Definitions
@@ -64,7 +64,7 @@
 #if defined(CONFIG_USBDEV) || defined(CONFIG_USBHOST)
 #  define HAVE_USB 1
 #else
-#  warning "CONFIG_STM32_OTGHS is enabled but neither CONFIG_USBDEV nor CONFIG_USBHOST"
+#  warning "CONFIG_STM32_OTGFS is enabled but neither CONFIG_USBDEV nor CONFIG_USBHOST"
 #  undef HAVE_USB
 #endif
 

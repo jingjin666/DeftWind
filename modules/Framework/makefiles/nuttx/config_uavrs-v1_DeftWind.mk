@@ -26,9 +26,9 @@ MODULES			+= systemcmds/perf
 MODULES			+= systemcmds/reboot
 MODULES			+= systemcmds/top
 MODULES			+= systemcmds/nshterm
-MODULES   		+= systemcmds/mtd
-MODULES   		+= systemcmds/ver
-MODULES         += systemcmds/usb_connected
+MODULES   	+= systemcmds/mtd
+MODULES   	+= systemcmds/ver
+MODULES     += systemcmds/usb_connected
 MODULES			+= systemcmds/tests
 
 #
@@ -38,9 +38,11 @@ MODULES		+= examples/hello_world
 MODULES		+= examples/hello_world_cxx
 
 #
-# Board drivers
+# Library modules
 #
-MODULES		+= drivers/boards/uavrs-v1
+MODULES		+= modules/systemlib
+MODULES		+= modules/systemlib/mixer
+MODULES		+= modules/uORB
 
 #
 # Transitional support - add commands from the NuttX export archive.
