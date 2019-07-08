@@ -83,7 +83,6 @@ int8_t GPIO::analogPinToDigitalPin(uint8_t pin)
     return -1;
 }
 
-
 uint8_t GPIO::read(uint8_t pin) {
     switch (pin) {
     case UAVRS_GPIO_FMU_SERVO_PIN(0) ... UAVRS_GPIO_FMU_SERVO_PIN(5): {
@@ -137,19 +136,6 @@ void GPIO::toggle(uint8_t pin)
     write(pin, !read(pin));
 }
 
-bool GPIO::imu_data_ready(void)
-{
-#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
-    return dp_arch_gpioread(GPIO_ADIS_DRDY);
-#else
-    return false;
-#endif
-}
-
-void GPIO::imu_reset(bool)
-{}
-
-
 /* Alternative interface: */
 AP_HAL::DigitalSource* GPIO::channel(uint16_t n) {
     return new DigitalSource(0);
@@ -163,7 +149,27 @@ bool GPIO::attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p,
 
 bool GPIO::usb_connected(void)
 {
+#if defined(CONFIG_ARCH_BOARD_UAVRS_V1) || defined(CONFIG_ARCH_BOARD_UAVRS_V2)
+    return dp_arch_gpioread(GPIO_USB_OTG_VBUS) && _usb_connected;
+#else
     return false;
+#endif
+}
+
+bool GPIO::imu_data_ready(void)
+{
+#if defined(CONFIG_ARCH_BOARD_UAVRS_V1) || defined(CONFIG_ARCH_BOARD_UAVRS_V2)
+    return dp_arch_gpioread(GPIO_ADIS_DRDY);
+#else
+    return false;
+#endif
+}
+
+void GPIO::imu_reset(bool level)
+{
+#if defined(CONFIG_ARCH_BOARD_UAVRS_V1) || defined(CONFIG_ARCH_BOARD_UAVRS_V2)
+    dp_arch_gpiowrite(GPIO_ADIS_RESET, level);
+#endif
 }
 
 DigitalSource::DigitalSource(uint8_t v) :

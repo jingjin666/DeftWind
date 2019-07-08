@@ -5,7 +5,14 @@
 #include "AP_BattMonitor_Backend.h"
 
 // default pins and dividers
-#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS && defined(CONFIG_ARCH_BOARD_UAVRS_V2)
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && defined(CONFIG_ARCH_BOARD_UAVRS_V1)
+ # define AP_BATT_VOLT_PIN				   15
+ # define AP_BATT_CURR_PIN				   -1
+ # define AP_BATT_VOLTDIVIDER_DEFAULT	   9.64f
+ # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
+ # define AP_BATT_COPTER_VOLT_PIN		    8
+ # define AP_BATT_STEERING_GEAR_VOLT_PIN	9
+#elif CONFIG_HAL_BOARD == HAL_BOARD_UAVRS && defined(CONFIG_ARCH_BOARD_UAVRS_V2)
  # define AP_BATT_VOLT_PIN				   10
  # define AP_BATT_CURR_PIN				   -1
  # define AP_BATT_VOLTDIVIDER_DEFAULT	    17.9f
@@ -44,7 +51,7 @@ protected:
 
     AP_HAL::AnalogSource *_volt_pin_analog_source;
     AP_HAL::AnalogSource *_curr_pin_analog_source;
-#if defined(CONFIG_ARCH_BOARD_UAVRS_V2)	
+#if defined(CONFIG_ARCH_BOARD_UAVRS_V1)	|| defined(CONFIG_ARCH_BOARD_UAVRS_V2)
     AP_HAL::AnalogSource *_copter_volt_pin_analog_source;
 	AP_HAL::AnalogSource *_steer_volt_pin_analog_source;
 #endif

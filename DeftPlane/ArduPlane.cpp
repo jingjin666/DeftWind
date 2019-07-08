@@ -32,7 +32,7 @@
  */
 const AP_Scheduler::Task Plane::scheduler_tasks[] = {
                            // Units:   Hz      us                           
-    //SCHED_TASK(ahrs_update,           400,    400),
+    SCHED_TASK(ahrs_update,           400,    400),
     SCHED_TASK(read_radio,             50,    100),
     SCHED_TASK(check_short_failsafe,   50,    100),
     SCHED_TASK(update_speed_height,    50,    200),
@@ -401,7 +401,7 @@ void Plane::setup()
 void Plane::loop()
 {
     uint32_t loop_us = 1000000UL / scheduler.get_loop_rate_hz();
-#if 0
+#if 1
     // wait for an INS sample
     ins.wait_for_sample();
 

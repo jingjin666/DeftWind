@@ -149,7 +149,7 @@ void Plane::init_ardupilot()
     g.num_resets.set_and_save(g.num_resets+1);
 
     // init baro before we start the GCS, so that the CLI baro test works
-    //barometer.init();
+    barometer.init();
 
     // initialise rangefinder
     init_rangefinder();
@@ -258,7 +258,7 @@ void Plane::startup_ground(void)
     //INS ground start
     //------------------------
     //
-    //startup_INS_ground();
+    startup_INS_ground();
 
     // Save the settings for in-air restart
     // ------------------------------------

@@ -25,7 +25,29 @@
 #include <stdio.h>
 extern const AP_HAL::HAL& hal;
 
-#define SERIAL0_PROTOCOL SerialProtocol_None
+#if defined(CONFIG_ARCH_BOARD_UAVRS_V1)
+#define SERIAL0_PROTOCOL SerialProtocol_MAVLink2
+#define SERIAL0_BAUD AP_SERIALMANAGER_CONSOLE_BAUD/1000
+
+#define SERIAL1_PROTOCOL SerialProtocol_MAVLink2
+#define SERIAL1_BAUD AP_SERIALMANAGER_RTCM_BAUD/1000
+
+#define SERIAL2_PROTOCOL SerialProtocol_GPS
+#define SERIAL2_BAUD AP_SERIALMANAGER_GPS_BAUD/1000
+
+#define SERIAL3_PROTOCOL SerialProtocol_Nova_Rtcm
+#define SERIAL3_BAUD AP_SERIALMANAGER_BACKUP_BAUD/1000
+
+#define SERIAL4_PROTOCOL SerialProtocol_GPS
+#define SERIAL4_BAUD AP_SERIALMANAGER_GPS_BAUD/1000
+
+#define SERIAL5_PROTOCOL SerialProtocol_None
+#define SERIAL5_BAUD AP_SERIALMANAGER_BACKUP_BAUD/1000
+
+#define SERIAL6_PROTOCOL SerialProtocol_None
+#define SERIAL6_BAUD AP_SERIALMANAGER_BACKUP_BAUD/1000
+#elif defined(CONFIG_ARCH_BOARD_UAVRS_V2)
+#define SERIAL0_PROTOCOL SerialProtocol_MAVLink2
 #define SERIAL0_BAUD AP_SERIALMANAGER_CONSOLE_BAUD/1000
 
 #define SERIAL1_PROTOCOL SerialProtocol_Nova_Rtcm
@@ -45,6 +67,9 @@ extern const AP_HAL::HAL& hal;
 
 #define SERIAL6_PROTOCOL SerialProtocol_GPS
 #define SERIAL6_BAUD AP_SERIALMANAGER_GPS_BAUD/1000
+#else
+#error "Unknown board type"
+#endif
 
 const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @Param: 0_PROTOCOL

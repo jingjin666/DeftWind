@@ -21,7 +21,7 @@ else
 	else
 		set MMCSD_FORMAT no
 		echo "format failed"
-		exit
+		#exit
     fi
 fi
 
@@ -33,7 +33,7 @@ then
 		set HAVE_MICROSD 1
 	else
 		echo "mount failed"
-		exit
+		#exit
 	fi
 fi
 

@@ -12,6 +12,16 @@
 
 using namespace UAVRS;
 
+#if defined(CONFIG_ARCH_BOARD_UAVRS_V1)
+#define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"	// Usb Mavlink
+#define UARTC_DEFAULT_DEVICE "/dev/ttyS2"	// Telecom MicroHard P900
+#define UARTD_DEFAULT_DEVICE "/dev/ttyS5"	// Rtk com1 ouput position data
+#define UARTB_DEFAULT_DEVICE "/dev/ttyS1"	// Rtk com2 input rtcm data and output raw position data
+#define UARTE_DEFAULT_DEVICE "/dev/ttyS0"	// Backup Gps Ublox M8N
+// ttyS3: RC
+#define UARTF_DEFAULT_DEVICE "/dev/null"
+#define UARTG_DEFAULT_DEVICE "/dev/null"
+#elif defined(CONFIG_ARCH_BOARD_UAVRS_V2)
 #define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"	// Usb Mavlink
 #define UARTB_DEFAULT_DEVICE "/dev/ttyS1"	// Rtk com2 input rtcm data and output raw position data
 #define UARTC_DEFAULT_DEVICE "/dev/ttyS2"	// Rtk com1 ouput position data
@@ -19,6 +29,10 @@ using namespace UAVRS;
 #define UARTE_DEFAULT_DEVICE "/dev/ttyS4"	// Backup Peripheral usart
 #define UARTF_DEFAULT_DEVICE "/dev/ttyS5"   // Telecom MicroHard P900
 #define UARTG_DEFAULT_DEVICE "/dev/ttyS7"   // Backup Gps Ublox M8N
+// ttyS6: RC
+#else
+#error "Unknow serial type"
+#endif
 
 static UARTDriver uartADriver(UARTA_DEFAULT_DEVICE, "UAVRS_uartA");
 static UARTDriver uartBDriver(UARTB_DEFAULT_DEVICE, "UAVRS_uartB");
@@ -94,6 +108,13 @@ static AP_HAL::HAL::Callbacks* g_callbacks;
 
 static int main_loop(int argc, char **argv)
 {
+#if defined(CONFIG_ARCH_BOARD_UAVRS_V1)
+    hal.uartA->begin(115200);
+    hal.uartB->begin(38400);
+    hal.uartC->begin(57600);
+    hal.uartD->begin(57600);
+    hal.uartE->begin(57600);
+#elif defined(CONFIG_ARCH_BOARD_UAVRS_V2)
     //hal.uartA->begin(115200); //USB
     hal.uartB->begin(115200);   //RTK COM2
     hal.uartC->begin(115200);   //RTK COM1
@@ -101,6 +122,7 @@ static int main_loop(int argc, char **argv)
     hal.uartE->begin(115200);   //BACKUP UART
     hal.uartF->begin(115200);   //TELECOM
     hal.uartG->begin(115200);   //BACKUP GPS
+#endif
 
     hal.scheduler->init();
 

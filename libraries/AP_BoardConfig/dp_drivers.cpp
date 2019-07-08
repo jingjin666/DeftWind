@@ -60,9 +60,11 @@ void AP_BoardConfig::px4_setup_pwm()
         { 4, PWM_SERVO_MODE_4PWM, 2 },
         { 6, PWM_SERVO_MODE_6PWM, 0 },
         { 7, PWM_SERVO_MODE_3PWM1CAP, 2 },
-#if defined(CONFIG_ARCH_BOARD_UAVRS_V2)
+#if defined(CONFIG_ARCH_BOARD_UAVRS_V1)
         { 8, PWM_SERVO_MODE_12PWM, 0 },
-        { 15, PWM_SERVO_MODE_15PWM, 0 },
+#elif defined(CONFIG_ARCH_BOARD_UAVRS_V2)
+        { 8, PWM_SERVO_MODE_12PWM, 0 },
+        { 15,PWM_SERVO_MODE_15PWM, 0 },
 #endif
     };
     uint8_t mode_parm = (uint8_t)px4.pwm_count.get();
@@ -367,7 +369,7 @@ void AP_BoardConfig::px4_autodetect(void)
         return;
     }
 
-#if defined(CONFIG_ARCH_BOARD_UAVRS_V2)
+#if defined(CONFIG_ARCH_BOARD_UAVRS_V1) || defined(CONFIG_ARCH_BOARD_UAVRS_V2)
     // UAVRS has ADIS16375 and xxx on external bus
     px4.board_type.set_and_notify(PX4_BOARD_UAVRS);
     hal.console->printf("Detected UAVRS\n");

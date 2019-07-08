@@ -360,9 +360,7 @@ int nsh_archinitialize(void)
 	}
 
 	/* Then let's guess and say that there is a card in the slot. There is no card detect GPIO. */
-	sdio_mediachange(sdio, true);
-
+	//sdio_mediachange(sdio, true);
 #endif
-
 	return OK;
 }
