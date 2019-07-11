@@ -58,6 +58,42 @@
 #include "imxrt_start.h"
 #include "imxrt_gpio.h"
 
+#ifdef CONFIG_ARMV7M_DTCM
+#include "imxrt_periphclks.h"
+#include "imxrt_iomuxc.h"
+
+#define IOMUXC_GPR_GPR16_INIT_ITCM_EN_MASK       (0x1U)
+#define IOMUXC_GPR_GPR16_INIT_ITCM_EN_SHIFT      (0U)
+#define IOMUXC_GPR_GPR16_INIT_ITCM_EN(x)         (((uint32_t)(((uint32_t)(x)) << IOMUXC_GPR_GPR16_INIT_ITCM_EN_SHIFT)) & IOMUXC_GPR_GPR16_INIT_ITCM_EN_MASK)
+#define IOMUXC_GPR_GPR16_INIT_DTCM_EN_MASK       (0x2U)
+#define IOMUXC_GPR_GPR16_INIT_DTCM_EN_SHIFT      (1U)
+#define IOMUXC_GPR_GPR16_INIT_DTCM_EN(x)         (((uint32_t)(((uint32_t)(x)) << IOMUXC_GPR_GPR16_INIT_DTCM_EN_SHIFT)) & IOMUXC_GPR_GPR16_INIT_DTCM_EN_MASK)
+#define IOMUXC_GPR_GPR16_FLEXRAM_BANK_CFG_SEL_MASK (0x4U)
+#define IOMUXC_GPR_GPR16_FLEXRAM_BANK_CFG_SEL_SHIFT (2U)
+#define IOMUXC_GPR_GPR16_FLEXRAM_BANK_CFG_SEL(x) (((uint32_t)(((uint32_t)(x)) << IOMUXC_GPR_GPR16_FLEXRAM_BANK_CFG_SEL_SHIFT)) & IOMUXC_GPR_GPR16_FLEXRAM_BANK_CFG_SEL_MASK)
+
+#define IOMUXC_GPR_GPR14_CM7_CFGITCMSZ_MASK      (0xF0000U)
+#define IOMUXC_GPR_GPR14_CM7_CFGITCMSZ_SHIFT     (16U)
+#define IOMUXC_GPR_GPR14_CM7_CFGITCMSZ(x)        (((uint32_t)(((uint32_t)(x)) << IOMUXC_GPR_GPR14_CM7_CFGITCMSZ_SHIFT)) & IOMUXC_GPR_GPR14_CM7_CFGITCMSZ_MASK)
+#define IOMUXC_GPR_GPR14_CM7_CFGDTCMSZ_MASK      (0xF00000U)
+#define IOMUXC_GPR_GPR14_CM7_CFGDTCMSZ_SHIFT     (20U)
+#define IOMUXC_GPR_GPR14_CM7_CFGDTCMSZ(x)        (((uint32_t)(((uint32_t)(x)) << IOMUXC_GPR_GPR14_CM7_CFGDTCMSZ_SHIFT)) & IOMUXC_GPR_GPR14_CM7_CFGDTCMSZ_MASK)
+
+/* @brief Bank size */
+#define FSL_FEATURE_FLEXRAM_INTERNAL_RAM_BANK_SIZE (32 * 1024)
+/* @brief Total Bank numbers */
+#define FSL_FEATURE_FLEXRAM_INTERNAL_RAM_TOTAL_BANK_NUMBERS (16)
+
+enum _flexram_tcm_size
+{
+    kFLEXRAM_TCMSize32KB = 32 * 1024U,   /*!< TCM total size 32KB */
+    kFLEXRAM_TCMSize64KB = 64 * 1024U,   /*!< TCM total size 64KB */
+    kFLEXRAM_TCMSize128KB = 128 * 1024U, /*!< TCM total size 128KB */
+    kFLEXRAM_TCMSize256KB = 256 * 1024U, /*!< TCM total size 256KB */
+    kFLEXRAM_TCMSize512KB = 512 * 1024U, /*!< TCM total size 512KB */
+};
+#endif
+
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
@@ -283,6 +319,90 @@ static void go_nx_start(void *pv, unsigned int nbytes)
 }
 #endif
 
+#if CONFIG_ARMV7M_DTCM
+/****************************************************************************
+ * Name: flexram_configure
+ *
+ * Description:
+ *   FLEXRAM map TCM size to register value.
+ *
+ ****************************************************************************/
+
+static uint8_t flexram_map_tcm_size_to_register(uint8_t tcm_bank_num)
+{
+    uint8_t tcm_size_config = 0U;
+
+    switch (tcm_bank_num * FSL_FEATURE_FLEXRAM_INTERNAL_RAM_BANK_SIZE)
+    {
+        case kFLEXRAM_TCMSize32KB:
+          tcm_size_config = 6U;
+          break;
+
+        case kFLEXRAM_TCMSize64KB:
+          tcm_size_config = 7U;
+          break;
+
+        case kFLEXRAM_TCMSize128KB:
+          tcm_size_config = 8U;
+          break;
+
+        case kFLEXRAM_TCMSize256KB:
+          tcm_size_config = 9U;
+          break;
+
+        case kFLEXRAM_TCMSize512KB:
+          tcm_size_config = 10U;
+          break;
+
+        default:
+          break;
+    }
+
+    return tcm_size_config;
+}
+
+/****************************************************************************
+ * Name: flexram_configure
+ *
+ * Description:
+ *   This function is used to set the TCM to the actual size.
+ *   When access to the TCM memory boundary ,hardfault will raised by core.
+ *
+ ****************************************************************************/
+
+static void flexram_configure()
+{
+    imxrt_clockall_flexram();
+
+    up_irq_disable();
+
+    /*
+    * OCRAM | DTCM | ITCM
+    * [KB]    [KB]   [KB]
+    *  128    256    128
+    */
+    *((uint32_t *)IMXRT_IOMUXC_GPR_GPR17) = 0x5AAFFAA5;
+
+    // dtcm
+    uint8_t dtcm_bank_num = 256/32;
+    *((uint32_t *)IMXRT_IOMUXC_GPR_GPR14) &= ~IOMUXC_GPR_GPR14_CM7_CFGDTCMSZ_MASK;
+    *((uint32_t *)IMXRT_IOMUXC_GPR_GPR14) |= IOMUXC_GPR_GPR14_CM7_CFGDTCMSZ(flexram_map_tcm_size_to_register(dtcm_bank_num));
+    *((uint32_t *)IMXRT_IOMUXC_GPR_GPR16) |= IOMUXC_GPR_GPR16_INIT_DTCM_EN_MASK;
+
+    // itcm
+    uint8_t itcm_bank_num = 128/32;
+    *((uint32_t *)IMXRT_IOMUXC_GPR_GPR14) &= ~IOMUXC_GPR_GPR14_CM7_CFGITCMSZ_MASK;
+    *((uint32_t *)IMXRT_IOMUXC_GPR_GPR14) |= IOMUXC_GPR_GPR14_CM7_CFGITCMSZ(flexram_map_tcm_size_to_register(itcm_bank_num));
+    *((uint32_t *)IMXRT_IOMUXC_GPR_GPR16) |= IOMUXC_GPR_GPR16_INIT_ITCM_EN_MASK;
+
+    // select source
+    *((uint32_t *)IMXRT_IOMUXC_GPR_GPR16) &= ~IOMUXC_GPR_GPR16_FLEXRAM_BANK_CFG_SEL_MASK;
+    *((uint32_t *)IMXRT_IOMUXC_GPR_GPR16) |= IOMUXC_GPR_GPR16_FLEXRAM_BANK_CFG_SEL(1);
+
+    up_irq_enable();
+}
+#endif
+
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -299,6 +419,10 @@ void __start(void)
 {
   const uint32_t *src;
   uint32_t *dest;
+
+#if CONFIG_ARMV7M_DTCM
+  flexram_configure();
+#endif
 
 #ifdef CONFIG_ARMV7M_STACKCHECK
   /* Set the stack limit before we attempt to call any functions */

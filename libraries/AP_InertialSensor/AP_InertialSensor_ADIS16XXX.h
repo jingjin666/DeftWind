@@ -226,4 +226,7 @@ private:
 	enum Rotation _rotation;
 
     uint16_t dev_type;
+
+    float _temp_filtered;
+    LowPassFilter2pFloat _temp_filter;
 };

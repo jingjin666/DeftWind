@@ -1,14 +1,14 @@
 /****************************************************************************
- * configs/uavrs-v2/scripts/ld.script
- *
+ * configs/uavrs-v2/scripts/ld_nor_itcm_ocram.script
+ * 指令存储在norflash中，运行时会把中断向量表拷贝到itcm中去，数据在ocram中运行
  ****************************************************************************/
 
 MEMORY
 {
 	flash (rx)  : ORIGIN = 0x60000000, LENGTH = 32M
-	sram  (rwx) : ORIGIN = 0x20200000, LENGTH = 128K
+	sram  (rwx) : ORIGIN = 0x20200000, LENGTH = 512M
 	itcm  (rwx) : ORIGIN = 0x00000000, LENGTH = 128K
-	dtcm  (rwx) : ORIGIN = 0x20000000, LENGTH = 256K
+	dtcm  (rwx) : ORIGIN = 0x20000000, LENGTH = 128K
 }
 
 OUTPUT_ARCH(arm)
@@ -109,14 +109,14 @@ SECTIONS
 		*(.gnu.linkonce.d.*)
 		CONSTRUCTORS
 		_edata = ABSOLUTE(.);
-	} > dtcm AT > flash
+	} > sram AT > flash
 
 	.ramfunc ALIGN(4):
 	{
 		_sramfuncs = ABSOLUTE(.);
 		*(.ramfunc  .ramfunc.*)
 		_eramfuncs = ABSOLUTE(.);
-	} > dtcm AT > flash
+	} > sram AT > flash
 
 	_framfuncs = LOADADDR(.ramfunc);
 
@@ -127,7 +127,7 @@ SECTIONS
 		*(.gnu.linkonce.b.*)
 		*(COMMON)
 		_ebss = ABSOLUTE(.);
-	} > dtcm
+	} > sram
 
 	/* Stabs debugging sections. */
 

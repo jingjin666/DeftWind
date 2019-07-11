@@ -149,7 +149,12 @@
 #  error No primary RAM defined
 #endif
 
+#ifdef CONFIG_ARMV7M_DTCM
+#define IMXRT_DTCM_SIZE        (256*1024)
+#define PRIMARY_RAM_END        (IMXRT_DTCM_BASE + IMXRT_DTCM_SIZE)
+#else
 #define PRIMARY_RAM_END        (PRIMARY_RAM_START + PRIMARY_RAM_SIZE)
+#endif
 
 /* REVISIT:  I am not sure how this works.  But I am assuming that if DTCM
  * is enabled, then ITCM is not and we can just use the DTCM base address to

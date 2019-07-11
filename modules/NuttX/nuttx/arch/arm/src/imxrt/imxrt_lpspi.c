@@ -104,22 +104,26 @@
 /* Configuration ********************************************************************/
 
 /* SPI interrupts */
+#if 0
 
 #ifdef CONFIG_IMXRT_LPSPI_INTERRUPTS
 #  error "Interrupt driven SPI not yet supported"
 #endif
 
-#if 1
 #if defined(CONFIG_IMXRT_LPSPI_DMA)
 #  error "DMA mode is not yet supported"
 #endif
-#else
-#define CONFIG_IMXRT_LPSPI_DMA 1
-#endif
+
 /* Can't have both interrupt driven SPI and SPI DMA */
 
 #if defined(CONFIG_IMXRT_LPSPI_INTERRUPTS) && defined(CONFIG_IMXRT_LPSPI_DMA)
 #  error "Cannot enable both interrupt mode and DMA mode for SPI"
+#endif
+
+#else
+
+#define CONFIG_IMXRT_LPSPI_DMA 1
+
 #endif
 
 /************************************************************************************
@@ -1721,10 +1725,11 @@ static void imxrt_lpspi_exchange(FAR struct spi_dev_s *dev, FAR const void *txbu
     imxrt_lpspi_modifyreg32(priv, IMXRT_LPSPI_CR_OFFSET, 0, LPSPI_CR_MEN);
 #endif
 
-    spiinfo("begin Wait\n");
-
+    spiinfo("begin txWait\n");
     /* Then wait for each to complete */
     lpspi_dmatxwait(priv);
+
+    spiinfo("begin rxWait\n");
     lpspi_dmarxwait(priv);
 }
 #endif /* CONFIG_IMXRT_LPSPI_DMA */

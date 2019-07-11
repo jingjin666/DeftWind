@@ -1,6 +1,6 @@
 /****************************************************************************
- * configs/uavrs-v2/scripts/ld.script
- *
+ * configs/uavrs-v2/scripts/ld_nor_dtcm.script
+ * 指令存储在norflash中，数据在dtcm中运行
  ****************************************************************************/
 
 MEMORY
@@ -60,11 +60,6 @@ SECTIONS
 		 */
 		__errno = get_errno_ptr;
 	} > flash
-
-	.ram_vectors : ALIGN(4)
-	{
-		*(.ram_vectors  .ram_vectors.*)
-	} > itcm
 
 	/*
 	 * Init functions (static constructors and the like)
