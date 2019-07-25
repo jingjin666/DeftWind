@@ -104,7 +104,7 @@
 /* Configuration ********************************************************************/
 
 /* SPI interrupts */
-#if 0
+#if 1
 
 #ifdef CONFIG_IMXRT_LPSPI_INTERRUPTS
 #  error "Interrupt driven SPI not yet supported"

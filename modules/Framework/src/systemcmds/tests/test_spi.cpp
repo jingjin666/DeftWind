@@ -172,7 +172,7 @@ __BEGIN_DECLS
 
 int test_spi(int argc, char *argv[])
 {
-	uint8_t send[2] = {0xf5, 0x00};
+	uint8_t send[2] = {0x7E, 0};
 	uint8_t recv[2] = {0};
 	bool ret;
 	uint8_t bus = 0;
@@ -198,14 +198,14 @@ int test_spi(int argc, char *argv[])
 
 	
 	if(spi_dev == nullptr) {
-		spi_dev = new DP_SPI(bus, SPIDEVTYPE_USER, SPIDEV_MODE3, 1*MHZ);
+		spi_dev = new DP_SPI(bus, (enum spi_devtype_e)1, SPIDEV_MODE3, 1*MHZ);
 	}
 
-	for(uint8_t i=0; i < 5; i++) {
+	for(uint8_t i=0; i < 200; i++) {
 		ret = spi_dev->transfer_fullduplex(send, recv, sizeof(send));
         //ret = spi_dev->transfer_singleduplex(send, 1, recv, 1);
 		if(ret) {
-			printf("Spi transfer [%d] complete.\n", i);
+			printf("Spi transfer [%d] complete. [0x%02x] [0x%02x]\n", i, send[0], send[1]);
 			printf("0x%02x, 0x%02x\n", recv[0], recv[1]);
 		} else {
 			printf("Spi transfer [%d] error.\n", i);

@@ -33,12 +33,15 @@
 const AP_Scheduler::Task Plane::scheduler_tasks[] = {
                            // Units:   Hz      us                           
     SCHED_TASK(ahrs_update,           400,    400),
+    #if 0
     SCHED_TASK(read_radio,             50,    100),
     SCHED_TASK(check_short_failsafe,   50,    100),
     SCHED_TASK(update_speed_height,    50,    200),
-    //SCHED_TASK(update_flight_mode,    400,    100),
-    //SCHED_TASK(stabilize,             400,    100),
-    //SCHED_TASK(set_servos,            400,    100),
+    #endif
+    SCHED_TASK(update_flight_mode,    400,    100),
+    SCHED_TASK(stabilize,             400,    100),
+    SCHED_TASK(set_servos,            400,    100),
+    #if 0
     SCHED_TASK(read_control_switch,     7,    100),
     SCHED_TASK(gcs_retry_deferred,     50,    500),
     SCHED_TASK(update_GPS_50Hz,        50,    300),
@@ -51,6 +54,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(afs_fs_check,           10,    100),
     SCHED_TASK(gcs_update,             50,    500),
     SCHED_TASK(gcs_data_stream_send,   50,    500),
+    #endif
     SCHED_TASK(update_events,          50,    150),
     SCHED_TASK(read_battery,           10,    300),
     SCHED_TASK(compass_accumulate,     50,    200),
@@ -60,6 +64,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(ice_update,             10,    100),
     SCHED_TASK(compass_cal_update,     50,    50),
     SCHED_TASK(accel_cal_update,       10,    50),
+
     SCHED_TASK(one_second_loop,         1,    400),
     SCHED_TASK(check_long_failsafe,     3,    400),
     SCHED_TASK(read_receiver_rssi,     10,    100),
@@ -383,6 +388,7 @@ void Plane::raw_data_update(void)
 
 void Plane::setup() 
 {
+
     cliSerial = hal.console;
 
     // load the default values of variables listed in var_info[]
@@ -424,6 +430,7 @@ void Plane::loop()
     perf.fast_loopTimer_us = timer;
 
     perf.mainLoop_count++;
+
 #else
     hal.scheduler->delay_microseconds(2500);
 #endif
@@ -611,7 +618,7 @@ void Plane::one_second_loop()
     // send a heartbeat
     gcs().send_message(MSG_HEARTBEAT);
 
-#ifdef SCHEDULER_DEBUG
+#ifndef SCHEDULER_DEBUG
     static int _cnt = 0;
     printf("one_second_loop>>>>>>>>>>>>>> %d\n", _cnt++);
 #endif

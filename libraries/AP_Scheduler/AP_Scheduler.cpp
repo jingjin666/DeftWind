@@ -66,6 +66,7 @@ AP_Scheduler::AP_Scheduler(void)
     } else if (_loop_rate_hz > 400) {
         _loop_rate_hz.set(400);
     }
+    _loop_rate_hz.set(300);
 }
 
 // initialise the scheduler

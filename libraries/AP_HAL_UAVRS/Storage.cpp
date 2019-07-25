@@ -39,6 +39,7 @@ Storage::Storage(void) :
 
 void Storage::_storage_open(void)
 {
+return;
     if (_initialised) {
         return;
     }

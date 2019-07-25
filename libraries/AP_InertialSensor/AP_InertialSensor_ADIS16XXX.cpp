@@ -147,12 +147,12 @@ void AP_InertialSensor_ADIS16XXX::_read_fifo()
 	uint32_t page = 0;
 	uint8_t tx[2] = {0};
 	uint8_t rx[2] = {0};
-
+#if 0
 	if(!hal.gpio->imu_data_ready()) {
 		//printf("%s:: imu data is not ready.\n", TAG_NAME);
 		return;
 	}
-
+#endif
 	// ÇÐ»»µ½µÚ0Ò³
 	// select a page what do you want
 	if (_current_page != page) {

@@ -48,7 +48,7 @@
 #define FLASH_END                   0x62000000
 #define SCLK 1
 
-#define DCD_ADDRESS                 0
+#define DCD_ADDRESS                 dcd_data
 #define BOOT_DATA_ADDRESS           &boot_data
 #define CSF_ADDRESS                 0
 #define PLUGIN_FLAG                 (uint32_t)0
@@ -115,5 +115,5 @@ struct boot_data_s
  ****************************************************************************/
 
 extern const struct boot_data_s boot_data;
-
+extern const uint8_t dcd_data[];
 #endif /* __CONFIGS_UAVRS_V2_FLEXSPI_NOR_BOOT_H */

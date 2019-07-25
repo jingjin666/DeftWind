@@ -416,6 +416,7 @@ void imxrt_clockconfig(void)
   reg |= CCM_CSCMR1_PERCLK_PODF(CCM_PODF_FROM_DIVISOR(IMXRT_PERCLK_PODF_DIVIDER));
   putreg32(reg, IMXRT_CCM_CSCMR1);
 
+#if 0
 #ifndef CONFIG_IMXRT_SEMC_INIT_DONE
   /* Configure SEMC Clock only if not already done by DCD SDR */
 
@@ -423,6 +424,7 @@ void imxrt_clockconfig(void)
   reg &= ~CCM_CBCDR_SEMC_PODF_MASK;
   reg |= CCM_CBCDR_SEMC_PODF(CCM_PODF_FROM_DIVISOR(IMXRT_SEMC_PODF_DIVIDER));
   putreg32(reg, IMXRT_CCM_CBCDR);
+#endif
 #endif
 
   /* Set PRE_PERIPH_CLK to Board Selection */

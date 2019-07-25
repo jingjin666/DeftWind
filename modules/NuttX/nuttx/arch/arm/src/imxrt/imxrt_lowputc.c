@@ -238,7 +238,7 @@ void imxrt_lowsetup(void)
   (void)imxrt_config_gpio(GPIO_LPUART1_RTS);
 #endif
 #endif
-
+#if 0
 #ifdef CONFIG_IMXRT_LPUART2
 
   /* Configure LPUART2 pins: RXD and TXD.  Also configure RTS and CTS if flow
@@ -350,7 +350,7 @@ void imxrt_lowsetup(void)
   (void)imxrt_config_gpio(GPIO_LPUART8_RTS);
 #endif
 #endif
-
+#endif
 #ifdef HAVE_LPUART_CONSOLE
   /* Configure the serial console for initial, non-interrupt driver mode */
 

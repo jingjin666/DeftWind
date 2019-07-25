@@ -382,10 +382,10 @@ void AP_BoardConfig::px4_autodetect(void)
  */
 void AP_BoardConfig::px4_setup()
 {
-    px4_setup_peripherals();
-    px4_setup_pwm();
-    px4_setup_safety_mask();
-    px4_setup_sbus();
+    //px4_setup_peripherals();
+    //px4_setup_pwm();
+    //px4_setup_safety_mask();
+    //px4_setup_sbus();
     px4_setup_drivers();
 }
 

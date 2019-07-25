@@ -414,20 +414,21 @@ static void flexram_configure()
  *   This is the reset entry point.
  *
  ****************************************************************************/
-
+ 
+//void __start(void) __attribute__((section("._boot_text")));
 void __start(void)
 {
   const uint32_t *src;
   uint32_t *dest;
 
 #if CONFIG_ARMV7M_DTCM
-  flexram_configure();
+    flexram_configure();
 #endif
-
+  
 #ifdef CONFIG_ARMV7M_STACKCHECK
-  /* Set the stack limit before we attempt to call any functions */
-
-  __asm__ volatile ("sub r10, sp, %0" : : "r" (CONFIG_IDLETHREAD_STACKSIZE - 64) : );
+    /* Set the stack limit before we attempt to call any functions */
+  
+    __asm__ volatile ("sub r10, sp, %0" : : "r" (CONFIG_IDLETHREAD_STACKSIZE - 64) : );
 #endif
 
   /* Clear .bss.  We'll do this inline (vs. calling memset) just to be
@@ -449,13 +450,6 @@ void __start(void)
     {
       *dest++ = *src++;
     }
-
-  /* Copy any necessary code sections from FLASH to RAM.  The correct
-   * destination in OCRAM is given by _sramfuncs and _eramfuncs.  The
-   * temporary location is in flash after the data initialization code
-   * at _framfuncs.  This should be done before imxrt_clockconfig() is
-   * called (in case it has some dependency on initialized C variables).
-   */
 
 #ifdef CONFIG_ARCH_RAMFUNCS
   for (src = &_framfuncs, dest = &_sramfuncs; dest < &_eramfuncs; )
