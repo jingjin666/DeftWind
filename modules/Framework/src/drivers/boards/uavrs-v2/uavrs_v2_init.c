@@ -119,14 +119,14 @@ static struct spi_dev_s *spi1;
 static int nsh_archinitialize(void)
 {
 	int ret;
-#if 0
+
 	dp_arch_configgpio(GPIO_ADIS_DRDY);
 	dp_arch_configgpio(GPIO_ADIS_RESET);
 	dp_arch_gpiowrite(GPIO_ADIS_RESET, 1);
     dp_arch_configgpio(GPIO_CAMERA_TRIGGER_OUTPUT);
 	dp_arch_gpiowrite(GPIO_CAMERA_TRIGGER_OUTPUT, 1);
     dp_arch_configgpio(GPIO_CAMERA_FEEDBACK_INPUT);
-#endif    
+    
 	hrt_init();
 
 	/* configure the DMA allocator */
@@ -136,7 +136,6 @@ static int nsh_archinitialize(void)
 #ifdef CONFIG_SCHED_INSTRUMENTATION
     cpuload_initialize_once();
 #endif
-    return 0;
 
 	/* initial LED state */
 	drv_led_start();
@@ -210,12 +209,6 @@ static void board_gpio_init(const uint32_t list[], int count)
 
 __EXPORT void imxrt_boardinitialize(void)
 {
-    message("imxrt_boardinitialize\n");
-
-    imxrt_spidev_initialize();
-    
-    dp_arch_gpiowrite(GPIO_ADIS_DRDY, 1);
-return;
 	led_init();
 
 	/* configure pins */
@@ -262,8 +255,6 @@ return;
 
 __EXPORT int board_app_initialize(uintptr_t arg)
 {
-    message("board_app_initialize\n");
-
 	return nsh_archinitialize();
 }
 

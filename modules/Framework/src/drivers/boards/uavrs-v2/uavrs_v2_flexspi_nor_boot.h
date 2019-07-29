@@ -13,6 +13,8 @@
 
 #include <stdint.h>
 
+#include "board_config.h"
+
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
@@ -44,11 +46,25 @@
 #define DCD_VERSION                 (0x40)
 #define DCD_ARRAY_SIZE              1
 
+#if defined(CONFIG_IMXRT1052_HYPER_FLASH)
+#define FLASH_BASE                  0x60000000
+#define FLASH_END                   0x64000000
+#elif defined(CONFIG_IMXRT1052_QSPI_FLASH)
 #define FLASH_BASE                  0x60000000
 #define FLASH_END                   0x62000000
+#elif defined(CONFIG_IMXRT1064_QSPI_FLASH)
+#define FLASH_BASE                  0x70000000
+#define FLASH_END                   0x70400000
+#endif
 #define SCLK 1
 
+#define IMAGE_ENTRY_ADDRESS         (FLASH_BASE+0x2000)
+
+#if defined(CONFIG_IMXRT_SEMC_INIT_DONE)
 #define DCD_ADDRESS                 dcd_data
+#else
+#define DCD_ADDRESS                 0
+#endif
 #define BOOT_DATA_ADDRESS           &boot_data
 #define CSF_ADDRESS                 0
 #define PLUGIN_FLAG                 (uint32_t)0

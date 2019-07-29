@@ -18,7 +18,7 @@ __attribute__((section(".boot_hdr.ivt")))
 const struct ivt_s image_vector_table =
 {
   IVT_HEADER,                         /* IVT Header */
-  0x60002000,                         /* Image  Entry Function */
+  IMAGE_ENTRY_ADDRESS,                         /* Image  Entry Function */
   IVT_RSVD,                           /* Reserved = 0 */
   (uint32_t)DCD_ADDRESS,              /* Address where DCD information is stored */
   (uint32_t)BOOT_DATA_ADDRESS,        /* Address where BOOT Data Structure is stored */

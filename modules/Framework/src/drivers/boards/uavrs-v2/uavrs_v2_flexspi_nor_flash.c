@@ -10,14 +10,13 @@
 
 
 #include "uavrs_v2_flexspi_nor_flash.h"
+#include "board_config.h"
 
 /*******************************************************************************
  * Public Data
  ******************************************************************************/
 
- //#define CONFIG_IMXRT1052_HYPER_FLASH 1
- #define CONFIG_IMXRT1052_QSPI_FLASH 1
- #if defined (CONFIG_IMXRT1052_HYPER_FLASH)
+#if defined (CONFIG_IMXRT1052_HYPER_FLASH)
 
 __attribute__((section(".boot_hdr.conf")))
 const struct flexspi_nor_config_s g_flash_config =
@@ -38,7 +37,7 @@ const struct flexspi_nor_config_s g_flash_config =
                               (1u << FLEXSPIMISC_OFFSET_SAFECONFIG_FREQ_EN) |
                               (1u << FLEXSPIMISC_OFFSET_DIFFCLKEN),
     .sflash_pad_type        = SERIAL_FLASH_8PADS,
-    .serial_clk_freq        = FLEXSPI_SERIAL_CLKFREQ_133MHz,
+    .serial_clk_freq        = FLEXSPI_SERIAL_CLKFREQ_166MHz,
     .sflash_a1size          = 64u * 1024u * 1024u,
     .data_valid_time        = {16u, 16u},
     .lookup_table           =
@@ -63,45 +62,74 @@ const struct flexspi_nor_config_s flash_config =
 {
 	.mem_config =
 	{
-		.tag = FLEXSPI_CFG_BLK_TAG,/*±êÖ¾£ºFCFB*/
-		.version = FLEXSPI_CFG_BLK_VERSION,/*°æ±¾£ºV1.4.0*/
-		.read_sample_clksrc = FLASH_READ_SAMPLE_CLK_LOOPBACK_INTERNELLY,/*ÄÚ²¿»·»Ø*/
-		.cs_hold_time = 3u, /*±£³ÖÊ±¼ä*/
-		.cs_setup_time = 3u,/*½¨Á¢Ê±¼ä*/
-		.column_address_width = 0u,/*ÁÐµØÖ·¿í¶È*/
-		.device_mode_cfg_enable = 1u,/*Éè±¸Ä£Ê½ÅäÖÃÊ¹ÄÜ*/
-		.device_mode_type = 1u,/*Quad Ê¹ÄÜÃüÁî*/
+		.tag = FLEXSPI_CFG_BLK_TAG,/*æ ‡å¿—ï¼šFCFB*/
+		.version = FLEXSPI_CFG_BLK_VERSION,/*ç‰ˆæœ¬ï¼šV1.4.0*/
+		.read_sample_clksrc = FLASH_READ_SAMPLE_CLK_LOOPBACK_INTERNELLY,/*å†…éƒ¨çŽ¯å›ž*/
+		.cs_hold_time = 3u,/*ä¿æŒæ—¶é—´*/
+		.cs_setup_time = 3u,/*å»ºç«‹æ—¶é—´*/
+		.column_address_width = 0u,/*åˆ—åœ°å€å®½åº¦*/
+		.device_mode_cfg_enable = 1u,/*è®¾å¤‡æ¨¡å¼é…ç½®ä½¿èƒ½*/
+		.device_mode_type = 1u,/*Quad ä½¿èƒ½å‘½ä»¤*/
 		.device_mode_seq.reserved = 0u,
-		.device_mode_seq.seq_num = 1u,/*LUTÐòÁÐºÅ*/
-		.device_mode_seq.seq_id = 4u, /*LUTÐòÁÐË÷Òý*/
-		.device_mode_arg = 0x000200,/*ÉèÖÃ QE=1£¨S9£©*/
-		.device_type = FLEXSPI_DEVICE_TYPE_SERIAL_NOR,/*Éè±¸ÀàÐÍÎªnor flash*/
-		.sflash_pad_type = SERIAL_FLASH_4PADS,/*Éè±¸Êý¾Ý×ÜÏßÎª4*/
-		.serial_clk_freq = FLEXSPI_SERIAL_CLKFREQ_133MHz,/*flash Ê±ÖÓ*/
-		.sflash_a1size = 32u * 1024u * 1024u,	  /*flash ´óÐ¡32MBytes*/
+		.device_mode_seq.seq_num = 1u,/*LUTåºåˆ—å·*/
+		.device_mode_seq.seq_id = 4u,/*LUTåºåˆ—ç´¢å¼•*/
+		.device_mode_arg = 0x000200,/*è®¾ç½® QE=1ï¼ˆS9ï¼‰*/
+		.device_type = FLEXSPI_DEVICE_TYPE_SERIAL_NOR,/*è®¾å¤‡ç±»åž‹ä¸ºnor flash*/
+		.sflash_pad_type = SERIAL_FLASH_4PADS,/*è®¾å¤‡æ•°æ®æ€»çº¿ä¸º4*/
+		.serial_clk_freq = FLEXSPI_SERIAL_CLKFREQ_133MHz,/*flash æ—¶é’Ÿ*/
+		.sflash_a1size = 32u * 1024u * 1024u,/*flash å¤§å°32MBytes*/
 		//.data_valid_time = {16u, 16u},
 		.lookup_table =
 			{
-				/*¿ìËÙ¶ÁÃüÁî£¨ËÄÏß£©*/
+				/*å¿«é€Ÿè¯»å‘½ä»¤ï¼ˆå››çº¿ï¼‰*/
 				[0] 	= FLEXSPI_LUT_SEQ(CMD_SDR, FLEXSPI_1PAD, 0xEB, RADDR_SDR, FLEXSPI_4PAD, 0x18),
 				[1] 	= FLEXSPI_LUT_SEQ(DUMMY_SDR, FLEXSPI_4PAD, 0x06, READ_SDR, FLEXSPI_4PAD, 0x04),
 				
 
-				/*¶Á×´Ì¬ÃüÁî*/
+				/*è¯»çŠ¶æ€å‘½ä»¤*/
 				[1*4]	= FLEXSPI_LUT_SEQ(CMD_SDR, FLEXSPI_1PAD, 0x05, READ_SDR, FLEXSPI_1PAD, 0x04),
-				/*Ð´Ê¹ÄÜÃüÁî*/
+				/*å†™ä½¿èƒ½å‘½ä»¤*/
 				[3*4]	= FLEXSPI_LUT_SEQ(CMD_SDR, FLEXSPI_1PAD, 0x06, STOP, FLEXSPI_1PAD, 0),		
-				/*²Á³ýÉÈÇøÃüÁî*/
+				/*æ“¦é™¤æ‰‡åŒºå‘½ä»¤*/
 				[5*4]	= FLEXSPI_LUT_SEQ(CMD_SDR, FLEXSPI_1PAD, 0x20, RADDR_SDR, FLEXSPI_1PAD, 0x04),
-				/*Ò³±à³ÌÃüÁî£¨ËÄÏß£©*/
+				/*é¡µç¼–ç¨‹å‘½ä»¤ï¼ˆå››çº¿ï¼‰*/
 				[9*4]	= FLEXSPI_LUT_SEQ(CMD_SDR, FLEXSPI_1PAD, 0x32, RADDR_SDR, FLEXSPI_1PAD, 0x18),	
 				[9*4+1] = FLEXSPI_LUT_SEQ(WRITE_SDR,FLEXSPI_4PAD , 0x04, STOP, FLEXSPI_1PAD, 0),				  
-				/*ÕûÆ¬²Á³ý*/
+				/*æ•´ç‰‡æ“¦é™¤*/
 				[11*4]	= FLEXSPI_LUT_SEQ(CMD_SDR, FLEXSPI_1PAD, 0xc7, STOP, FLEXSPI_1PAD, 0),					
 			},
 	},
-	.page_size = 256u,/*Ò³´óÐ¡Îª256×Ö½Ú*/
-	.sector_size = 4u * 1024u,/*ÉÈÇø´óÐ¡Îª4k×Ö½Ú*/
+	.page_size = 256u,/*é¡µå¤§å°ä¸º256å­—èŠ‚*/
+	.sector_size = 4u * 1024u,/*æ‰‡åŒºå¤§å°ä¸º4kå­—èŠ‚*/
+};
+
+#elif defined(CONFIG_IMXRT1064_QSPI_FLASH)
+
+__attribute__((section(".boot_hdr.conf")))
+const struct flexspi_nor_config_s flash_config =
+{
+    .mem_config =
+        {
+            .tag              = FLEXSPI_CFG_BLK_TAG,
+            .version          = FLEXSPI_CFG_BLK_VERSION,
+            .read_sample_clksrc = FLASH_READ_SAMPLE_CLK_LOOPBACK_FROM_DQSPAD,
+            .cs_hold_time       = 3u,
+            .cs_setup_time      = 3u,
+            // Enable DDR mode, Wordaddassable, Safe configuration, Differential clock
+            .sflash_pad_type = SERIAL_FLASH_4PADS,
+            .serial_clk_freq = FLEXSPI_SERIAL_CLKFREQ_133MHz,
+            .sflash_a1size  = 4u * 1024u * 1024u,
+            .lookup_table =
+                {
+                    // Read LUTs
+                    FLEXSPI_LUT_SEQ(CMD_SDR, FLEXSPI_1PAD, 0xEB, RADDR_SDR, FLEXSPI_4PAD, 0x18),
+                    FLEXSPI_LUT_SEQ(DUMMY_SDR, FLEXSPI_4PAD, 0x06, READ_SDR, FLEXSPI_4PAD, 0x04),
+                },
+        },
+    .page_size           = 256u,
+    .sector_size         = 4u * 1024u,
+    .blocksize          = 256u * 1024u,
+    .is_uniform_blocksize = false,
 };
 
 #else

@@ -181,7 +181,7 @@ void UAVRSUtil::set_imu_temp(float current)
 
     float output = constrain_float(kP * err + _heater.integrator, 0, 100);
     
-    printf("integrator %.1f out=%.1f temp=%.2f err=%.2f\n", _heater.integrator, output, current, err);
+    //printf("integrator %.1f out=%.1f temp=%.2f err=%.2f\n", _heater.integrator, output, current, err);
 }
 
 

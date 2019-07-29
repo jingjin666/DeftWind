@@ -42,9 +42,6 @@
 
 void weak_function imxrt_spidev_initialize(void)
 {
-        (void)imxrt_config_gpio(GPIO_LPSPI3_CS_ADIS16375BM);
-return;
-
 #ifdef CONFIG_IMXRT_LPSPI1
 		(void)imxrt_config_gpio(GPIO_LPSPI1_CS_MPU9250);
 		(void)imxrt_config_gpio(GPIO_LPSPI1_CS_BARO);
@@ -95,12 +92,6 @@ __EXPORT void imxrt_lpspi1select(FAR struct spi_dev_s *dev, uint32_t devid, bool
     spiinfo("devid: %d CS: %s\n", (int)devid, selected ? "assert" : "de-assert");
 
   	switch(devid) {
-
-        case UAVRS_SPIDEV_ADIS:
-            /* Making sure the other peripherals are not selected */
-            imxrt_gpio_write(GPIO_LPSPI3_CS_ADIS16375BM, !selected);
-        break;
-        #if 0
 		case UAVRS_SPIDEV_BARO_MS5611:
 			imxrt_gpio_write(GPIO_LPSPI1_CS_BARO, !selected);
             imxrt_gpio_write(GPIO_LPSPI1_CS_MPU9250, 1);
@@ -109,7 +100,6 @@ __EXPORT void imxrt_lpspi1select(FAR struct spi_dev_s *dev, uint32_t devid, bool
 			imxrt_gpio_write(GPIO_LPSPI1_CS_MPU9250, !selected);
             imxrt_gpio_write(GPIO_LPSPI1_CS_BARO, 1);
 			break;
-        #endif    
 		default:
 			break;
   }

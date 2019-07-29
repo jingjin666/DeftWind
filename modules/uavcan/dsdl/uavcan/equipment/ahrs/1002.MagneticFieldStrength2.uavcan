@@ -1,0 +1,7 @@
+#
+# Magnetic field readings, in Gauss, in body frame.
+# SI units are avoided because of int16 range limitations.
+#
+int16 magnetic_field_ga_x
+int16 magnetic_field_ga_y
+int16 magnetic_field_ga_z

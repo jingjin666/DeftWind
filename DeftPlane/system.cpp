@@ -75,8 +75,6 @@ static void failsafe_check_static()
 
 void Plane::init_ardupilot()
 {
-    printf("-------------------------start init ardupilot %d\n", __LINE__);
-
     // initialise serial port
     serial_manager.init_console();
 
@@ -151,7 +149,7 @@ void Plane::init_ardupilot()
     g.num_resets.set_and_save(g.num_resets+1);
 
     // init baro before we start the GCS, so that the CLI baro test works
-    //barometer.init();
+    barometer.init();
 
     // initialise rangefinder
     init_rangefinder();
@@ -177,7 +175,7 @@ void Plane::init_ardupilot()
 #endif
 
     // initialise airspeed sensor
-    //airspeed.init();
+    airspeed.init();
 
     if (g.compass_enabled==true) {
         bool compass_ok = compass.init() && compass.read();
@@ -224,30 +222,23 @@ void Plane::init_ardupilot()
 
     AP_Param::reload_defaults_file();
     
-    printf("-------------------------start init ardupilot %d\n", __LINE__);
     startup_ground();
-    printf("-------------------------start init ardupilot %d\n", __LINE__);
 
     // don't initialise aux rc output until after quadplane is setup as
     // that can change initial values of channels
     init_rc_out_aux();
     
-    printf("-------------------------start init ardupilot %d\n", __LINE__);
     // choose the nav controller
     set_nav_controller();
 
     set_mode((FlightMode)g.initial_mode.get(), MODE_REASON_UNKNOWN);
-    printf("-------------------------start init ardupilot %d\n", __LINE__);
 
     // set the correct flight mode
     // ---------------------------
-    //reset_control_switch();
-    printf("-------------------------start init ardupilot %d\n", __LINE__);
+    reset_control_switch();
 
     // disable safety if requested
     BoardConfig.init_safety();
-
-    printf("-------------------------end init ardupilot\n");
 }
 
 //********************************************************************************
@@ -640,7 +631,7 @@ void Plane::startup_INS_ground(void)
 
     // read Baro pressure at ground
     //-----------------------------
-    //init_barometer(true);
+    init_barometer(true);
 
     if (airspeed.enabled()) {
         // initialize airspeed sensor

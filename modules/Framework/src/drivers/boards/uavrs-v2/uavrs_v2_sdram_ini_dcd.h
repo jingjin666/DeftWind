@@ -1,5 +1,5 @@
-#ifndef __EVKBIMXRT1050_DCD_SDRAM_INIT__
-#define __EVKBIMXRT1050_DCD_SDRAM_INIT__
+#ifndef __UAVRSV2_DCD_SDRAM_INIT__
+#define __UAVRSV2_DCD_SDRAM_INIT__
 
 #include <stdint.h>
 
@@ -11,4 +11,4 @@
 #define DCD_VERSION (0x40)
 #define DCD_ARRAY_SIZE 1
 
-#endif /* __EVKBIMXRT1050_DCD_SDRAM_INIT__ */
+#endif /* __UAVRSV2_DCD_SDRAM_INIT__ */

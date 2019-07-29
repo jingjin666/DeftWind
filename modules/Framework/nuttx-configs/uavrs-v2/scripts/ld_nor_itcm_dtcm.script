@@ -64,7 +64,7 @@ SECTIONS
 	.ram_vectors : ALIGN(4)
 	{
 		*(.ram_vectors  .ram_vectors.*)
-	} > itcm
+	} > itcm AT > flash
 
 	/*
 	 * Init functions (static constructors and the like)

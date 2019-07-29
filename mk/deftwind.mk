@@ -60,6 +60,11 @@ endif
 include $(MK_DIR)/mavgen.mk
 
 #####################
+# 引入uavcan python生成器 = 【~/DeftWind/mk/uavcangen.mk】
+#####################
+include $(MK_DIR)/uavcangen.mk
+
+#####################
 # 导出ros,msg生成器工具
 #####################
 PYTHONPATH=$(SKETCHBOOK)/mk/Tools/genmsg/src:$(SKETCHBOOK)/mk/Tools/gencpp/src
@@ -138,6 +143,9 @@ SKETCHLIBOBJS		:=	$(addsuffix .o,$(basename $(subst $(SKETCHBOOK),$(BUILDROOT),$
 SKETCHLIBINCLUDES	:=	-I$(SKETCHBOOK)/libraries/ -I$(BUILDROOT)/libraries/ -I$(BUILDROOT)/libraries/GCS_MAVLink/
 SKETCHLIBSRCSRELATIVE	:=	$(subst $(SKETCHBOOK)/,,$(SKETCHLIBSRCS))
 #$(info SKETCHLIBSRCSRELATIVE:$(SKETCHLIBSRCSRELATIVE))
+
+# uavcan includes
+include $(SKETCHBOOK)/modules/uavcan/libuavcan/include.mk
 
 # board specific includes
 ifeq ($(HAL_BOARD),HAL_BOARD_SITL)

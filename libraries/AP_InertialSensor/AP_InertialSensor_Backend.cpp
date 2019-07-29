@@ -195,7 +195,7 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
         _imu._new_gyro_data[instance] = true;
         _sem->give();
     }
-return;
+
     DataFlash_Class *dataflash = get_dataflash();
     if (dataflash != nullptr) {
         uint64_t now = AP_HAL::micros64();
@@ -290,12 +290,11 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
         }
 
         _imu.set_accel_peak_hold(instance, _imu._accel_filtered[instance]);
-        
-        _imu._new_accel_data[instance] = true;
 
+        _imu._new_accel_data[instance] = true;
         _sem->give();
     }
-return;
+
     DataFlash_Class *dataflash = get_dataflash();
     if (dataflash != nullptr) {
         uint64_t now = AP_HAL::micros64();

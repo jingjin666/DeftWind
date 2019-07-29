@@ -6,7 +6,7 @@
 MEMORY
 {
 	flash (rx)  : ORIGIN = 0x60000000, LENGTH = 32M
-	sram  (rwx) : ORIGIN = 0x20200000, LENGTH = 512M
+	sram  (rwx) : ORIGIN = 0x20200000, LENGTH = 512K
 	itcm  (rwx) : ORIGIN = 0x00000000, LENGTH = 128K
 	dtcm  (rwx) : ORIGIN = 0x20000000, LENGTH = 128K
 }
@@ -64,7 +64,7 @@ SECTIONS
 	.ram_vectors : ALIGN(4)
 	{
 		*(.ram_vectors  .ram_vectors.*)
-	} > itcm
+	} > itcm AT > flash
 
 	/*
 	 * Init functions (static constructors and the like)

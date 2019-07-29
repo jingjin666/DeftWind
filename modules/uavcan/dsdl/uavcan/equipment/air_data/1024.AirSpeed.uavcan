@@ -1,0 +1,8 @@
+#
+# TAS.
+#
+
+uint16 pressure
+uint16 temperature
+uint16 pressure2
+uint16 temperature2
