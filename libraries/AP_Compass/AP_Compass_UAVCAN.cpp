@@ -49,7 +49,7 @@ AP_Compass_UAVCAN::~AP_Compass_UAVCAN()
             if (ap_uavcan != nullptr) {
                 ap_uavcan->remove_mag_listener(this);
 
-                debug_mag_uavcan(2, "AP_Compass_UAVCAN destructed\n");
+                //debug_mag_uavcan(2, "AP_Compass_UAVCAN destructed\n");
             }
         }
     }
@@ -68,7 +68,7 @@ AP_Compass_Backend *AP_Compass_UAVCAN::probe(Compass &compass)
                     if (freemag != UINT8_MAX) {
                         sensor = new AP_Compass_UAVCAN(compass);
                         if (sensor->register_uavcan_compass(i, freemag)) {
-                            debug_mag_uavcan(2, "AP_Compass_UAVCAN probed, drv: %d, node: %d\n", i, freemag);
+                            debug_mag_uavcan(2, "AP_Compass_UAVCAN probed, CAN_Driver[%d], registered node id: %d\n", i, freemag);
                             return sensor;
                         } else {
                             delete sensor;
@@ -118,7 +118,7 @@ bool AP_Compass_UAVCAN::register_uavcan_compass(uint8_t mgr, uint8_t node)
 							
                 accumulate();
 				
-                debug_mag_uavcan(2, "AP_Compass_UAVCAN loaded\n");
+                //debug_mag_uavcan(2, "AP_Compass_UAVCAN loaded\n");
 
                 return true;
             }

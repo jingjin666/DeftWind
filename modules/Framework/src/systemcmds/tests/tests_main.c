@@ -45,6 +45,7 @@ const struct {
 #define OPT_NOALLTEST	(1<<1)
 #define OPT_NOJIGTEST	(1<<2)
 } tests[] = {
+    {"flexcan",     test_flexcan,   OPT_NOJIGTEST | OPT_NOALLTEST},
     {"servo",       test_servo,     OPT_NOJIGTEST | OPT_NOALLTEST},
 	{"spi",       	test_spi,       OPT_NOJIGTEST | OPT_NOALLTEST},
 	{"i2c",       	test_i2c, 		OPT_NOJIGTEST | OPT_NOALLTEST},

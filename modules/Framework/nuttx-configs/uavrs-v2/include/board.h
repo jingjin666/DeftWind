@@ -1,48 +1,21 @@
-/************************************************************************************
- * configs/imxrt1050/include/board.h
+/****************************************************************************
  *
- *   Copyright (C) 2018 Gregory Nutt. All rights reserved.
- *   Authors: Gregory Nutt <gnutt@nuttx.org>
- *            David Sidrane <david_s5@nscdg.com>
- *            Dave Marples <dave@marples.net>
+ * Copyright (c) 2018 UAVRS. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- * 3. Neither the name NuttX nor the names of its contributors may be
- *    used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
- * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- *
- ************************************************************************************/
+ ****************************************************************************/
 
-#ifndef __CONFIGS_IMXRT1050_EVK_INCLUDE_BOARD_H
-#define __CONFIGS_IMXRT1050_EVK_INCLUDE_BOARD_H
+#ifndef __CONFIGS_UAVRS_V2_INCLUDE_BOARD_H
+#define __CONFIGS_UAVRS_V2_INCLUDE_BOARD_H
 
 /************************************************************************************
  * Included Files
  ************************************************************************************/
 
 #include <nuttx/config.h>
+
+#include "imxrt_gpio.h"
+#include "imxrt_iomuxc.h"
+#include "chip/imxrt_pinmux.h"
 
 /************************************************************************************
  * Pre-processor Definitions
@@ -86,6 +59,10 @@
  *
  * Set USB1 PLL (PLL3) to fOut    = (24Mhz * 20)
  *                         480Mhz = (24Mhz * 20)
+ *
+ *     FLEXCAN CLK = PLL3_CLK / 6 = (480Mhz / 6) = 80Mhz
+ *                       IMXRT_FLEXCAN_PODF_DIVIDER = 4
+ *                       20M =  80Mhz / 4
  */
 
 #define BOARD_XTAL_FREQUENCY      24000000
@@ -102,6 +79,8 @@
 #define IMXRT_LSPI_PODF_DIVIDER   8
 #define IMXRT_USDHC1_CLK_SELECT    CCM_CSCMR1_USDHC1_CLK_SEL_PLL2_PFD0
 #define IMXRT_USDHC1_PODF_DIVIDER 2
+#define IMXRT_FLEXCAN_CLK_SELECT  CCM_CSCMR2_CAN_CLK_SEL_PLL3_SW_80
+#define IMXRT_FLEXCAN_PODF_DIVIDER 4
 
 #define IMXRT_SYS_PLL_SELECT      CCM_ANALOG_PLL_SYS_DIV_SELECT_22
 
@@ -110,66 +89,6 @@
 
 #define BOARD_GPT_FREQUENCY \
 	(BOARD_CPU_FREQUENCY / IMXRT_IPG_PODF_DIVIDER) / IMXRT_PERCLK_PODF_DIVIDER
-
-/* LED definitions ******************************************************************/
-
-/* There are four LED status indicators located on the EVK Board.  The functions of
- * these LEDs include:
- *
- *   - Main Power Supply(D3)
- *     Green: DC 5V main supply is normal.
- *     Red:   J2 input voltage is over 5.6V.
- *     Off:   The board is not powered.
- *   - Reset RED LED(D15)
- *   - OpenSDA LED(D16)
- *   - USER LED(D18)
- *
- * Only a single LED, D18, is under software control.
- */
-
-/* LED index values for use with board_userled() */
-
-#define BOARD_USERLED     0
-#define BOARD_NLEDS       1
-
-/* LED bits for use with board_userled_all() */
-
-#define BOARD_USERLED_BIT (1 << BOARD_USERLED)
-
-/* This LED is not used by the board port unless CONFIG_ARCH_LEDS is
- * defined.  In that case, the usage by the board port is defined in
- * include/board.h and src/imxrt_autoleds.c. The LED is used to encode
- * OS-related events as follows:
- *
- *   -------------------- ----------------------------- ------
- *   SYMBOL                   Meaning                   LED
- *   -------------------- ----------------------------- ------ */
-
-#define LED_STARTED       0  /* NuttX has been started  OFF    */
-#define LED_HEAPALLOCATE  0  /* Heap has been allocated OFF    */
-#define LED_IRQSENABLED   0  /* Interrupts enabled      OFF    */
-#define LED_STACKCREATED  1  /* Idle stack created      ON     */
-#define LED_INIRQ         2  /* In an interrupt         N/C    */
-#define LED_SIGNAL        2  /* In a signal handler     N/C    */
-#define LED_ASSERTION     2  /* An assertion failed     N/C    */
-#define LED_PANIC         3  /* The system has crashed  FLASH  */
-#undef  LED_IDLE             /* Not used                       */
-
-/* Thus if the LED is statically on, NuttX has successfully  booted and is,
- * apparently, running normally.  If the LED is flashing at approximately
- * 2Hz, then a fatal error has been detected and the system has halted.
- */
-
-/* Button definitions ***************************************************************/
-
-/* The IMXRT board has one external user button
- *
- * 1. SW8 (IRQ88)   GPIO5-00
- */
-
-#define BUTTON_SW8        0
-
-#define BUTTON_SW8_BIT    (1 << BUTTON_SW8)
 
 /* SDIO *****************************************************************************/
 
@@ -246,8 +165,6 @@
 #define GPIO_LPUART8_TX    GPIO_LPUART8_TX_1  /* GPIO_AD_B1_10----CBU-AUXGPS_TX */
 #define GPIO_LPUART8_RX    GPIO_LPUART8_RX_1  /* GPIO_AD_B1_11----CBU-AUXGPS_RX */
 
-
-
 /* LPI2Cs
  *
  */
@@ -263,9 +180,6 @@
 
 #define GPIO_LPI2C4_SDA   GPIO_LPI2C4_SDA_2  /* GPIO_EMC_11-------NotConnect */
 #define GPIO_LPI2C4_SCL   GPIO_LPI2C4_SCL_2  /* GPIO_EMC_12-------NotConnect */
-
-
-
 
 /* LPSPI
  *
@@ -287,7 +201,13 @@
 #define GPIO_LPSPI4_MOSI  GPIO_LPSPI4_SDO_1  /* GPIO_B1_06-------FM25V05-GTR */
 #define GPIO_LPSPI4_MISO  GPIO_LPSPI4_SDI_1  /* GPIO_B1_05-------FM25V05-GTR */
 
-
+/* FLEXCAN
+ *
+ */
+#define GPIO_CAN1_RX	GPIO_FLEXCAN1_RX_4
+#define GPIO_CAN1_TX	GPIO_FLEXCAN1_TX_4
+#define GPIO_CAN2_RX	GPIO_FLEXCAN2_RX_4
+#define GPIO_CAN2_TX	GPIO_FLEXCAN2_TX_4
 
 /************************************************************************************
  * Public Types
@@ -318,4 +238,4 @@ extern "C"
 #endif
 
 #endif /* __ASSEMBLY__ */
-#endif /* __CONFIGS_IMXRT1050_EVK_INCLUDE_BOARD_H */
+#endif /* __CONFIGS_UAVRS_V2_INCLUDE_BOARD_H */

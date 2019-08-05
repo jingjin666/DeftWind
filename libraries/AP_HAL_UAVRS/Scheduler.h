@@ -31,28 +31,23 @@
 class UAVRS::Scheduler : public AP_HAL::Scheduler {
 public:
     Scheduler();
+    /* AP_HAL::Scheduler methods */
+
     void     init();
     void     delay(uint16_t ms);
     void     delay_microseconds(uint16_t us);
-    void     register_delay_callback(AP_HAL::Proc,
-                uint16_t min_time_ms);
-
+    void     register_delay_callback(AP_HAL::Proc, uint16_t min_time_ms);
     void     register_timer_process(AP_HAL::MemberProc);
     void     register_io_process(AP_HAL::MemberProc);
     void     suspend_timer_procs();
     void     resume_timer_procs();
-
     bool     in_timerprocess();
-
     void     register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_us);
-
     void     system_initialized();
-
     void     reboot(bool hold_in_bootloader);
-    
     bool     in_main_thread() const;
-
     void     hal_initialized() { _hal_initialized = true; }
+    void     create_uavcan_thread() override;
 
 private:
     bool _initialized;
@@ -78,11 +73,18 @@ private:
     pthread_t _io_thread_ctx;
     pthread_t _storage_thread_ctx;
     pthread_t _uart_thread_ctx;
+    pthread_t _uavcan_thread_ctx;
+
+    struct _uavcan_thread_arg {
+        Scheduler *sched;
+        uint8_t uavcan_number;
+    };
 
     static void *_timer_thread(void *arg);
     static void *_io_thread(void *arg);
     static void *_storage_thread(void *arg);
     static void *_uart_thread(void *arg);
+    static void *_uavcan_thread(void *arg);
 
     void _run_timers(bool called_from_timer_thread);
     void _run_io(void);

@@ -19,4 +19,5 @@ namespace UAVRS {
     class Storage;
     class UARTDriver;
     class UAVRSUtil;
+    class UAVRSCANManager;
 }

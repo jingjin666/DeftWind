@@ -29,17 +29,20 @@ bool AP_Airspeed_UAVCAN_MS4525::init()
             if (hal.can_mgr[i] != nullptr) {
                 AP_UAVCAN *uavcan = hal.can_mgr[i]->get_UAVCAN();
                 if (uavcan != nullptr) {
-                    if(uavcan->register_airspeed_listener_to_id(this, get_instance())) {
-                        printf("AP_Airspeed_UAVCAN_MS4525 CAN_Driver[%d] registered id: %d\n", i, get_instance());
-						return true;
-                    } else {
-						printf("Failed to register_airspeed_listener_to_id\n");
-					}
+                    uint8_t free_airspeed = uavcan->find_smallest_free_airspeed_node();
+                    if (free_airspeed != UINT8_MAX) {
+                        if(uavcan->register_airspeed_listener_to_id(this, free_airspeed)) {
+                            printf("AP_Airspeed_UAVCAN_MS4525 init, CAN_Driver[%d], registered node id: %d\n", i, free_airspeed);
+                            return true;
+                        } else {
+                            printf("Failed to register_airspeed_listener_to_id\n");
+                        }
+                    }
                 } else {
-					printf("uavcan is null\n", i);
+					printf("uavcan[%d] is null\n", i);
 				}
             } else {
-				printf("hal.can_mgr[%d] is null\n", i);
+				//printf("hal.can_mgr[%d] is null\n", i);
 			}
         }
     }

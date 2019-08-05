@@ -18,6 +18,7 @@
 #elif defined(CONFIG_ARCH_BOARD_UAVRS_V2)
 #define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_UAVRS_V2
 #define HAL_STORAGE_SIZE            16384
+#define HAL_WITH_UAVCAN				1
 #else
 #error "Unknown UAVRS board type"
 #endif

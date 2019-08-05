@@ -1,4 +1,3 @@
-
 #include "Scheduler.h"
 
 #include <stdarg.h>
@@ -19,7 +18,10 @@
 #include "RCInput.h"
 #include <AP_Scheduler/AP_Scheduler.h>
 
-
+#if HAL_WITH_UAVCAN
+#include "CAN.h"
+#include <AP_UAVCAN/AP_UAVCAN.h>
+#endif
 
 using namespace UAVRS;
 
@@ -81,6 +83,34 @@ void Scheduler::init()
     pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
 
     pthread_create(&_storage_thread_ctx, &thread_attr, &Scheduler::_storage_thread, this);
+}
+
+void Scheduler::create_uavcan_thread()
+{
+#if HAL_WITH_UAVCAN
+    pthread_attr_t thread_attr;
+    struct sched_param param;
+
+     //the UAVCAN thread runs at medium priority
+    pthread_attr_init(&thread_attr);
+    pthread_attr_setstacksize(&thread_attr, 8192);
+
+    param.sched_priority = UAVRS_CAN_PRIORITY;
+    (void) pthread_attr_setschedparam(&thread_attr, &param);
+    pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
+
+    for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
+        if (hal.can_mgr[i] != nullptr) {
+            if (hal.can_mgr[i]->get_UAVCAN() != nullptr) {
+                _uavcan_thread_arg *arg = new _uavcan_thread_arg;
+                arg->sched = this;
+                arg->uavcan_number = i;
+
+                pthread_create(&_uavcan_thread_ctx, &thread_attr, &Scheduler::_uavcan_thread, arg);
+            }
+        }
+    }
+#endif
 }
 
 void Scheduler::delay(uint16_t ms)
@@ -367,3 +397,33 @@ void *Scheduler::_storage_thread(void *arg)
     }
     return nullptr;
 }
+
+#if HAL_WITH_UAVCAN
+void *Scheduler::_uavcan_thread(void *arg)
+{
+    Scheduler *sched = ((_uavcan_thread_arg *) arg)->sched;
+    uint8_t uavcan_number = ((_uavcan_thread_arg *) arg)->uavcan_number;
+
+    char name[15];
+    snprintf(name, sizeof(name), "uavrs_uavcan:%u", uavcan_number);
+    pthread_setname_np(pthread_self(), name);
+
+    while (!sched->_hal_initialized) {
+        poll(nullptr, 0, 1);
+    }
+
+    while (!_uavrs_thread_should_exit) {
+        if (((UAVRSCANManager *)hal.can_mgr[uavcan_number])->is_initialized()) {
+            if (((UAVRSCANManager *)hal.can_mgr[uavcan_number])->get_UAVCAN() != nullptr) {
+                (((UAVRSCANManager *)hal.can_mgr[uavcan_number])->get_UAVCAN())->do_cyclic();
+            } else {
+                sched->delay_microseconds_semaphore(10000);
+            }
+        } else {
+            sched->delay_microseconds_semaphore(10000);
+        }
+    }
+
+    return nullptr;
+}
+#endif

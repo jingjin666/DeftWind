@@ -22,13 +22,13 @@
 
 #if HAL_WITH_UAVCAN
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 
-#include <AP_HAL_PX4/CAN.h>
+#include <AP_HAL_UAVRS/CAN.h>
 #endif
 
 #include <AP_UAVCAN/AP_UAVCAN.h>
@@ -88,17 +88,17 @@ void AP_BoardConfig_CAN::init()
         _st_can_debug[i] = (int8_t) _var_info_can[i]._can_debug;
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    px4_setup_canbus();
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
+    uavrs_setup_canbus();
 #endif
 
 }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
 /*
   setup CANBUS drivers
  */
-void AP_BoardConfig_CAN::px4_setup_canbus(void)
+void AP_BoardConfig_CAN::uavrs_setup_canbus(void)
 {
     // Create all drivers that we need
     bool initret = true;
@@ -107,7 +107,7 @@ void AP_BoardConfig_CAN::px4_setup_canbus(void)
 
         if (drv_num != 0 && drv_num <= MAX_NUMBER_OF_CAN_DRIVERS) {
             if (hal.can_mgr[drv_num - 1] == nullptr) {
-                const_cast <AP_HAL::HAL&> (hal).can_mgr[drv_num - 1] = new PX4::PX4CANManager;
+                const_cast <AP_HAL::HAL&> (hal).can_mgr[drv_num - 1] = new UAVRS::UAVRSCANManager;
             }
 
             if (hal.can_mgr[drv_num - 1] != nullptr) {
@@ -152,8 +152,8 @@ void AP_BoardConfig_CAN::px4_setup_canbus(void)
             // start UAVCAN working thread
             hal.scheduler->create_uavcan_thread();
 
-            // Delay for magnetometer and barometer discovery
-            hal.scheduler->delay(5000);
+            // Delay for airspeed and magnetometer discovery
+            hal.scheduler->delay(3000);
         }
     }
 }

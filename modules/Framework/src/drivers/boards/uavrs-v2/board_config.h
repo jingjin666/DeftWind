@@ -209,15 +209,6 @@
 /* Mtd Storage Device */
 #define UAVRS_SPI_BUS_RAMTRON	4
 
-
-/* MMCSD EN */
-#define IOMUX_MMCSD_EN  (IOMUX_SLEW_FAST | IOMUX_DRIVE_50OHM | \
-                         IOMUX_SPEED_MEDIUM | IOMUX_PULL_UP_100K | \
-                       _IOMUX_PULL_ENABLE)
-#define GPIO_MMCSD_EN   (GPIO_OUTPUT | GPIO_OUTPUT_ZERO | \
-                        GPIO_PORT3 | GPIO_PIN2 | IOMUX_MMCSD_EN)
-
-
 /* High-resolution timer */
 
 #define HRT_TIMER               1  /* use GPT1 for the HRT */

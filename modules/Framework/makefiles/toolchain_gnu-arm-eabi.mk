@@ -261,7 +261,7 @@ endef
 # as a side-effect, generate a dependency file
 #
 define COMPILEXX
-	@$(ECHO) "CXX:$(GREEN)     $1 $(CLOSE)"
+	@$(ECHO) "CXX:$(PURPLE)     $1 $(CLOSE)"
 	@$(MKDIR) -p $(dir $2)
 	$(Q) $(CCACHE) $(CXX) -MD -c $(CXXFLAGS) $(abspath $1) -o $2
 endef

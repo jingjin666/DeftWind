@@ -250,6 +250,26 @@ static void imxrt_pllsetup(void)
     {
     }
 
+  /* Init USB PLL3 */
+
+  uint32_t pll3reg=getreg32(IMXRT_CCM_ANALOG_PFD_480);
+  putreg32(pll3reg |
+            CCM_ANALOG_PFD_480_PFD0_CLKGATE |
+            CCM_ANALOG_PFD_480_PFD1_CLKGATE |
+            CCM_ANALOG_PFD_480_PFD2_CLKGATE |
+            CCM_ANALOG_PFD_480_PFD3_CLKGATE,
+            IMXRT_CCM_ANALOG_PFD_480 );
+
+  reg = CCM_ANALOG_PLL_USB1_DIV_SELECT_20 |
+        CCM_ANALOG_PLL_USB1_ENABLE | CCM_ANALOG_PLL_USB1_EN_USB_CLKS |
+        CCM_ANALOG_PLL_USB1_POWER;
+  putreg32(reg, IMXRT_CCM_ANALOG_PLL_USB1);
+  while ((getreg32(IMXRT_CCM_ANALOG_PLL_USB1) & CCM_ANALOG_PLL_USB1_LOCK) == 0)
+    {
+    }
+
+  putreg32(pll3reg,IMXRT_CCM_ANALOG_PFD_480);
+
 #ifdef CONFIG_IMXRT_LCD
   /* Init Video PLL5 */
 
@@ -531,6 +551,23 @@ void imxrt_clockconfig(void)
 #endif
   putreg32(reg, IMXRT_CCM_CSCDR1);
 #endif
+
+  /* Set FLEXCAN clock source to IMXRT_FLEXCAN_CLK_SELECT */
+  reg  = getreg32(IMXRT_CCM_CSCMR2);
+  reg &= ~CCM_CSCMR2_CAN_CLK_SEL_MASK;
+#if defined(IMXRT_FLEXCAN_CLK_SELECT)
+  reg |= IMXRT_FLEXCAN_CLK_SELECT;
+#endif
+  putreg32(reg, IMXRT_CCM_CSCMR2);
+
+  /* Set FLEXCAN divider to IMXRT_FLEXCAN_PODF_DIVIDER */
+
+  reg  = getreg32(IMXRT_CCM_CSCMR2);
+  reg &= ~CCM_CSCMR2_CAN_CLK_PODF_MASK;
+#if defined(IMXRT_FLEXCAN_PODF_DIVIDER)
+  reg |= CCM_CSCMR2_CAN_CLK_PODF(CCM_PODF_FROM_DIVISOR(IMXRT_FLEXCAN_PODF_DIVIDER));
+#endif
+  putreg32(reg, IMXRT_CCM_CSCMR2);
 
 #endif
 }

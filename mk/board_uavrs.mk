@@ -107,7 +107,8 @@ uavrs-v1-clean:
 	rm -rf $(DP_ROOT)/Archives
 	rm -rf $(DP_ROOT)/Build $(DP_ROOT)/Images/*.dp $(DP_ROOT)/Images/*.bin $(DP_ROOT)/Images/*.hex
 	rm -f $(SRCROOT)/*.o $(SRCROOT)/*.d
-		
+	rm -rf $(UAVCAN_DIRECTORY)/libuavcan/include/dsdlc_generated
+
 #####################
 # 伪目标uavrs-v2-clean
 # 删除xxx.export和相关Builds
@@ -118,6 +119,7 @@ uavrs-v2-clean:
 	rm -rf $(DP_ROOT)/Archives
 	rm -rf $(DP_ROOT)/Build $(DP_ROOT)/Images/*.dp $(DP_ROOT)/Images/*.bin $(DP_ROOT)/Images/*.hex
 	rm -f $(SRCROOT)/*.o $(SRCROOT)/*.d
+	rm -rf $(UAVCAN_DIRECTORY)/libuavcan/include/dsdlc_generated
 
 #####################
 # 生成【~/DeftWind/module.mk】
