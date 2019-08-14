@@ -530,6 +530,7 @@ static void imxrt_dmaterminate(struct imxrt_dmach_s *dmach, int result)
   struct imxrt_edmatcd_s *tcd;
   struct imxrt_edmatcd_s *next;
 #endif
+
   uintptr_t regaddr;
   uint8_t regval8;
   uint8_t chan;
@@ -586,9 +587,12 @@ static void imxrt_dmaterminate(struct imxrt_dmach_s *dmach, int result)
       dmach->callback((DMACH_HANDLE)dmach, dmach->arg, true, result);
     }
 
-  dmach->callback = NULL;
-  dmach->arg      = NULL;
-  dmach->state    = IMXRT_DMA_IDLE;
+  /* Becase we will resetup and restart dma after callback, so you can't clear callback and arg,
+   * dma only interrupt once if you clear callback and arg at here.
+   */
+  //dmach->callback = NULL;
+  //dmach->arg      = NULL;
+  //dmach->state    = IMXRT_DMA_IDLE;
 }
 
 /****************************************************************************
@@ -645,7 +649,6 @@ static void imxrt_dmach_interrupt(struct imxrt_dmach_s *dmach)
       if ((regval16 & EDMA_TCD_CSR_DONE) != 0)
         {
           /* Clear the pending DONE interrupt status. */
-
           regval8 = EDMA_CDNE(chan);
           putreg8(regval8, IMXRT_EDMA_CDNE);
           result = OK;
@@ -1187,9 +1190,11 @@ int imxrt_dmach_xfrsetup(DMACH_HANDLE *handle,
   imxrt_tcd_configure((struct imxrt_edmatcd_s *)IMXRT_EDMA_TCD_BASE(dmach->chan),
                       config);
 
+  /* Enable auto disable request feature */
   /* Enable the DONE interrupt when the major iteration count completes. */
 
   regaddr = IMXRT_EDMA_TCD_CSR(dmach->chan);
+  modifyreg16(regaddr, 0, EDMA_TCD_CSR_DREQ);
   modifyreg16(regaddr, 0, EDMA_TCD_CSR_INTMAJOR);
 #endif
 
@@ -1266,6 +1271,7 @@ int imxrt_dmach_start(DMACH_HANDLE handle, edma_callback_t callback, void *arg)
 
   DEBUGASSERT(dmach != NULL && dmach->state == IMXRT_DMA_CONFIGURED);
   chan            = dmach->chan;
+
   dmainfo("dmach%u: %p callback: %p arg: %p\n", chan, dmach, callback, arg);
 
   /* Save the callback info.  This will be invoked when the DMA completes */
@@ -1324,6 +1330,56 @@ void imxrt_dmach_stop(DMACH_HANDLE handle)
 
   flags = spin_lock_irqsave();
   imxrt_dmaterminate(dmach, -EINTR);
+  spin_unlock_irqrestore(flags);
+}
+
+void imxrt_dmach_abort_transfer(DMACH_HANDLE handle)
+{
+  struct imxrt_dmach_s *dmach = (struct imxrt_dmach_s *)handle;
+  irqstate_t flags;
+  uintptr_t regaddr;
+  uint8_t regval8;
+
+  dmainfo("dmach: %p\n", dmach);
+  DEBUGASSERT(dmach != NULL);
+
+  flags = spin_lock_irqsave();
+
+  /* Disable channel IRQ requests */
+
+  regval8         = EDMA_CERQ(dmach->chan);
+  putreg8(regval8, IMXRT_EDMA_CERQ);
+
+  /* Clear CSR to disable channel. Because if the given channel started,
+   * transfer CSR will be not zero. Because if it is the last transfer, DREQ
+   * will be set.  If not, ESG will be set.
+   */
+
+  regaddr         = IMXRT_EDMA_TCD_CSR(dmach->chan);
+  putreg16(0, regaddr);
+
+  /* Cancel next TCD transfer. */
+
+  regaddr         = IMXRT_EDMA_TCD_DLASTSGA(dmach->chan);
+  putreg16(0, regaddr);
+
+#if CONFIG_IMXRT_EDMA_NTCD > 0
+  /* Return all allocated TCDs to the free list */
+
+  for (imxrt_edmatcd_s tcd = dmach->head; tcd != NULL; tcd = next)
+  {
+    next = (struct imxrt_edmatcd_s *)tcd->dlastsga;
+    imxrt_tcd_free(tcd);
+  }
+
+  dmach->head = NULL;
+  dmach->tail = NULL;
+#endif
+
+  dmach->callback = NULL;
+  dmach->arg      = NULL;
+  dmach->state    = IMXRT_DMA_IDLE;
+
   spin_unlock_irqrestore(flags);
 }
 

@@ -743,7 +743,12 @@ static ssize_t uart_read(FAR struct file *filep, FAR char *buffer, size_t buflen
    * we add data to the head of the buffer; uart_xmitchars takes the
    * data from the end of the buffer.
    */
-
+  if(!dev->isconsole && dev->rxdma_use)
+  {
+      recvd = uart_dma_ringbuffer_read(dev, buffer, buflen);
+  }
+  else
+  {
   while ((size_t)recvd < buflen)
     {
 #ifdef CONFIG_SERIAL_REMOVABLE
@@ -1045,7 +1050,7 @@ static ssize_t uart_read(FAR struct file *filep, FAR char *buffer, size_t buflen
     }
 #endif
 #endif
-
+  }
   uart_givesem(&dev->recv.sem);
   return recvd;
 }
@@ -1270,7 +1275,6 @@ static int uart_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
                 {
                   count = dev->recv.size - (dev->recv.tail - dev->recv.head);
                 }
-
               leave_critical_section(flags);
 
               *(FAR int *)((uintptr_t)arg) = count;

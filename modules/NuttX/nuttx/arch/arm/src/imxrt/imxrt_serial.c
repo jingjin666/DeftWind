@@ -70,12 +70,35 @@
 #include "chip/imxrt_pinmux.h"
 #include "imxrt_config.h"
 #include "imxrt_lowputc.h"
+#include "imxrt_edma.h"
+#include "chip/imxrt_dmamux.h"
 
 #ifdef USE_SERIALDRIVER
 
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
+
+#ifndef DMA_RX_BUFFER_SIZE
+#define DMA_RX_BUFFER_SIZE   256
+#endif
+
+/* Is DMA available on any (enabled) UART? */
+
+#undef SERIAL_HAVE_DMA
+#define CONFIG_IMXRT_LPUART2_RXDMA 1
+#define CONFIG_IMXRT_LPUART3_RXDMA 1
+#define CONFIG_IMXRT_LPUART4_RXDMA 1
+#define CONFIG_IMXRT_LPUART5_RXDMA 1
+#define CONFIG_IMXRT_LPUART6_RXDMA 1
+#define CONFIG_IMXRT_LPUART7_RXDMA 1
+#define CONFIG_IMXRT_LPUART8_RXDMA 1
+#if defined(CONFIG_IMXRT_LPUART1_RXDMA) || defined(CONFIG_IMXRT_LPUART2_RXDMA) || \
+    defined(CONFIG_IMXRT_LPUART3_RXDMA) || defined(CONFIG_IMXRT_LPUART4_RXDMA) || \
+    defined(CONFIG_IMXRT_LPUART5_RXDMA) || defined(CONFIG_IMXRT_LPUART6_RXDMA) || \
+    defined(CONFIG_IMXRT_LPUART7_RXDMA) || defined(CONFIG_IMXRT_LPUART8_RXDMA)
+#  define SERIAL_HAVE_DMA 1
+#endif
 
 /* Which LPUART with be tty0/console and which tty1-7?  The console will
  * always be ttyS0.  If there is no console then will use the lowest
@@ -353,6 +376,16 @@ struct imxrt_uart_s
 #ifdef CONFIG_SERIAL_OFLOWCONTROL
   uint8_t  oflow:1;     /* output flow control (CTS) enabled */
 #endif
+
+#ifdef SERIAL_HAVE_DMA
+  uint8_t           rxch;           /* DMA channel assigned */
+  DMACH_HANDLE      rxdma;          /* currently-open receive DMA stream */
+  bool              rxenable;       /* DMA-based reception en/disable */
+  uint8_t *         rxfifo;         /* Receive DMA buffer */
+  volatile  uint8_t rxresult;       /* Result of the RX DMA */
+  sem_t             rxsem;          /* Wait for RX DMA to complete */
+#endif
+
   uint8_t  reserved:(7 - IFLOW + OFLOW);
 };
 
@@ -383,6 +416,15 @@ static void imxrt_txint(struct uart_dev_s *dev, bool enable);
 static bool imxrt_txready(struct uart_dev_s *dev);
 static bool imxrt_txempty(struct uart_dev_s *dev);
 
+#ifdef SERIAL_HAVE_DMA
+static int  imxrt_dma_setup(struct uart_dev_s *dev);
+static void imxrt_dma_shutdown(struct uart_dev_s *dev);
+static int  imxrt_dma_receive(struct uart_dev_s *dev, unsigned int *status);
+static void imxrt_dma_rxint(struct uart_dev_s *dev, bool enable);
+static bool imxrt_dma_rxavailable(struct uart_dev_s *dev);
+static void imxrt_dma_rxcallback(DMACH_HANDLE handle, void *arg, bool done, int result);
+#endif
+
 #ifdef CONFIG_PM
 static void up_pm_notify(struct pm_callback_s *cb, int dowmin,
                          enum pm_state_e pmstate);
@@ -395,6 +437,27 @@ static int  up_pm_prepare(struct pm_callback_s *cb, int domain,
  ****************************************************************************/
 
 /* Serial driver UART operations */
+
+#ifdef SERIAL_HAVE_DMA
+static const struct uart_ops_s g_uart_dma_ops =
+{
+  .setup          = imxrt_dma_setup,
+  .shutdown       = imxrt_dma_shutdown,
+  .attach         = imxrt_attach,
+  .detach         = imxrt_detach,
+  .ioctl          = imxrt_ioctl,
+  .receive        = imxrt_dma_receive,
+  .rxint          = imxrt_dma_rxint,
+  .rxavailable    = imxrt_dma_rxavailable,
+#ifdef CONFIG_SERIAL_IFLOWCONTROL
+  .rxflowcontrol  = NULL,
+#endif
+  .send           = imxrt_send,
+  .txint          = imxrt_txint,
+  .txready        = imxrt_txready,
+  .txempty        = imxrt_txempty,
+};
+#endif
 
 static const struct uart_ops_s g_uart_ops =
 {
@@ -420,41 +483,65 @@ static const struct uart_ops_s g_uart_ops =
 #ifdef CONFIG_IMXRT_LPUART1
 static char g_uart1rxbuffer[CONFIG_LPUART1_RXBUFSIZE];
 static char g_uart1txbuffer[CONFIG_LPUART1_TXBUFSIZE];
+#ifdef CONFIG_IMXRT_LPUART1_RXDMA
+static char g_uart1rxfifo[DMA_RX_BUFFER_SIZE];
+#endif
 #endif
 
 #ifdef CONFIG_IMXRT_LPUART2
 static char g_uart2rxbuffer[CONFIG_LPUART2_RXBUFSIZE];
 static char g_uart2txbuffer[CONFIG_LPUART2_TXBUFSIZE];
+#ifdef CONFIG_IMXRT_LPUART2_RXDMA
+static char g_uart2rxfifo[DMA_RX_BUFFER_SIZE];
+#endif
 #endif
 
 #ifdef CONFIG_IMXRT_LPUART3
 static char g_uart3rxbuffer[CONFIG_LPUART3_RXBUFSIZE];
 static char g_uart3txbuffer[CONFIG_LPUART3_TXBUFSIZE];
+#ifdef CONFIG_IMXRT_LPUART3_RXDMA
+static char g_uart3rxfifo[DMA_RX_BUFFER_SIZE];
+#endif
 #endif
 
 #ifdef CONFIG_IMXRT_LPUART4
 static char g_uart4rxbuffer[CONFIG_LPUART4_RXBUFSIZE];
 static char g_uart4txbuffer[CONFIG_LPUART4_TXBUFSIZE];
+#ifdef CONFIG_IMXRT_LPUART4_RXDMA
+static char g_uart4rxfifo[DMA_RX_BUFFER_SIZE];
+#endif
 #endif
 
 #ifdef CONFIG_IMXRT_LPUART5
 static char g_uart5rxbuffer[CONFIG_LPUART5_RXBUFSIZE];
 static char g_uart5txbuffer[CONFIG_LPUART5_TXBUFSIZE];
+#ifdef CONFIG_IMXRT_LPUART5_RXDMA
+static char g_uart5rxfifo[DMA_RX_BUFFER_SIZE];
+#endif
 #endif
 
 #ifdef CONFIG_IMXRT_LPUART6
 static char g_uart6rxbuffer[CONFIG_LPUART6_RXBUFSIZE];
 static char g_uart6txbuffer[CONFIG_LPUART6_TXBUFSIZE];
+#ifdef CONFIG_IMXRT_LPUART6_RXDMA
+static char g_uart6rxfifo[DMA_RX_BUFFER_SIZE];
+#endif
 #endif
 
 #ifdef CONFIG_IMXRT_LPUART7
 static char g_uart7rxbuffer[CONFIG_LPUART7_RXBUFSIZE];
 static char g_uart7txbuffer[CONFIG_LPUART7_TXBUFSIZE];
+#ifdef CONFIG_IMXRT_LPUART7_RXDMA
+static char g_uart7rxfifo[DMA_RX_BUFFER_SIZE];
+#endif
 #endif
 
 #ifdef CONFIG_IMXRT_LPUART8
 static char g_uart8rxbuffer[CONFIG_LPUART8_RXBUFSIZE];
 static char g_uart8txbuffer[CONFIG_LPUART8_TXBUFSIZE];
+#ifdef CONFIG_IMXRT_LPUART8_RXDMA
+static char g_uart8rxfifo[DMA_RX_BUFFER_SIZE];
+#endif
 #endif
 
 /* This describes the state of the IMXRT lpuart1 port. */
@@ -476,6 +563,10 @@ static struct imxrt_uart_s g_uart1priv =
   .iflow        = 1,
   .rts_gpio     = GPIO_LPUART1_RTS,
 #endif
+#ifdef CONFIG_IMXRT_LPUART1_RXDMA
+  .rxch          = IMXRT_DMACHAN_LPUART1_RX,
+  .rxfifo        = &g_uart1rxfifo
+#endif
 };
 
 static struct uart_dev_s g_uart1port =
@@ -490,7 +581,13 @@ static struct uart_dev_s g_uart1port =
     .size       = CONFIG_LPUART1_TXBUFSIZE,
     .buffer     = g_uart1txbuffer,
   },
+#ifdef CONFIG_IMXRT_LPUART1_RXDMA
+  .ops          = &g_uart_dma_ops,
+  .rxdma_use    = true,
+#else
   .ops          = &g_uart_ops,
+  .rxdma_use    = false,
+#endif
   .priv         = &g_uart1priv,
 };
 #endif
@@ -514,6 +611,10 @@ static struct imxrt_uart_s g_uart2priv =
   .iflow        = 1,
   .rts_gpio     = GPIO_LPUART2_RTS,
 #endif
+#ifdef CONFIG_IMXRT_LPUART2_RXDMA
+  .rxch          = IMXRT_DMACHAN_LPUART1_RX,
+  .rxfifo        = &g_uart2rxfifo
+#endif
 };
 
 static struct uart_dev_s g_uart2port =
@@ -528,7 +629,13 @@ static struct uart_dev_s g_uart2port =
     .size       = CONFIG_LPUART2_TXBUFSIZE,
     .buffer     = g_uart2txbuffer,
    },
+#ifdef CONFIG_IMXRT_LPUART2_RXDMA
+  .ops          = &g_uart_dma_ops,
+  .rxdma_use    = true,
+#else
   .ops          = &g_uart_ops,
+  .rxdma_use    = false,
+#endif
   .priv         = &g_uart2priv,
 };
 #endif
@@ -550,6 +657,10 @@ static struct imxrt_uart_s g_uart3priv =
   .iflow        = 1,
   .rts_gpio     = GPIO_LPUART3_RTS,
 #endif
+#ifdef CONFIG_IMXRT_LPUART3_RXDMA
+  .rxch          = IMXRT_DMACHAN_LPUART3_RX,
+  .rxfifo        = &g_uart3rxfifo
+#endif
 };
 
 static struct uart_dev_s g_uart3port =
@@ -564,7 +675,13 @@ static struct uart_dev_s g_uart3port =
     .size       = CONFIG_LPUART3_TXBUFSIZE,
     .buffer     = g_uart3txbuffer,
   },
+#ifdef CONFIG_IMXRT_LPUART3_RXDMA
+  .ops          = &g_uart_dma_ops,
+  .rxdma_use    = true,
+#else
   .ops          = &g_uart_ops,
+  .rxdma_use    = false,
+#endif
   .priv         = &g_uart3priv,
 };
 #endif
@@ -586,6 +703,10 @@ static struct imxrt_uart_s g_uart4priv =
   .iflow        = 1,
   .rts_gpio     = GPIO_LPUART4_RTS,
 #endif
+#ifdef CONFIG_IMXRT_LPUART4_RXDMA
+  .rxch          = IMXRT_DMACHAN_LPUART4_RX,
+  .rxfifo        = &g_uart4rxfifo
+#endif
 };
 
 static struct uart_dev_s g_uart4port =
@@ -600,7 +721,13 @@ static struct uart_dev_s g_uart4port =
     .size       = CONFIG_LPUART4_TXBUFSIZE,
     .buffer     = g_uart4txbuffer,
   },
+#ifdef CONFIG_IMXRT_LPUART4_RXDMA
+  .ops          = &g_uart_dma_ops,
+  .rxdma_use    = true,
+#else
   .ops          = &g_uart_ops,
+  .rxdma_use    = false,
+#endif
   .priv         = &g_uart4priv,
 };
 #endif
@@ -622,6 +749,10 @@ static struct imxrt_uart_s g_uart5priv =
   .iflow        = 1,
   .rts_gpio     = GPIO_LPUART5_RTS,
 #endif
+#ifdef CONFIG_IMXRT_LPUART5_RXDMA
+  .rxch          = IMXRT_DMACHAN_LPUART5_RX,
+  .rxfifo        = &g_uart5rxfifo
+#endif
 };
 
 static struct uart_dev_s g_uart5port =
@@ -636,7 +767,13 @@ static struct uart_dev_s g_uart5port =
     .size       = CONFIG_LPUART5_TXBUFSIZE,
     .buffer     = g_uart5txbuffer,
   },
+#ifdef CONFIG_IMXRT_LPUART5_RXDMA
+  .ops          = &g_uart_dma_ops,
+  .rxdma_use    = true,
+#else
   .ops          = &g_uart_ops,
+  .rxdma_use    = false,
+#endif
   .priv         = &g_uart5priv,
 };
 #endif
@@ -658,6 +795,10 @@ static struct imxrt_uart_s g_uart6priv =
   .iflow        = 1,
   .rts_gpio     = GPIO_LPUART6_RTS,
 #endif
+#ifdef CONFIG_IMXRT_LPUART6_RXDMA
+  .rxch          = IMXRT_DMACHAN_LPUART6_RX,
+  .rxfifo        = &g_uart6rxfifo
+#endif
 };
 
 static struct uart_dev_s g_uart6port =
@@ -672,7 +813,13 @@ static struct uart_dev_s g_uart6port =
     .size       = CONFIG_LPUART6_TXBUFSIZE,
     .buffer     = g_uart6txbuffer,
   },
+#ifdef CONFIG_IMXRT_LPUART6_RXDMA
+  .ops          = &g_uart_dma_ops,
+  .rxdma_use    = true,
+#else
   .ops          = &g_uart_ops,
+  .rxdma_use    = false,
+#endif
   .priv         = &g_uart6priv,
 };
 #endif
@@ -694,6 +841,10 @@ static struct imxrt_uart_s g_uart7priv =
   .iflow        = 1,
   .rts_gpio     = GPIO_LPUART7_RTS,
 #endif
+#ifdef CONFIG_IMXRT_LPUART7_RXDMA
+  .rxch          = IMXRT_DMACHAN_LPUART7_RX,
+  .rxfifo        = &g_uart7rxfifo
+#endif
 };
 
 static struct uart_dev_s g_uart7port =
@@ -708,7 +859,13 @@ static struct uart_dev_s g_uart7port =
     .size       = CONFIG_LPUART7_TXBUFSIZE,
     .buffer     = g_uart7txbuffer,
   },
+#ifdef CONFIG_IMXRT_LPUART7_RXDMA
+  .ops          = &g_uart_dma_ops,
+  .rxdma_use    = true,
+#else
   .ops          = &g_uart_ops,
+  .rxdma_use    = false,
+#endif
   .priv         = &g_uart7priv,
 };
 #endif
@@ -730,6 +887,10 @@ static struct imxrt_uart_s g_uart8priv =
   .iflow        = 1,
   .rts_gpio     = GPIO_LPUART8_RTS,
 #endif
+#ifdef CONFIG_IMXRT_LPUART8_RXDMA
+  .rxch          = IMXRT_DMACHAN_LPUART8_RX,
+  .rxfifo        = &g_uart8rxfifo
+#endif
 };
 
 static struct uart_dev_s g_uart8port =
@@ -744,7 +905,13 @@ static struct uart_dev_s g_uart8port =
     .size       = CONFIG_LPUART8_TXBUFSIZE,
     .buffer     = g_uart8txbuffer,
   },
+#ifdef CONFIG_IMXRT_LPUART8_RXDMA
+  .ops          = &g_uart_dma_ops,
+  .rxdma_use    = true,
+#else
   .ops          = &g_uart_ops,
+  .rxdma_use    = false,
+#endif
   .priv         = &g_uart8priv,
 };
 #endif
@@ -827,6 +994,373 @@ static inline void imxrt_restoreuartint(struct imxrt_uart_s *priv,
   imxrt_serialout(priv, IMXRT_LPUART_CTRL_OFFSET, regval);
   spin_unlock_irqrestore(flags);
 }
+
+#ifdef SERIAL_HAVE_DMA
+
+/************************************************************************************
+* Name: lpuart_dmarxsetup
+*
+* Description:
+*   Setup to perform RX DMA
+*
+************************************************************************************/
+
+static void lpuart_dmarxsetup(FAR struct imxrt_uart_s *dev, uint32_t maddr, size_t nwords)
+{
+    //syslog(LOG_DEBUG, "%s::::::::::::::%d\n", __FUNCTION__, __LINE__);
+
+    struct imxrt_uart_s *priv = (struct imxrt_uart_s *)dev;
+    struct imxrt_edma_xfrconfig_s config;
+
+    ASSERT(priv != NULL && nwords > 0);
+
+    /* Configure the RX DMA */
+    config.saddr    = priv->uartbase + IMXRT_LPUART_DATA_OFFSET;
+    config.daddr    = maddr;
+    config.soff     = (int16_t)0;
+    config.doff     = (int16_t)1;
+    config.iter     = nwords / 1;
+    config.ssize    = TCD_ATTR_SIZE_8BIT;
+    config.dsize    = TCD_ATTR_SIZE_8BIT;
+    config.nbytes   = 1;
+    config.ttype    = eDMA_PERIPH2MEM;
+
+    imxrt_dmach_xfrsetup(priv->rxdma, &config);
+}
+
+/************************************************************************************
+ * Name: lpuart_dmarxstart
+ *
+ * Description:
+ *   Start RX DMA
+ *
+ ************************************************************************************/
+
+static inline void lpuart_dmarxstart(struct uart_dev_s *dev)
+{
+    //syslog(LOG_DEBUG, "%s::::::::::::::%d\n", __FUNCTION__, __LINE__);
+
+    struct imxrt_uart_s *priv = (struct imxrt_uart_s *)dev->priv;
+    ASSERT(dev != NULL && priv != NULL);
+
+    priv->rxresult = 0;
+    imxrt_dmach_start(priv->rxdma, imxrt_dma_rxcallback, dev);
+}
+
+/************************************************************************************
+ * Name: lpuart_dmarxstop
+ *
+ * Description:
+ *   Stop RX DMA
+ *
+ ************************************************************************************/
+
+static inline void lpuart_dmarxstop(struct uart_dev_s *dev)
+{
+    //syslog(LOG_DEBUG, "%s::::::::::::::%d\n", __FUNCTION__, __LINE__);
+
+    struct imxrt_uart_s *priv = (struct imxrt_uart_s *)dev->priv;
+    ASSERT(dev != NULL && priv != NULL);
+
+    imxrt_dmach_stop(priv->rxdma);
+}
+
+/************************************************************************************
+ * Name: lpuart_dma_abort_transfer
+ *
+ * Description:
+ *   Abort RX DMA
+ *
+ ************************************************************************************/
+
+static inline void lpuart_dma_abort_transfer(struct uart_dev_s *dev)
+{
+    //syslog(LOG_DEBUG, "%s::::::::::::::%d\n", __FUNCTION__, __LINE__);
+
+    struct imxrt_uart_s *priv = (struct imxrt_uart_s *)dev->priv;
+    ASSERT(dev != NULL && priv != NULL);
+
+    imxrt_dmach_abort_transfer(priv->rxdma);
+}
+
+/************************************************************************************
+ * Name: lpuart_enable_interrupts
+ *
+ * Description:
+ *   Enable interrupts
+ *
+ ************************************************************************************/
+
+static void lpuart_enable_interrupts(struct imxrt_uart_s *priv, uint32_t mask)
+{
+    //syslog(LOG_DEBUG, "%s::::::::::::::%d\n", __FUNCTION__, __LINE__);
+
+    ASSERT(priv != NULL);
+
+    uint32_t regval;
+
+    regval = imxrt_serialin(priv, IMXRT_LPUART_BAUD_OFFSET);
+    regval |= ((mask << 8) & (LPUART_BAUD_LBKDIE | LPUART_BAUD_RXEDGIE));
+    imxrt_serialout(priv, IMXRT_LPUART_BAUD_OFFSET, regval);
+
+    regval = imxrt_serialin(priv, IMXRT_LPUART_FIFO_OFFSET);
+    regval = (regval & ~(LPUART_FIFO_TXOF | LPUART_FIFO_RXUF)) | ((mask << 8) & (LPUART_FIFO_TXOFE | LPUART_FIFO_RXUFE));
+    imxrt_serialout(priv, IMXRT_LPUART_FIFO_OFFSET, regval);
+
+    regval = imxrt_serialin(priv, IMXRT_LPUART_CTRL_OFFSET);
+    regval &= ~LPUART_ALL_INTS;
+    regval |= priv->ie;
+    imxrt_serialout(priv, IMXRT_LPUART_CTRL_OFFSET, regval);
+}
+
+/************************************************************************************
+ * Name: lpuart_dmarx_data_cnts
+ *
+ * Description:
+ *   Get RX DMA avalible data counts
+ *
+ ************************************************************************************/
+
+static uint32_t lpuart_dmarx_data_cnts(struct imxrt_uart_s *priv)
+{
+    ASSERT(priv != NULL);
+
+    uint32_t rx_remain = 0;
+
+    rx_remain = imxrt_dmach_getcount(priv->rxdma);
+
+    return DMA_RX_BUFFER_SIZE - rx_remain;
+}
+
+/************************************************************************************
+ * Name: lpuart_dma_enable
+ *
+ * Description:
+ *   Enable UART DMA
+ *
+ ************************************************************************************/
+
+static void lpuart_dma_enable(struct imxrt_uart_s *priv, bool enable)
+{
+    ASSERT(priv != NULL);
+
+    uint32_t regval;
+
+    regval = imxrt_serialin(priv, IMXRT_LPUART_BAUD_OFFSET);
+    if(enable)
+    {
+        regval |= LPUART_BAUD_RDMAE;
+    }
+    else
+    {
+        regval &= ~LPUART_BAUD_RDMAE;
+    }
+    imxrt_serialout(priv, IMXRT_LPUART_BAUD_OFFSET, regval);
+}
+
+/************************************************************************************
+* Name: imxrt_dmarxcallback
+*
+* Description:
+*   Called when the RX DMA completes
+*
+************************************************************************************/
+
+static void imxrt_dma_rxcallback(DMACH_HANDLE handle, void *arg, bool done, int result)
+{
+    //syslog(LOG_DEBUG, "%s::::::::::::::%d\n", __FUNCTION__, __LINE__);
+
+    FAR struct uart_dev_s *dev = (FAR struct uart_dev_s *)arg;
+    struct imxrt_uart_s *priv = (struct imxrt_uart_s *)dev->priv;
+    ASSERT(dev != NULL && priv != NULL);
+
+    uint32_t rx_cnts = 0;
+
+    if(done) {
+        rx_cnts = DMA_RX_BUFFER_SIZE;
+    } else {
+        rx_cnts = lpuart_dmarx_data_cnts(priv);
+    }
+
+    if(rx_cnts > 0) {
+        /* Disable receive DMA for the UART */
+
+        lpuart_dma_enable(priv, false);
+
+        /* Stop transfer */
+
+        lpuart_dma_abort_transfer(dev);
+
+        /* Copy to Ring Buffer */
+
+        uart_dma_ringbuffer_write(dev, priv->rxfifo, rx_cnts);
+
+        /* Configure for signle DMA reception into the RX FIFO */
+
+        lpuart_dmarxsetup(priv, (uint32_t)priv->rxfifo, DMA_RX_BUFFER_SIZE);
+
+        /* Start the DMA channel, and arrange for callbacks at the full points in the FIFO */
+
+        lpuart_dmarxstart(dev);
+
+        /* Enable receive DMA for the UART */
+
+        lpuart_dma_enable(priv, true);
+
+        /* Wake-up the UART driver */
+
+        priv->rxresult = (result==OK)?1:0;
+        //nxsem_post(&priv->rxsem);
+    }
+}
+
+/****************************************************************************
+ * Name: imxrt_dma_receive
+ *
+ * Description:
+ *   Called (usually) from the interrupt level to receive one
+ *   character from the USART.  Error bits associated with the
+ *   receipt are provided in the return 'status'.
+ *
+ ****************************************************************************/
+
+static int imxrt_dma_receive(struct uart_dev_s *dev, uint32_t *status)
+{
+    return 0;
+}
+
+/************************************************************************************
+ * Name: imxrt_dma_setup
+ *
+ * Description:
+ *   Setup UART DMA
+ *
+ ************************************************************************************/
+
+static int  imxrt_dma_setup(struct uart_dev_s *dev)
+{
+    //syslog(LOG_DEBUG, "%s::::::::::::::%d\n", __FUNCTION__, __LINE__);
+
+    struct imxrt_uart_s *priv = (struct imxrt_uart_s *)dev->priv;
+    ASSERT(dev != NULL && priv != NULL);
+
+    int result;
+    uint8_t regval;
+    DMACH_HANDLE rxdma = NULL;
+
+    dev->rxdma_use = true;
+
+    /* Do the basic UART setup first, unless we are the console */
+
+    if (!dev->isconsole)
+    {
+        result = imxrt_setup(dev);
+        if (result != OK)
+        {
+            return result;
+        }
+    }
+
+    /* Acquire the DMA channel.*/
+    if (priv->rxch)
+    {
+        nxsem_init(&priv->rxsem, 0, 0);
+        priv->rxdma = imxrt_dmach_alloc(DMAMUX_CHCFG_SOURCE(priv->rxch), EDMA_DCHPRI_ECP);
+        priv->rxenable = true;
+    }
+    else
+    {
+        priv->rxenable = false;
+        priv->rxdma = NULL;
+        return -EBUSY;
+    }
+
+    irqstate_t flags;
+
+    /* Enable Idle interrupt for receiving indefinite length data */
+
+    flags = spin_lock_irqsave();
+
+    priv->ie |= LPUART_CTRL_ILIE;
+
+    lpuart_enable_interrupts(priv, priv->ie);
+
+    /* Disable receive DMA for the UART */
+
+    lpuart_dma_enable(priv, false);
+
+    /* Configure for signle DMA reception into the RX FIFO */
+
+    lpuart_dmarxsetup(priv, (uint32_t)priv->rxfifo, DMA_RX_BUFFER_SIZE);
+
+    /* Start the DMA channel, and arrange for callbacks at the full points in the FIFO */
+
+    lpuart_dmarxstart(dev);
+
+    /* Enable receive DMA for the UART */
+
+    lpuart_dma_enable(priv, true);
+
+    spin_unlock_irqrestore(flags);
+
+    return OK;
+}
+
+/****************************************************************************
+ * Name: imxrt_dma_shutdown
+ *
+ * Description:
+ *   Disable the UART.  This method is called when the serial
+ *   port is closed
+ *
+ ****************************************************************************/
+
+static void imxrt_dma_shutdown(struct uart_dev_s *dev)
+{
+    struct imxrt_uart_s *priv = (struct imxrt_uart_s *)dev->priv;
+    ASSERT(dev != NULL && priv != NULL);
+
+    /* Perform the normal UART shutdown */
+
+    imxrt_shutdown(dev);
+
+    /* Stop the DMA channel */
+
+    imxrt_dmach_stop(priv->rxdma);
+
+    /* Release the DMA channel */
+
+    imxrt_dmach_free(priv->rxdma);
+
+    priv->rxdma = NULL;
+}
+
+/****************************************************************************
+ * Name: imxrt_dma_rxavailable
+ *
+ * Description:
+ *   Return true if the receive register is not empty
+ *
+ ****************************************************************************/
+
+static bool imxrt_dma_rxavailable(struct uart_dev_s *dev)
+{
+    return true;
+}
+
+/****************************************************************************
+ * Name: imxrt_dma_rxint
+ *
+ * Description:
+ *   Call to enable or disable DMA RX interrupts
+ *
+ ****************************************************************************/
+
+static void imxrt_dma_rxint(struct uart_dev_s *dev, bool enable)
+{
+}
+
+#endif
 
 /****************************************************************************
  * Name: imxrt_setup
@@ -977,7 +1511,7 @@ static int imxrt_interrupt(int irq, void *context, FAR void *arg)
 
       usr  = imxrt_serialin(priv, IMXRT_LPUART_STAT_OFFSET);
       usr &= (LPUART_STAT_RDRF | LPUART_STAT_TC | LPUART_STAT_OR |
-              LPUART_STAT_FE);
+              LPUART_STAT_FE | LPUART_STAT_IDLE);
 
       /* Clear serial overrun and framing errors */
 
@@ -1008,6 +1542,18 @@ static int imxrt_interrupt(int irq, void *context, FAR void *arg)
           uart_xmitchars(dev);
           handled = true;
         }
+#ifdef SERIAL_HAVE_DMA
+      /* Handle idle interrupt, receive bytes */
+
+      if ((usr & LPUART_STAT_IDLE) != 0 &&
+          (priv->ie & LPUART_CTRL_ILIE) != 0)
+        {
+          imxrt_dma_rxcallback(priv->rxdma, dev, false, 0);
+          /* Clear idle interrupt flag */
+          imxrt_serialout(priv, IMXRT_LPUART_STAT_OFFSET, LPUART_STAT_IDLE);
+          handled = true;
+        }
+#endif
     }
 
   return OK;
@@ -1190,18 +1736,39 @@ static int imxrt_ioctl(struct file *filep, int cmd, unsigned long arg)
             priv->parity    = parity;
             priv->bits      = nbits;
             priv->stopbits2 = stop2;
-#ifdef CONFIG_SERIAL_OFLOWCONTROL
+  #ifdef CONFIG_SERIAL_OFLOWCONTROL
             priv->oflow     = (termiosp->c_cflag & CCTS_OFLOW) != 0;
-#endif
-#ifdef CONFIG_SERIAL_IFLOWCONTROL
+  #endif
+  #ifdef CONFIG_SERIAL_IFLOWCONTROL
             priv->iflow     = (termiosp->c_cflag & CRTS_IFLOW) != 0;
-#endif
+  #endif
             /* effect the changes immediately - note that we do not
              * implement TCSADRAIN / TCSAFLUSH
              */
 
             imxrt_disableuartint(priv, &ie);
-            ret = imxrt_setup(dev);
+
+            if(dev->rxdma_use) {
+                /* Disable receive DMA for the UART */
+                lpuart_dma_enable(priv, false);
+
+                /* Stop transfer */
+                lpuart_dma_abort_transfer(dev);
+
+                /* Configure uart */
+                imxrt_setup(dev);
+
+                /* Configure for signle DMA reception into the RX FIFO */
+                lpuart_dmarxsetup(priv, (uint32_t)priv->rxfifo, DMA_RX_BUFFER_SIZE);
+
+                /* Start the DMA channel, and arrange for callbacks at the full points in the FIFO */
+                lpuart_dmarxstart(dev);
+
+                /* Enable receive DMA for the UART */
+                lpuart_dma_enable(priv, true);
+            } else {
+                ret = imxrt_setup(dev);
+            }
 
             /* Restore the interrupt state */
 

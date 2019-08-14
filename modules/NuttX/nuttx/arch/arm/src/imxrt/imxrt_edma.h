@@ -351,6 +351,8 @@ int imxrt_dmach_start(DMACH_HANDLE handle, edma_callback_t callback, void *arg);
 
 void imxrt_dmach_stop(DMACH_HANDLE handle);
 
+void imxrt_dmach_abort_transfer(DMACH_HANDLE handle);
+
 /************************************************************************************
  * Name: imxrt_dmach_getcount
  *

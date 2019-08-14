@@ -279,3 +279,49 @@ void uart_recvchars(FAR uart_dev_t *dev)
     }
 #endif
 }
+
+#ifndef min
+#  define min(a,b) ((a)<(b)?(a):(b))
+#endif
+
+#ifndef max
+#  define max(a,b) ((a)>(b)?(a):(b))
+#endif
+
+uint32_t uart_dma_ringbuffer_read(FAR uart_dev_t *dev, uint8_t *pdata, uint32_t count)
+{
+    FAR struct uart_buffer_s *buf = &dev->recv;
+
+	uint32_t l;
+
+    count = min(count, buf->head - buf->tail);
+
+    l = min(count, buf->size - (buf->tail & (buf->size - 1)));
+
+    memcpy(pdata, buf->buffer + (buf->tail & (buf->size - 1)), l);
+
+    memcpy(pdata + l, buf->buffer, count - l);
+
+    buf->tail += count;
+
+	return count;
+}
+
+uint32_t uart_dma_ringbuffer_write(FAR uart_dev_t *dev, uint8_t *pdata, uint32_t count)
+{
+    FAR struct uart_buffer_s *buf = &dev->recv;
+
+	uint32_t l;
+
+    count = min(count, buf->size - buf->head + buf->tail);
+
+    l = min(count, buf->size - (buf->head  & (buf->size - 1)));
+
+    memcpy(buf->buffer + (buf->head & (buf->size - 1)), pdata, l);
+
+    memcpy(buf->buffer, pdata + l, count - l);
+
+    buf->head += count;
+
+	return count;
+}

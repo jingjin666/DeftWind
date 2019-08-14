@@ -138,8 +138,8 @@
 struct uart_buffer_s
 {
   sem_t            sem;    /* Used to control exclusive access to the buffer */
-  volatile int16_t head;   /* Index to the head [IN] index in the buffer */
-  volatile int16_t tail;   /* Index to the tail [OUT] index in the buffer */
+  volatile uint32_t head;   /* Index to the head [IN] index in the buffer */
+  volatile uint32_t tail;   /* Index to the tail [OUT] index in the buffer */
   int16_t          size;   /* The allocated size of the buffer */
   FAR char        *buffer; /* Pointer to the allocated buffer memory */
 };
@@ -293,7 +293,7 @@ struct uart_dev_s
   volatile bool        disconnected; /* true: Removable device is not connected */
 #endif
   bool                 isconsole;    /* true: This is the serial console */
-
+  bool                 rxdma_use;
 #ifdef CONFIG_SERIAL_TERMIOS
   /* Terminal control flags */
 
@@ -409,6 +409,9 @@ void uart_recvchars(FAR uart_dev_t *dev);
  ************************************************************************************/
 
 void uart_datareceived(FAR uart_dev_t *dev);
+
+uint32_t uart_dma_ringbuffer_read(FAR uart_dev_t *dev, uint8_t *pdata, uint32_t count);
+uint32_t uart_dma_ringbuffer_write(FAR uart_dev_t *dev, uint8_t *pdata, uint32_t count);
 
 /************************************************************************************
  * Name: uart_datasent

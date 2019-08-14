@@ -57,13 +57,15 @@ static const AP_Scheduler::Task scheduler_test_tasks[]= {
 };
 
 void Plane_test::one_second_loop() {
-#ifdef UART_TEST    
+
+#define UART_TEST 1
+#ifdef UART_TEST
     int rx = 0;
     const char *send = "123456789";
     char recv[128] = {0};
     
     if(hal.uartE != nullptr) {
-        hal.uartE->write((uint8_t *)send, strlen(send));
+        //hal.uartE->write((uint8_t *)send, strlen(send));
 
         rx = hal.uartE->available();
         
