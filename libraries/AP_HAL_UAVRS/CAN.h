@@ -152,6 +152,8 @@ class UAVRSCAN: public AP_HAL::CAN {
 
     bool initialized_;
 public:
+    flexcan_handle_t flexcan_handle_;
+
     enum {
         MaxRxQueueCapacity = 254
     };
@@ -182,7 +184,7 @@ public:
         update_event_ = update_event;
     }
 
-    void handleTxInterrupt(uint64_t utc_usec);
+    void handleTxInterrupt(flexcan_handle_t *handle);
     void handleRxInterrupt(uint8_t fifo_index, uint64_t utc_usec);
 
     /**

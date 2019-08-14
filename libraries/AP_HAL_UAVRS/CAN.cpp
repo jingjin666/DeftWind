@@ -60,21 +60,42 @@ extern "C" {
 #define RX_BUFFER_NUM (8)       //消息缓冲序号
 #define TX_BUFFER_NUM (9)       //消息缓冲序号
 
-int8_t FLEXCAN_SendMsg(CAN_Type *base, flexcan_frame_t* msg)
+int8_t FLEXCAN_SendMsgBlocking(CAN_Type *base, flexcan_frame_t* msg)
 {
     int8_t ret = -1;
     
     /* Assertion. */
     assert(msg != NULL);
-    
+
     if(FLEXCAN_TransferSendBlocking(base, TX_BUFFER_NUM, msg) == kStatus_Success) {
-        ret = 0;//发送数据，阻塞传输
+        ret = 0;
     } else {
         ret = -1;
     }
-        
+
     return ret;
 }
+
+int8_t FLEXCAN_SendMsgNonBlocking(CAN_Type *base, flexcan_handle_t *handle, flexcan_frame_t* msg)
+{
+    int8_t ret = -1;
+
+    /* Assertion. */
+    assert(msg != NULL);
+
+    flexcan_mb_transfer_t xfer;
+    xfer.frame = msg;
+    xfer.mbIdx = TX_BUFFER_NUM;
+
+    if(FLEXCAN_TransferSendNonBlocking(base, handle, &xfer) == kStatus_Success) {
+        ret = 0;
+    } else {
+        ret = -1;
+    }
+
+    return ret;
+}
+
 
 uint64_t clock::getUtcUSecFromCanInterrupt()
 {
@@ -147,7 +168,7 @@ static void handleTxInterrupt(uint8_t iface_index)
             if (hal.can_mgr[i] != nullptr) {
                 UAVRSCAN* iface = ((UAVRSCANManager*) hal.can_mgr[i])->getIface_out_to_in(iface_index);
                 if (iface != nullptr) {
-                    iface->handleTxInterrupt(utc_usec);
+                    iface->handleTxInterrupt(&iface->flexcan_handle_);
                 }
             }
         }
@@ -212,11 +233,19 @@ int16_t UAVRSCAN::send(const uavcan::CanFrame& frame, uavcan::MonotonicTime tx_d
     msg.dataByte6 = frame.data[6];
     msg.dataByte7 = frame.data[7];
 
-    if((ret = FLEXCAN_SendMsg(can_, &msg)) == -1) {
+#ifdef CAN_SEND_BLOCK
+    if((ret = FLEXCAN_SendMsgBlocking(can_, &msg)) == -1) {
         //printf("Send msg failed, frame.id is 0x%08x\n", frame.id);
     } else {
         //printf("Send msg ok, frame.id is 0x%08x\n", frame.id);
     }
+#else
+    if((ret = FLEXCAN_SendMsgNonBlocking(can_, &flexcan_handle_, &msg)) == -1) {
+        //printf("Send msg failed, frame.id is 0x%08x\n", frame.id);
+    } else {
+        //printf("Send msg ok, frame.id is 0x%08x\n", frame.id);
+    }
+#endif
 
     TxItem& txi = pending_tx_[0];
     txi.deadline = tx_deadline;
@@ -295,6 +324,9 @@ int UAVRSCAN::init(const uint32_t bitrate, const OperatingMode mode)
     can_config.enableLoopBack = mode;                    //设置模式
     FLEXCAN_Init(can_, &can_config, canclk);             //初始化CAN
 
+    /* Clean FlexCAN transfer handle. */
+    memset(&flexcan_handle_, 0, sizeof(flexcan_handle_)/sizeof(flexcan_handle_t));
+
     FLEXCAN_SetRxMbGlobalMask(can_, FLEXCAN_RX_MB_EXT_MASK(can_rxid, 0, 0));
 
     FLEXCAN_EnableMbInterrupts(can_, 1<<RX_BUFFER_NUM);  //使能RX消息缓冲中断
@@ -330,31 +362,29 @@ void UAVRSCAN::handleTxMailboxInterrupt(uint8_t mailbox_index, bool txok, const 
     }
 }
 
-void UAVRSCAN::handleTxInterrupt(const uint64_t utc_usec)
+void UAVRSCAN::handleTxInterrupt(flexcan_handle_t *handle)
 {
-#if 0
-    // TXOK == false means that there was a hardware failure
-    if (can_->TSR & bxcan::TSR_RQCP0) {
-        const bool txok = can_->TSR & bxcan::TSR_TXOK0;
-        can_->TSR = bxcan::TSR_RQCP0;
-        handleTxMailboxInterrupt(0, txok, utc_usec);
-    }
-    if (can_->TSR & bxcan::TSR_RQCP1) {
-        const bool txok = can_->TSR & bxcan::TSR_TXOK1;
-        can_->TSR = bxcan::TSR_RQCP1;
-        handleTxMailboxInterrupt(1, txok, utc_usec);
-    }
-    if (can_->TSR & bxcan::TSR_RQCP2) {
-        const bool txok = can_->TSR & bxcan::TSR_TXOK2;
-        can_->TSR = bxcan::TSR_RQCP2;
-        handleTxMailboxInterrupt(2, txok, utc_usec);
-    }
-#endif
-    if(update_event_ != nullptr) {
-        update_event_->signalFromInterrupt();
-    }
+    if ((FLEXCAN_GetMbStatusFlags(can_, (uint64_t)1 << TX_BUFFER_NUM)))
+    {
+        FLEXCAN_ClearMbStatusFlags(can_, 1<<TX_BUFFER_NUM);     //清除中断标志位
 
-    pollErrorFlagsFromISR();
+        /* Disable Message Buffer Interrupt. */
+        FLEXCAN_DisableMbInterrupts(can_, (uint64_t)1 << TX_BUFFER_NUM);
+
+        /* Un-register handle. */
+        handle->mbFrameBuf[TX_BUFFER_NUM] = 0x0;
+
+        /* Clean Message Buffer. */
+        FLEXCAN_SetTxMbConfig(can_, TX_BUFFER_NUM, true);
+
+        handle->mbState[TX_BUFFER_NUM] = 0;
+
+        if(update_event_ != nullptr) {
+            update_event_->signalFromInterrupt();
+        }
+
+        pollErrorFlagsFromISR();
+    }
 }
 
 void UAVRSCAN::handleRxInterrupt(uint8_t fifo_index, uint64_t utc_usec)
@@ -369,41 +399,41 @@ void UAVRSCAN::handleRxInterrupt(uint8_t fifo_index, uint64_t utc_usec)
     {
         FLEXCAN_ClearMbStatusFlags(can_, 1<<RX_BUFFER_NUM);     //清除中断标志位
         FLEXCAN_ReadRxMb(can_, RX_BUFFER_NUM, &rx_frame);       //读取数据
+
+        frame.id = rx_frame.id;
+
+        if(rx_frame.format == kFLEXCAN_FrameFormatExtend)
+            frame.id |= uavcan::CanFrame::FlagEFF;
+        if(rx_frame.type == kFLEXCAN_FrameTypeRemote)
+            frame.id |= uavcan::CanFrame::FlagRTR;
+        //printf("frame.id is 0x%08x\n", frame.id);
+
+        frame.dlc = rx_frame.length;
+        frame.data[0] = rx_frame.dataByte0;
+        frame.data[1] = rx_frame.dataByte1;
+        frame.data[2] = rx_frame.dataByte2;
+        frame.data[3] = rx_frame.dataByte3;
+        frame.data[4] = rx_frame.dataByte4;
+        frame.data[5] = rx_frame.dataByte5;
+        frame.data[6] = rx_frame.dataByte6;
+        frame.data[7] = rx_frame.dataByte7;
+
+        /*
+         * Store with timeout into the FIFO buffer and signal update event
+         */
+        CanRxItem frm;
+        frm.frame = frame;
+        frm.flags = 0;
+        frm.utc_usec = utc_usec;
+        rx_queue_.push(frm);
+
+        had_activity_ = true;
+        if(update_event_ != nullptr) {
+            update_event_->signalFromInterrupt();
+        }
+
+        pollErrorFlagsFromISR();
     }
-
-    frame.id = rx_frame.id;
-    
-    if(rx_frame.format == kFLEXCAN_FrameFormatExtend)
-        frame.id |= uavcan::CanFrame::FlagEFF;
-    if(rx_frame.type == kFLEXCAN_FrameTypeRemote)
-        frame.id |= uavcan::CanFrame::FlagRTR;
-    //printf("frame.id is 0x%08x\n", frame.id);
-    
-    frame.dlc = rx_frame.length;
-    frame.data[0] = rx_frame.dataByte0;
-    frame.data[1] = rx_frame.dataByte1;
-    frame.data[2] = rx_frame.dataByte2;
-    frame.data[3] = rx_frame.dataByte3;
-    frame.data[4] = rx_frame.dataByte4;
-    frame.data[5] = rx_frame.dataByte5;
-    frame.data[6] = rx_frame.dataByte6;
-    frame.data[7] = rx_frame.dataByte7;
-
-    /*
-     * Store with timeout into the FIFO buffer and signal update event
-     */
-    CanRxItem frm;
-    frm.frame = frame;
-    frm.flags = 0;
-    frm.utc_usec = utc_usec;
-    rx_queue_.push(frm);
-
-    had_activity_ = true;
-    if(update_event_ != nullptr) {
-        update_event_->signalFromInterrupt();
-    }
-
-    pollErrorFlagsFromISR();  
 }
 
 void UAVRSCAN::pollErrorFlagsFromISR()
@@ -821,8 +851,9 @@ extern "C" {
     static int can1_irq(int irq, void *context, void *arg)
     {
         if (irq == IMXRT_IRQ_CAN1) {
-            //printf("can1_irq rx \n");
+            //printf("can1_irq \n");
             handleRxInterrupt(0, 0);
+            handleTxInterrupt(0);
         } else {
             printf("can1_irq unhandled");
         }
@@ -833,8 +864,9 @@ extern "C" {
     static int can2_irq(int irq, void *context, void *arg)
     {
         if (irq == IMXRT_IRQ_CAN2) {
-            //printf("can2_irq rx \n");
+            //printf("can2_irq \n");
             handleRxInterrupt(1, 0);
+            handleTxInterrupt(1);
         } else {
             printf("can2_irq unhandled");
         }
