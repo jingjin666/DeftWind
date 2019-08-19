@@ -708,98 +708,40 @@ void AP_InertialSensor_Invensense::_read_fifo()
      * 循环读取FIFO数据到buffer，每次以16个采样周期为单位，最少循环1次(n_samples<=16)，最多2次(n>16&&n<=24)
      * 在每一次循环的过程中，如果accumulate失败，则直接放弃本次数据的解析
      */
-    int fuck = 0;
-
     uint8_t n_samples;
-    uint16_t bytes_read;
     uint8_t *rx = _fifo_buffer;
-    bool need_reset = false;
 
-    if (!_block_read(MPUREG_FIFO_COUNTH, rx, 2)) {
-        goto check_registers;
-    }
-
-    bytes_read = uint16_val(rx, 0);
-    //printf("bytes_read is %d\n", bytes_read);
-    n_samples = bytes_read / MPU_SAMPLE_SIZE;
-
-    if (n_samples == 0) {
-        /* Not enough data in FIFO */
-        goto check_registers;
-    }
-
-    /*
-      testing has shown that if we have more than 32 samples in the
-      FIFO then some of those samples will be corrupt. It always is
-      the ones at the end of the FIFO, so clear those with a reset
-      once we've read the first 24. Reading 24 gives us the normal
-      number of samples for fast sampling at 400Hz
+#if defined(CONFIG_ARCH_BOARD_UAVRS_V2)
+    /* 当前的读取逻辑更适合用于DMA读取，先发送FIFO首地址，再直接读取采样数据
+     * 使用DMA读取FIFO的方式还有问题，第一次读取正常，后面的读取，返回的数据只有前32个字节，后面全为0
+     * 暂改为直接用DMA读取一次ACC,GYRO,TEMP数据
+     * block_read比全速读取要占用较少的CPU资源
      */
-    if (n_samples > 32) {
-        need_reset = true;
-        n_samples = 24;
+    n_samples = 1;
+    #if 1
+    if (!_block_read(MPUREG_ACCEL_XOUT_H, rx, n_samples * MPU_SAMPLE_SIZE)) {
+        return;
     }
-    //printf("n_samples is %d\n", n_samples);
+    #else
+    _dev->set_chip_select(true)
+    uint8_t reg = MPUREG_ACCEL_XOUT_H | 0x80;
+    if (!_dev->transfer(&reg, 1, nullptr, 0)) {
+        _dev->set_chip_select(false);
+        return;
+    }
+    memset(rx, 0, n_samples * MPU_SAMPLE_SIZE);
+    if (!_dev->transfer(rx, n_samples * MPU_SAMPLE_SIZE, rx, n_samples * MPU_SAMPLE_SIZE)) {
+        _dev->set_chip_select(false);
+        return;
+    }
+    _dev->set_chip_select(false);
+    #endif
+    //fifo_dump(rx, n_samples * MPU_SAMPLE_SIZE, MPU_SAMPLE_SIZE);
 
-    while (n_samples > 0) {
-        uint8_t n = MIN(n_samples, MPU_FIFO_BUFFER_LEN);
-
-#if defined(CONFIG_ARCH_BOARD_UAVRS_V1)
-        if (!_dev->set_chip_select(true)) {
-            if (!_block_read(MPUREG_FIFO_R_W, rx, n * MPU_SAMPLE_SIZE)) {
-                goto check_registers;
-            }
-        } else {
-            // this ensures we keep things nicely setup for DMA
-            uint8_t reg = MPUREG_FIFO_R_W | 0x80;
-            if (!_dev->transfer(&reg, 1, nullptr, 0)) {
-                _dev->set_chip_select(false);
-                goto check_registers;
-            }
-            memset(rx, 0, n * MPU_SAMPLE_SIZE);
-            if (!_dev->transfer(rx, n * MPU_SAMPLE_SIZE, rx, n * MPU_SAMPLE_SIZE)) {
-                hal.console->printf("MPU60x0: error in fifo read %u bytes\n", n * MPU_SAMPLE_SIZE);
-                _dev->set_chip_select(false);
-                goto check_registers;
-            }
-            _dev->set_chip_select(false);
-        }
-#elif defined(CONFIG_ARCH_BOARD_UAVRS_V2)
-        if (!_block_read(MPUREG_FIFO_R_W, rx, n * MPU_SAMPLE_SIZE)) {
-            goto check_registers;
-        }
-        //printf("n is %d, _block_read size %d\n", n, n * MPU_SAMPLE_SIZE);
-        //printf("%>>>%dth sample\n", ++fuck);
-        //fifo_dump(rx, n * MPU_SAMPLE_SIZE, MPU_SAMPLE_SIZE);
+    if (!_accumulate(rx, n_samples)) {
+        return;
+    }
 #endif
-
-        if (_fast_sampling) {
-            if (!_accumulate_fast_sampling(rx, n)) {
-                //debug("stop at %u of %u", n_samples, bytes_read/MPU_SAMPLE_SIZE);
-                break;
-            }
-        } else {
-            if (!_accumulate(rx, n)) {
-                break;
-            }
-        }
-
-        n_samples -= n;
-    }
-
-    if (need_reset) {
-        //debug("fifo reset n_samples %u", bytes_read/MPU_SAMPLE_SIZE);
-        _fifo_reset();
-    }
-
-check_registers:
-    // check next register value for correctness
-    _dev->set_speed(AP_HAL::Device::DEV_SPEED_LOW);
-    if (!_dev->check_next_register()) {
-        _inc_gyro_error_count(_gyro_instance);
-        _inc_accel_error_count(_accel_instance);
-    }
-    _dev->set_speed(AP_HAL::Device::DEV_SPEED_HIGH);
 }
 
 /*

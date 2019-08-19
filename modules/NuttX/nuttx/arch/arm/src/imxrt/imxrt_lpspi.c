@@ -104,7 +104,7 @@
 /* Configuration ********************************************************************/
 
 /* SPI interrupts */
-#if 1
+#if 0
 
 #ifdef CONFIG_IMXRT_LPSPI_INTERRUPTS
 #  error "Interrupt driven SPI not yet supported"
@@ -219,6 +219,10 @@ static uint16_t imxrt_lpspi_send(FAR struct spi_dev_s *dev, uint16_t wd);
 static void imxrt_lpspi_exchange(FAR struct spi_dev_s *dev,
                                  FAR const void *txbuffer, FAR void *rxbuffer,
                                  size_t nwords);
+static void imxrt_lpspi_dma_exchange(FAR struct spi_dev_s *dev,
+                                 FAR const void *txbuffer, FAR void *rxbuffer,
+                                 size_t nwords);
+
 #ifndef CONFIG_SPI_EXCHANGE
 static void imxrt_lpspi_sndblock(FAR struct spi_dev_s *dev,
                                  FAR const void *txbuffer, size_t nwords);
@@ -251,7 +255,7 @@ static const struct spi_ops_s g_spi1ops =
 #endif
   .send         = imxrt_lpspi_send,
 #ifdef CONFIG_SPI_EXCHANGE
-  .exchange     = imxrt_lpspi_exchange,
+  .exchange     = imxrt_lpspi_dma_exchange,
 #else
   .sndblock     = imxrt_lpspi_sndblock,
   .recvblock    = imxrt_lpspi_recvblock,
@@ -1032,17 +1036,6 @@ static void lpspi_dmarxsetup(FAR struct imxrt_lpspidev_s *dev, FAR void *rxbuffe
     config.dsize = TCD_ATTR_SIZE_8BIT;
     config.nbytes = 1;
     config.ttype = eDMA_PERIPH2MEM;
-#if 1
-    if (rxbuffer)
-    {
-        config.doff = (int16_t)1;
-    }
-    else
-    {
-        rxbuffer    = rxdummy;
-        config.doff = (int16_t)0;
-    }
-#endif    
     imxrt_dmach_xfrsetup(priv->rxdma, &config);
 }
 
@@ -1072,17 +1065,6 @@ static void lpspi_dmatxsetup(FAR struct imxrt_lpspidev_s *dev, FAR const void *t
     config.dsize = TCD_ATTR_SIZE_8BIT;
     config.nbytes = 1;
     config.ttype = eDMA_MEM2PERIPH;
-#if 0
-    if (txbuffer)
-    {
-        config.soff = (int16_t)1;
-    }
-    else
-    {
-        txbuffer    = txdummy;
-        config.soff = (int16_t)0;
-    }
-#endif    
     imxrt_dmach_xfrsetup(priv->txdma, &config);
 }
 
@@ -1571,16 +1553,9 @@ static uint16_t imxrt_lpspi_send(FAR struct spi_dev_s *dev, uint16_t wd)
  *
  ************************************************************************************/
 
-#if !defined(CONFIG_IMXRT_LPSPI_DMA) || defined(CONFIG_IMXRT_DMACAPABLE)
-#if !defined(CONFIG_IMXRT_LPSPI_DMA)
 static void imxrt_lpspi_exchange(FAR struct spi_dev_s *dev,
                                  FAR const void *txbuffer, FAR void *rxbuffer,
                                  size_t nwords)
-#else
-static void imxrt_lpspi_exchange_nodma(FAR struct spi_dev_s *dev,
-                                       FAR const void *txbuffer,
-                                       FAR void *rxbuffer, size_t nwords)
-#endif
 {
   FAR struct imxrt_lpspidev_s *priv = (FAR struct imxrt_lpspidev_s *)dev;
   DEBUGASSERT(priv && priv->spibase);
@@ -1656,7 +1631,6 @@ static void imxrt_lpspi_exchange_nodma(FAR struct spi_dev_s *dev,
         }
     }
 }
-#endif /* !CONFIG_IMXRT_LPSPI_DMA || CONFIG_IMXRT_DMACAPABLE */
 
 
 /****************************************************************************
@@ -1679,36 +1653,53 @@ static void imxrt_lpspi_exchange_nodma(FAR struct spi_dev_s *dev,
  *
  ************************************************************************************/
 #ifdef CONFIG_IMXRT_LPSPI_DMA
-static void imxrt_lpspi_exchange(FAR struct spi_dev_s *dev, FAR const void *txbuffer,
+static void imxrt_lpspi_dma_exchange(FAR struct spi_dev_s *dev, FAR const void *txbuffer,
                          FAR void *rxbuffer, size_t nwords)
 {
     FAR struct imxrt_lpspidev_s *priv = (FAR struct imxrt_lpspidev_s *)dev;
 
-    static uint16_t rxdummy = 0xffff;
-    static const uint16_t txdummy = 0xffff;
+    uint32_t regval = 0;
+    uint16_t rxdummy = 0xffff;
+    const uint16_t txdummy = 0xffff;
     
+#if 0
+    /* Set TX RX water to zero */
+    imxrt_lpspi_putreg32(priv, IMXRT_LPSPI_FCR_OFFSET, LPSPI_FCR_TXWATER(0) | LPSPI_FCR_RXWATER(0));
+
+    /* Transfers will stall when transmit FIFO is empty or receive FIFO is full. */
+    imxrt_lpspi_modifyreg32(priv, IMXRT_LPSPI_CR_OFFSET, LPSPI_CR_MEN, 0);
+    imxrt_lpspi_modifyreg32(priv, IMXRT_LPSPI_CFGR1_OFFSET, LPSPI_CFGR1_NOSTALL, 0);
+
+    /*Flush FIFO , clear status , disable all the inerrupts.*/
+    imxrt_lpspi_modifyreg32(priv, IMXRT_LPSPI_CR_OFFSET, 0, LPSPI_CR_RTF|LPSPI_CR_RRF);
+    imxrt_lpspi_putreg32(priv, IMXRT_LPSPI_SR_OFFSET, LPSPI_SR_ALL);
+    imxrt_lpspi_modifyreg32(priv, IMXRT_LPSPI_IER_OFFSET, LPSPI_IER_ALL, 0);
+
+    imxrt_dmach_abort_transfer(priv->txdma);
+    imxrt_dmach_abort_transfer(priv->rxdma);
+#endif
+
     /* Disable DMA */
     imxrt_lpspi_modifyreg32(priv, IMXRT_LPSPI_DER_OFFSET, LPSPI_DER_TDDE|LPSPI_DER_RDDE, 0);
     spiinfo("get IMXRT_LPSPI_DER_OFFSET 0x%08x\n", getreg32(priv->spibase+IMXRT_LPSPI_DER_OFFSET));
-    
-#if 0
-    /* Flush FIFO */
-    imxrt_lpspi_modifyreg32(priv, IMXRT_LPSPI_CR_OFFSET, 0, LPSPI_CR_RTF|LPSPI_CR_RRF);
-    /* Disable spi*/
-    imxrt_lpspi_modifyreg32(priv, IMXRT_LPSPI_CR_OFFSET, LPSPI_CR_MEN, 0);
-    spiinfo("get IMXRT_LPSPI_CR_OFFSET 0x%08x\n", getreg32(priv->spibase+IMXRT_LPSPI_CR_OFFSET));
-    /* Clear status */
-    imxrt_lpspi_modifyreg32(priv, IMXRT_LPSPI_SR_OFFSET, 0, LPSPI_SR_ALL);
-    /* Disable all interrupts */
-    imxrt_lpspi_modifyreg32(priv, IMXRT_LPSPI_IER_OFFSET, LPSPI_IER_ALL, 0);
-#endif
 
     spiinfo("txbuffer=%p rxbuffer=%p nwords=%d\n", txbuffer, rxbuffer, nwords);
+    
+#if 0
+    uint8_t *cmd = (uint8_t *)txbuffer;
+    if(priv->spibase == IMXRT_LPSPI1_BASE)
+        syslog(LOG_DEBUG, "txbuffer=%p rxbuffer=%p cmd=0x%02x nwords=%d\n", txbuffer, rxbuffer, cmd[0], nwords);
+#endif
+
     DEBUGASSERT(priv && priv->spibase);
 
     /* Setup DMAs */
     spiinfo("begin Setup\n");
+
+    /*Rx*/
     lpspi_dmarxsetup(priv, rxbuffer, &rxdummy, nwords);
+
+    /*Tx*/
     lpspi_dmatxsetup(priv, txbuffer, &txdummy, nwords);
 
     /* Start the DMAs */

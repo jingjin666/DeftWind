@@ -1619,8 +1619,8 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         // mark the firmware version in the tlog
         send_text(MAV_SEVERITY_INFO, FIRMWARE_STRING);
 
-#if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
-        send_text(MAV_SEVERITY_INFO, "UAV-RS: " PX4_GIT_VERSION " operating system: " NUTTX_GIT_VERSION);
+#if defined(DP_GIT_VERSION)
+        send_text(MAV_SEVERITY_INFO, "DEFTWIND: GIT_VERSION# " DP_GIT_VERSION);
 #endif
         handle_param_request_list(msg);
         break;

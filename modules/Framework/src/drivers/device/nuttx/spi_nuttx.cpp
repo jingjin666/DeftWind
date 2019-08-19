@@ -158,6 +158,7 @@ SPI::set_frequency(uint32_t frequency)
 int
 SPI::_transfer(uint8_t *send, uint8_t *recv, unsigned len)
 {
+    SPI_LOCK(_dev, true);
 	SPI_SETFREQUENCY(_dev, _frequency);
 	SPI_SETMODE(_dev, _mode);
 	SPI_SETBITS(_dev, 8);
@@ -168,7 +169,7 @@ SPI::_transfer(uint8_t *send, uint8_t *recv, unsigned len)
 
 	/* and clean up */
 	SPI_SELECT(_dev, _device, false);
-
+    SPI_LOCK(_dev, false);
 	return OK;
 }
 

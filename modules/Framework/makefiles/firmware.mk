@@ -260,6 +260,7 @@ $(WORK_DIR)firmware.dp: $(PRODUCT_BIN) $(PRODUCT_HEX)
 #	@echo "PRODUCT_BUNDLE: $(PRODUCT_BUNDLE)"
 	@echo %% Generating $@
 	$(Q) $(MKFW) --prototype $(IMAGE_DIR)/$(BOARD).prototype \
+	    --git_identity $(SKETCHBOOK) \
 		--image $< > $@
 
 $(PRODUCT_HEX): $(PRODUCT_ELF)

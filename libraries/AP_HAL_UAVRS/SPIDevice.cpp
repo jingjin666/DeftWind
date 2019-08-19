@@ -22,7 +22,7 @@ SPIDesc SPIDeviceManager::device_table[] = {
 	SPIDesc("ms5611",       PX4_SPI_BUS_BARO_MS5611, (spi_devtype_e)PX4_SPIDEV_BARO_MS5611, SPIDEV_MODE3, 20*MHZ, 20*MHZ),
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_UAVRS_V2
 	SPIDesc("adis16375",    UAVRS_SPI_BUS_ADIS, (spi_devtype_e)UAVRS_SPIDEV_ADIS, SPIDEV_MODE3, 500*KHZ, 20*MHZ),
-	SPIDesc("mpu9250",      UAVRS_SPI_BUS_MPU_9250, (spi_devtype_e)UAVRS_SPIDEV_MPU_9250, SPIDEV_MODE3, 1*MHZ, 8*MHZ),
+	SPIDesc("mpu9250",      UAVRS_SPI_BUS_MPU_9250, (spi_devtype_e)UAVRS_SPIDEV_MPU_9250, SPIDEV_MODE3, 1*MHZ, 20*MHZ),
 	SPIDesc("ms5611",       UAVRS_SPI_BUS_BARO_MS5611, (spi_devtype_e)UAVRS_SPIDEV_BARO_MS5611, SPIDEV_MODE3, 20*MHZ, 20*MHZ),
 #endif
     SPIDesc(nullptr, 0, (spi_devtype_e)0, (spi_mode_e)0, 0, 0),

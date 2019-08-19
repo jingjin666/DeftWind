@@ -30,7 +30,7 @@
 
 //#define CONFIG_IMXRT_SEMC_INIT_DONE 1
 
-#define UDID_START		0x1FFF7A10
+#define UDID_START 0x401F4410   //IMXRT_OCOTP_CFG0
 
 /****************************************************************************
  * Pre-processor Definitions

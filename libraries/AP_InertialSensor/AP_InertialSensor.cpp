@@ -688,7 +688,7 @@ AP_InertialSensor::detect_backends(void)
         _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME), (enum Rotation)_imu_low.get()));
 #elif defined(CONFIG_ARCH_BOARD_UAVRS_V2)
 		_add_backend(AP_InertialSensor_ADIS16XXX::probe(*this, hal.spi->get_device(HAL_INS_ADIS16XXX_NAME), (enum Rotation)_imu_adis.get()));
-        //_add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME), (enum Rotation)_imu_low.get()));
+        _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME), (enum Rotation)_imu_low.get()));
 #endif
 		break;
 

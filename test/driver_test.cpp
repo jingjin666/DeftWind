@@ -58,7 +58,7 @@ static const AP_Scheduler::Task scheduler_test_tasks[]= {
 
 void Plane_test::one_second_loop() {
 
-#define UART_TEST 1
+//#define UART_TEST 1
 #ifdef UART_TEST
     int rx = 0;
     const char *send = "123456789";

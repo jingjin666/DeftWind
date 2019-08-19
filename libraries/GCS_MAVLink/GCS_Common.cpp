@@ -1477,11 +1477,11 @@ void GCS_MAVLINK::send_autopilot_version(uint8_t major_version, uint8_t minor_ve
 #if defined(GIT_VERSION)
     strncpy((char *)flight_custom_version, GIT_VERSION, 8);
 #else
-    memset(middleware_custom_version,0,8);
+    memset(flight_custom_version,0,8);
 #endif
 
-#if defined(PX4_GIT_VERSION)
-    strncpy((char *)middleware_custom_version, PX4_GIT_VERSION, 8);
+#if defined(DP_GIT_VERSION)
+    strncpy((char *)middleware_custom_version, DP_GIT_VERSION, 8);
 #else
     memset(middleware_custom_version,0,8);
 #endif
