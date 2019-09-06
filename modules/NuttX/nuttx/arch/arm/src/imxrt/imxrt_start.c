@@ -58,7 +58,8 @@
 #include "imxrt_start.h"
 #include "imxrt_gpio.h"
 
-#ifdef CONFIG_ARMV7M_DTCM
+#define CONFIGURE_FLEXRAM
+#ifdef CONFIGURE_FLEXRAM
 #include "imxrt_periphclks.h"
 #include "imxrt_iomuxc.h"
 
@@ -319,7 +320,7 @@ static void go_nx_start(void *pv, unsigned int nbytes)
 }
 #endif
 
-#if CONFIG_ARMV7M_DTCM
+#ifdef CONFIGURE_FLEXRAM
 /****************************************************************************
  * Name: flexram_configure
  *
@@ -379,18 +380,18 @@ static void flexram_configure()
     /*
     * OCRAM | DTCM | ITCM
     * [KB]    [KB]   [KB]
-    *  128    256    128
+    *  384    64    64
     */
-    *((uint32_t *)IMXRT_IOMUXC_GPR_GPR17) = 0x5AAFFAA5;
+    *((uint32_t *)IMXRT_IOMUXC_GPR_GPR17) = 0x5555FA55;
 
     // dtcm
-    uint8_t dtcm_bank_num = 256/32;
+    uint8_t dtcm_bank_num = 64/32;
     *((uint32_t *)IMXRT_IOMUXC_GPR_GPR14) &= ~IOMUXC_GPR_GPR14_CM7_CFGDTCMSZ_MASK;
     *((uint32_t *)IMXRT_IOMUXC_GPR_GPR14) |= IOMUXC_GPR_GPR14_CM7_CFGDTCMSZ(flexram_map_tcm_size_to_register(dtcm_bank_num));
     *((uint32_t *)IMXRT_IOMUXC_GPR_GPR16) |= IOMUXC_GPR_GPR16_INIT_DTCM_EN_MASK;
 
     // itcm
-    uint8_t itcm_bank_num = 128/32;
+    uint8_t itcm_bank_num = 64/32;
     *((uint32_t *)IMXRT_IOMUXC_GPR_GPR14) &= ~IOMUXC_GPR_GPR14_CM7_CFGITCMSZ_MASK;
     *((uint32_t *)IMXRT_IOMUXC_GPR_GPR14) |= IOMUXC_GPR_GPR14_CM7_CFGITCMSZ(flexram_map_tcm_size_to_register(itcm_bank_num));
     *((uint32_t *)IMXRT_IOMUXC_GPR_GPR16) |= IOMUXC_GPR_GPR16_INIT_ITCM_EN_MASK;
@@ -420,7 +421,7 @@ void __start(void)
   const uint32_t *src;
   uint32_t *dest;
 
-#if CONFIG_ARMV7M_DTCM
+#ifdef CONFIGURE_FLEXRAM
   flexram_configure();
 #endif
 

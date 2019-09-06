@@ -214,7 +214,6 @@ void AP_Camera::configure(float shooting_mode, float shutter_speed, float apertu
     GCS_MAVLINK::send_to_components(&msg);
 }
 
-#include <stdio.h>
 void AP_Camera::control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id)
 {
     // take picture
@@ -384,6 +383,7 @@ void AP_Camera::log_picture()
         if (df->should_log(log_camera_bit)) {
             df->Log_Write_Camera(ahrs, gps, current_loc);
         }
+	df->Pos_Write_CameraInfo(LOG_CAMERA_MSG, ahrs, gps, current_loc);
     } else {
         if (df->should_log(log_camera_bit)) {
             df->Log_Write_Trigger(ahrs, gps, current_loc);
@@ -414,6 +414,7 @@ void AP_Camera::update_trigger()
             if (df->should_log(log_camera_bit)) {
                 df->Log_Write_Camera(ahrs, gps, current_loc);
             }
+		df->Pos_Write_CameraInfo(LOG_CAMERA_MSG, ahrs, gps, current_loc);
         }
     }
 }

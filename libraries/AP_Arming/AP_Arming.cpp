@@ -656,3 +656,15 @@ AP_Arming::ArmingRequired AP_Arming::arming_required()
 {
     return (AP_Arming::ArmingRequired)require.get();
 }
+
+bool AP_Arming::ppk_checks(bool report)
+{
+	if(!DataFlash_Class::instance()->ppk_status) {
+		if (report) {
+			gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: ppk is idle!");
+		}
+		return false;
+	}
+	return true;
+}
+

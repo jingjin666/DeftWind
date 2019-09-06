@@ -612,7 +612,7 @@ static struct imxrt_uart_s g_uart2priv =
   .rts_gpio     = GPIO_LPUART2_RTS,
 #endif
 #ifdef CONFIG_IMXRT_LPUART2_RXDMA
-  .rxch          = IMXRT_DMACHAN_LPUART1_RX,
+  .rxch          = IMXRT_DMACHAN_LPUART2_RX,
   .rxfifo        = &g_uart2rxfifo
 #endif
 };

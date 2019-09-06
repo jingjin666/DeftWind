@@ -70,7 +70,7 @@
 #define AP_SERIALMANAGER_ULANDING_BUFSIZE_TX     128
 
 // Nova RTK default baud rates and buffer sizes
-#define AP_SERIALMANAGER_RTCM_BAUD           115200
+#define AP_SERIALMANAGER_RTCM_BAUD           460800
 #define AP_SERIALMANAGER_RTCM_BUFSIZE_RX     256
 #define AP_SERIALMANAGER_RTCM_BUFSIZE_TX     256
 

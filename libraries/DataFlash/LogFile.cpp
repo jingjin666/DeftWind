@@ -1529,9 +1529,41 @@ void DataFlash_Class::Log_Write_CameraInfo(enum LogMessages msg, const AP_AHRS &
         yaw         : (uint16_t)ahrs.yaw_sensor
     };
     WriteCriticalBlock(&pkt, sizeof(pkt));
-	if(msg == LOG_CAMERA_MSG) {
-		WritePosData(&pkt, sizeof(pkt));
-	}
+}
+
+
+// Write a Pos packet
+void DataFlash_Class::Pos_Write_CameraInfo(enum LogMessages msg, const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc)
+{
+    int32_t altitude, altitude_rel, altitude_gps;
+    if (current_loc.flags.relative_alt) {
+        altitude = current_loc.alt+ahrs.get_home().alt;
+        altitude_rel = current_loc.alt;
+    } else {
+        altitude = current_loc.alt;
+        altitude_rel = current_loc.alt - ahrs.get_home().alt;
+    }
+    if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+        altitude_gps = gps.location().alt;
+    } else {
+        altitude_gps = 0;
+    }
+
+    struct log_Camera pkt = {
+        LOG_PACKET_HEADER_INIT(static_cast<uint8_t>(msg)),
+        time_us     : AP_HAL::micros64(),
+        gps_time    : gps.time_week_ms(),
+        gps_week    : gps.time_week(),
+        latitude    : current_loc.lat,
+        longitude   : current_loc.lng,
+        altitude    : altitude,
+        altitude_rel: altitude_rel,
+        altitude_gps: altitude_gps,
+        roll        : (int16_t)ahrs.roll_sensor,
+        pitch       : (int16_t)ahrs.pitch_sensor,
+        yaw         : (uint16_t)ahrs.yaw_sensor
+    };
+    WritePosData(&pkt, sizeof(pkt));
 }
 
 // Write a Camera packet
@@ -1663,13 +1695,11 @@ void DataFlash_Class::Log_Write_Raw_Data(const AP_SerialManager &manager)
 	uart_raw = manager.find_serial(AP_SerialManager::SerialProtocol_Nova_Rtcm, 0);
 	if(uart_raw != nullptr) {
 		int16_t nbytes = uart_raw->available();
+
 		if(nbytes > sizeof(buffer)) {
 			gcs().send_text(MAV_SEVERITY_INFO, "Log_Write_Raw_Data over len %d", nbytes);
-			return;
-		}
-
-		if(nbytes > 1000) {
-			gcs().send_text(MAV_SEVERITY_INFO, "-----------------------------[%d]", nbytes);
+			//printf( "Log_Write_Raw_Data over len %d\n", nbytes);
+			nbytes = sizeof(buffer);
 		}
 
 		while(nbytes-- > 0) {

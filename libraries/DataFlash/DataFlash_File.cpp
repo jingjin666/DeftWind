@@ -38,11 +38,11 @@
 #endif
 extern const AP_HAL::HAL& hal;
 
-#define MAX_LOG_FILES 500U
+#define MAX_LOG_FILES 30U
 #define DATAFLASH_PAGE_SIZE 1024UL
-#define MAX_RAW_DATA_FILES 200U
-#define MAX_POS_DATA_FILES 200U
-
+#define MAX_RAW_DATA_FILES 100U
+#define MAX_POS_DATA_FILES 100U
+#define MAX_ERASE_OVERRIDE 500U
 
 /*
   constructor
@@ -80,8 +80,8 @@ DataFlash_File::DataFlash_File(DataFlash_Class &front,
     _writebuf(0),
     _writebuf_raw_data(0),
     _writebuf_pos_data(0),
-    _writebuf_chunk(4096),
-    _writebuf_chunk_raw_data(4096),
+    _writebuf_chunk(512),
+    _writebuf_chunk_raw_data(512),
 	_writebuf_chunk_pos_data(512),//single camera information size
     _last_write_time(0),
     _perf_write(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "DF_write")),
@@ -177,7 +177,7 @@ void DataFlash_File::Init()
 		printf("Raw data directory is existed\n");
 	}
 	
-	uint32_t bufsizeRawData = 8*1024;
+	uint32_t bufsizeRawData = 16*1024;
     while (!_writebuf_raw_data.set_size(bufsizeRawData) && bufsizeRawData >= _writebuf_chunk_raw_data) {
         printf("DataFlash_File: Couldn't set buffer size to=%u\n", (unsigned)bufsizeRawData);
         bufsizeRawData >>= 1;
@@ -482,7 +482,7 @@ uint16_t DataFlash_File::find_oldest_raw_data()
         }
 
         uint16_t thisnum = strtoul(de->d_name, nullptr, 10);
-        if (thisnum > MAX_LOG_FILES) {
+        if (thisnum > MAX_RAW_DATA_FILES) {
             // ignore files above our official maximum...
             continue;
         }
@@ -551,7 +551,7 @@ uint16_t DataFlash_File::find_oldest_pos_data()
         }
 
         uint16_t thisnum = strtoul(de->d_name, nullptr, 10);
-        if (thisnum > MAX_LOG_FILES) {
+        if (thisnum > MAX_POS_DATA_FILES) {
             // ignore files above our official maximum...
             continue;
         }
@@ -815,7 +815,7 @@ void DataFlash_File::EraseAll()
     const bool was_logging = (_write_fd != -1);
     stop_logging();
 #if !DATAFLASH_FILE_MINIMAL
-    for (log_num=1; log_num<=MAX_LOG_FILES; log_num++) {
+    for (log_num=1; log_num<=MAX_LOG_FILES+MAX_ERASE_OVERRIDE; log_num++) {
         char *fname = _log_file_name(log_num);
         if (fname == nullptr) {
             break;
@@ -844,7 +844,7 @@ void DataFlash_File::EraseAllRawData()
     const bool was_raw_data = (_write_raw_data_fd != -1);
     stop_raw_data();
 #if !DATAFLASH_FILE_MINIMAL
-    for (raw_num=1; raw_num<=MAX_RAW_DATA_FILES; raw_num++) {
+    for (raw_num=1; raw_num<=MAX_RAW_DATA_FILES+MAX_ERASE_OVERRIDE; raw_num++) {
         char *fname = _raw_data_file_name(raw_num);
         if (fname == nullptr) {
             break;
@@ -873,7 +873,7 @@ void DataFlash_File::EraseAllPosData()
     const bool was_pos_data = (_write_pos_data_fd != -1);
     stop_pos_data();
 #if !DATAFLASH_FILE_MINIMAL
-    for (pos_num=1; pos_num<=MAX_POS_DATA_FILES; pos_num++) {
+    for (pos_num=1; pos_num<=MAX_POS_DATA_FILES+MAX_ERASE_OVERRIDE; pos_num++) {
         char *fname = _pos_data_file_name(pos_num);
         if (fname == nullptr) {
             break;
@@ -1810,8 +1810,8 @@ void DataFlash_File::write_last_pos_data(void)
 void DataFlash_File::stop_pos_data(void)
 {
     if (_write_pos_data_fd != -1) {
-		printf("stop_pos_data-----------------------\n");
-		gcs().send_text(MAV_SEVERITY_INFO, "stop_pos_data-----------------------");
+		printf("pos data stop--------\n");
+		gcs().send_text(MAV_SEVERITY_INFO, "pos data stop--------");
 		write_last_pos_data();
         int fd = _write_pos_data_fd;
         _write_pos_data_fd = -1;
@@ -1825,9 +1825,6 @@ void DataFlash_File::stop_pos_data(void)
  */
 uint16_t DataFlash_File::start_new_pos_data(void)
 {
-	printf("start_new_pos_data-----------------------\n");
-	gcs().send_text(MAV_SEVERITY_INFO, "start_new_pos_data-----------------------\n");
-
     stop_pos_data();
 
     if (_open_pos_data_error) {
@@ -1844,23 +1841,26 @@ uint16_t DataFlash_File::start_new_pos_data(void)
     if (disk_space_avail() < _free_space_min_avail) {
         hal.console->printf("Out of space for pos data store\n");
         _open_pos_data_error = true;
+		gcs().send_text(MAV_SEVERITY_INFO, "Out of space for pos data");
         return 0xffff;
     }
 
     uint16_t pos_data_num = find_last_pos_data();
-	printf("last pos data file number is [%d]\n", pos_data_num);
-	gcs().send_text(MAV_SEVERITY_INFO, "last pos data file number is [%d]", pos_data_num);
+	//printf("last pos data file number is [%d]\n", pos_data_num);
+	//gcs().send_text(MAV_SEVERITY_INFO, "last pos data file number is [%d]", pos_data_num);
 	
     // re-use empty pos data if possible
     if (_get_pos_data_size(pos_data_num) > 0 || pos_data_num == 0) {
         pos_data_num++;
     } else {
-		printf("last pos data file is empty, new file number will replace it\n");
-		gcs().send_text(MAV_SEVERITY_INFO, "last pos data file is empty, new file number will replace it");
+		//printf("last pos data file is empty, new file number will replace it\n");
+		//gcs().send_text(MAV_SEVERITY_INFO, "last pos data file is empty, new file number will replace it");
 	}
     if (pos_data_num > MAX_POS_DATA_FILES) {
         pos_data_num = 1;
     }
+	printf("pos data file[%d] start loging++++++++\n", pos_data_num);
+	gcs().send_text(MAV_SEVERITY_INFO, "pos data file[%d] start loging++++++++", pos_data_num);
     char *fname = _pos_data_file_name(pos_data_num);
     if (fname == nullptr) {
         _open_pos_data_error = true;
@@ -1941,14 +1941,15 @@ void DataFlash_File::write_last_raw_data(void)
 void DataFlash_File::stop_raw_data(void)
 {
     if (_write_raw_data_fd != -1) {
-		printf("stop_raw_data+++++++++++++++++++++++++++\n");
-		gcs().send_text(MAV_SEVERITY_INFO, "stop_raw_data+++++++++++++++++++++++++++");
+		printf("raw data stop--------\n");
+		gcs().send_text(MAV_SEVERITY_INFO, "raw data stop--------");
 
 		write_last_raw_data();
 
         int fd = _write_raw_data_fd;
         _write_raw_data_fd = -1;
         ::close(fd);
+		_front.ppk_status = false;
     }
 }
 
@@ -1957,9 +1958,6 @@ void DataFlash_File::stop_raw_data(void)
  */
 uint16_t DataFlash_File::start_new_raw_data(void)
 {
-	printf("start_new_raw_data+++++++++++++++++++++++++++\n");
-	gcs().send_text(MAV_SEVERITY_INFO, "start_new_raw_data+++++++++++++++++++++++++++\n");
-
     stop_raw_data();
 
     if (_open_raw_data_error) {
@@ -1976,23 +1974,26 @@ uint16_t DataFlash_File::start_new_raw_data(void)
     if (disk_space_avail() < _free_space_min_avail) {
         hal.console->printf("Out of space for raw data store\n");
         _open_raw_data_error = true;
+		gcs().send_text(MAV_SEVERITY_INFO, "Out of space for raw data");
         return 0xffff;
     }
 
     uint16_t raw_data_num = find_last_raw_data();
-	printf("last raw data file number is [%d]\n", raw_data_num);
-	gcs().send_text(MAV_SEVERITY_INFO, "last raw data file number is [%d]", raw_data_num);
+	//printf("last raw data file number is [%d]\n", raw_data_num);
+	//gcs().send_text(MAV_SEVERITY_INFO, "last raw data file number is [%d]", raw_data_num);
 	
     // re-use empty raw data if possible
     if (_get_raw_data_size(raw_data_num) > 0 || raw_data_num == 0) {
         raw_data_num++;
     } else {
-		printf("last raw data file is empty, new file number will replace it\n");
+		//printf("last raw data file is empty, new file number will replace it\n");
 		gcs().send_text(MAV_SEVERITY_INFO, "last raw data file is empty, new file number will replace it");
 	}
     if (raw_data_num > MAX_RAW_DATA_FILES) {
         raw_data_num = 1;
     }
+	printf("raw data file[%d] start loging++++++++\n", raw_data_num);
+	gcs().send_text(MAV_SEVERITY_INFO, "raw data file[%d] start loging++++++++", raw_data_num);
     char *fname = _raw_data_file_name(raw_data_num);
     if (fname == nullptr) {
         _open_raw_data_error = true;
@@ -2038,7 +2039,7 @@ uint16_t DataFlash_File::start_new_raw_data(void)
         _open_raw_data_error = true;
         return 0xFFFF;
     }
-
+	_front.ppk_status = true;
     return raw_data_num;
 }
 
@@ -2371,6 +2372,9 @@ void DataFlash_File::_io_timer_raw_data(void)
 
     if (nbytes > _writebuf_chunk_raw_data) {
         // be kind to the FAT PX4 filesystem
+		if(nbytes > 12*1024) {
+			printf("io_raw_data ringbuffer ------------------nbytes [%d]\n", nbytes);
+		}
         nbytes = _writebuf_chunk_raw_data;
     }
 

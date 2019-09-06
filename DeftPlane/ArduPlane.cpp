@@ -69,7 +69,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(update_trigger,         50,    100),
     SCHED_TASK(log_perf_info,         0.2,    100),
     SCHED_TASK(compass_save,          0.1,    200),
-	SCHED_TASK(raw_data_update,		    20,	  200),
+	SCHED_TASK(raw_data_update,		  100,	  200),
     SCHED_TASK(Log_Write_Fast,         25,    300),
     SCHED_TASK(update_logging1,        25,    300),
     SCHED_TASK(update_logging2,        25,    300),
@@ -453,7 +453,7 @@ void Plane::ahrs_update()
     ahrs.update();
 
     if (should_log(MASK_LOG_IMU)) {
-        Log_Write_IMU();
+        //Log_Write_IMU();
     }
 
     // calculate a scaled roll limit based on current pitch
@@ -552,7 +552,7 @@ void Plane::update_logging1(void)
         Log_Write_Attitude();
     }
 
-    if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_IMU))
+    if (should_log(MASK_LOG_ATTITUDE_MED) && should_log(MASK_LOG_IMU))
         Log_Write_IMU();
 
     if (should_log(MASK_LOG_ATTITUDE_MED))

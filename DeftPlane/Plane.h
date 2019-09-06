@@ -187,7 +187,8 @@ private:
         uint32_t eeprom_status                  : 1; //bit12  0:bad, 1:healthy
         uint32_t hardware_safety_status         : 1; //bit13  0:bad, 1:healthy
         uint32_t rtk_compass_diff               : 1; //bit14  0:bad, 1:healthy
-        uint32_t resave                         : 18; //resave
+        uint32_t ppk_status						: 1; //bit15 0:idle, 1:runing
+        uint32_t resave                         : 17; //resave
     };
     //load param status
     enum  LOAD_PARAM_stauts{

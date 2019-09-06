@@ -108,4 +108,5 @@ public:
 
     virtual enum HomeState home_status() const = 0;
 
+    bool ppk_checks(bool report);
 };

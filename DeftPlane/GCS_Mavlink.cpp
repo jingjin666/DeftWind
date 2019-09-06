@@ -121,12 +121,13 @@ void Plane::send_indicator(mavlink_channel_t chan)
     indicator.compass_status = arming.compass_checks(false);
     indicator.gps_status = arming.gps_checks(false);
     indicator.plane_battery_status = arming.battery_checks(false);
-    indicator.sdcard_status = arming.logging_checks(false);
+    indicator.sdcard_status = arming.logging_checks(true);
     indicator.radio_status = arming.manual_transmitter_checks(false);
     indicator.board_voltage_status = true;//arming.board_voltage_checks(false);
     indicator.hardware_safety_status = true;//arming.hardware_safety_check(false);
     indicator.eeprom_status = (load_param_flag == LOAD_PARAM_OK ? true:false);
     indicator.airspeed_status = arming.airspeed_checks(false);
+    indicator.ppk_status = arming.ppk_checks(false);
 
     float heading_error = fabs(rtk_heading - compass_heading);
     heading_error = heading_error > 180 ? 360 - heading_error : heading_error;

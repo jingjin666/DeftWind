@@ -143,6 +143,7 @@ public:
     void Log_Write_Message(const char *message);
     void Log_Write_MessageF(const char *fmt, ...);
     void Log_Write_CameraInfo(enum LogMessages msg, const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc);
+    void Pos_Write_CameraInfo(enum LogMessages msg, const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc);
     void Log_Write_Camera(const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc);
     void Log_Write_Trigger(const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc);    
     void Log_Write_ESC(void);
@@ -453,5 +454,6 @@ private:
 	
     void get_pos_data_info(uint16_t pos_data_num, uint32_t &size, uint32_t &time_utc);
     /* end support for retrieving pos_datas via mavlink: */
-
+public:
+	bool ppk_status;
 };
