@@ -47,9 +47,10 @@ class DataFlash_Class
 public:
     FUNCTOR_TYPEDEF(print_mode_fn, void, AP_HAL::BetterStream*, uint8_t);
     FUNCTOR_TYPEDEF(vehicle_startup_message_Log_Writer, void);
-    DataFlash_Class(const char *firmware_string, const AP_Int32 &log_bitmask) :
+    DataFlash_Class(const char *firmware_string, const AP_Int32 &log_bitmask, const AP_Int32 &rawdata_bitmask) :
         _firmware_string(firmware_string),
-        _log_bitmask(log_bitmask)
+        _log_bitmask(log_bitmask),
+        _rawdata_bitmask(rawdata_bitmask)
         {
             AP_Param::setup_object_defaults(this, var_info);
             if (_instance != nullptr) {
@@ -257,6 +258,7 @@ private:
     DataFlash_Backend *backends[DATAFLASH_MAX_BACKENDS];
     const char *_firmware_string;
     const AP_Int32 &_log_bitmask;
+    const AP_Int32 &_rawdata_bitmask;
 
     void internal_error() const;
 

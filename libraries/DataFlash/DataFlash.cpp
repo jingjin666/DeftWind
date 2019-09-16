@@ -315,6 +315,10 @@ bool DataFlash_Class::should_log(const uint32_t mask) const
 
 bool DataFlash_Class::should_raw_data(const uint32_t mask) const
 {
+    if (!(mask & _rawdata_bitmask)) {
+        return false;
+    }
+
     if (!vehicle_is_armed()) {
         return false;
     }

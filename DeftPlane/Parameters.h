@@ -377,6 +377,8 @@ public:
         k_param_track_Acceptable_angle = 279,
         k_param_track_radius_gain = 280,
         k_param_fs_nogps_rtl_sink_rate = 281,
+
+        k_param_rawdata_bitmask = 282,
     };
 
     AP_Int16 format_version;
@@ -547,6 +549,8 @@ public:
     AP_Int32 fly_time_hour;
     AP_Int8  fly_time_minute;
     AP_Int8  fly_time_second;
+
+    AP_Int32 rawdata_bitmask;
 };
 
 /*

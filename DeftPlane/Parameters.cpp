@@ -32,6 +32,8 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     GSCALAR(format_version,         "FORMAT_VERSION", 0),
 
+    GSCALAR(rawdata_bitmask,         "RAWDATA_BITMASK",    1),
+
     GSCALAR(fly_odometer_km,         "FLY_ODOMETER_KM",   0),
 
     GSCALAR(fly_odometer_m,          "FLY_ODOMETER_M",   0),

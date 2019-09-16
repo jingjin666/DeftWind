@@ -366,7 +366,7 @@ void Plane::stats_update(void)
  */
 void Plane::raw_data_update(void)
 {
-	if(DataFlash.should_raw_data(0)) {
+	if(DataFlash.should_raw_data(1)) {
     	DataFlash.Log_Write_Raw_Data(serial_manager);
 	} else {
 		AP_HAL::UARTDriver *uart_raw  = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Nova_Rtcm, 0);

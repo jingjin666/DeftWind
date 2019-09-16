@@ -303,6 +303,10 @@ bool DataFlash_Backend::StartNewRawDataOK() const
         return false;
     }
 
+    if (_front._rawdata_bitmask == 0) {
+        return false;
+    }
+
     if (_front.in_raw_data_download()) {
         return false;
     }
