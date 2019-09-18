@@ -218,6 +218,17 @@ __EXPORT void imxrt_boardinitialize(void)
     /* enable power peripheral */
     dp_arch_gpiowrite(GPIO_PMIC_STBY_REQ, 1);
 
+    /* configuer pwm gpio pins */
+    const uint32_t pwm_gpio[] = DP_GPIO_PWM_INIT_LIST;
+	board_gpio_init(pwm_gpio, arraySize(pwm_gpio));
+
+    /* pull low pwm outputs for servo pass to self-test */
+	for (int pwm = 0; pwm < arraySize(pwm_gpio); pwm++) {
+		if (pwm_gpio[pwm] != 0) {
+			dp_arch_gpiowrite(pwm_gpio[pwm], 0);
+		}
+	}
+
 	imxrt_spidev_initialize();
 
 	imxrt_usb_initialize();
