@@ -25,13 +25,13 @@ UAVRS_V1_CONFIG_FILE = $(MK_DIR)/uavrs/config_uavrs-v1_DeftWind.mk
 UAVRS_V2_CONFIG_FILE = $(MK_DIR)/uavrs/config_uavrs-v2_DeftWind.mk
 #$(info UAVRS_V2_CONFIG_FILE::$(UAVRS_V2_CONFIG_FILE))
 
-DP_GIT_VERSION   ?= $(shell cd $(DP_ROOT) && git rev-parse HEAD | cut -c1-8)
-#$(info DP_GIT_VERSION::$(DP_GIT_VERSION))
+GIT_VERSION   ?= $(shell cd $(DP_ROOT) && git rev-parse HEAD | cut -c1-8)
+#$(info GIT_VERSION::$(GIT_VERSION))
 
 #####################
 # C/C++±‡“Î—°œÓ
 #####################
-EXTRAFLAGS += -DDP_GIT_VERSION="\"$(DP_GIT_VERSION)\""
+EXTRAFLAGS += -DGIT_VERSION="\"$(GIT_VERSION)\""
 EXTRAFLAGS += -DUAVCAN=1
 EXTRAFLAGS += -D__STDC_FORMAT_MACROS
 

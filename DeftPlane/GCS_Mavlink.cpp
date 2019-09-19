@@ -1621,7 +1621,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         send_text(MAV_SEVERITY_INFO, FIRMWARE_STRING);
 
 #if defined(DP_GIT_VERSION)
-        send_text(MAV_SEVERITY_INFO, "DEFTWIND: GIT_VERSION# " DP_GIT_VERSION);
+        send_text(MAV_SEVERITY_INFO, "DEFTWIND: DP_GIT_VERSION# " DP_GIT_VERSION);
 #endif
         handle_param_request_list(msg);
         break;
