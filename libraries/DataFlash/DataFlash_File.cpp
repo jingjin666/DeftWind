@@ -134,7 +134,10 @@ void DataFlash_File::Init()
     ret = stat(_log_directory, &st);
     if (ret == -1) {
         ret = mkdir(_log_directory, 0777);
+    } else {
+        printf("Log data directory is existed\n");
     }
+
     if (ret == -1) {
         hal.console->printf("Failed to create log directory %s\n", _log_directory);
         return;
@@ -157,6 +160,8 @@ void DataFlash_File::Init()
     if (!_writebuf.get_size()) {
         hal.console->printf("Out of memory for logging\n");
         return;
+    } else {
+        printf("Log data ringbuffer ok %d\n", _writebuf.get_size());
     }
 
     hal.console->printf("DataFlash_File: buffer size=%u\n", (unsigned)bufsize);
@@ -2098,6 +2103,8 @@ uint16_t DataFlash_File::start_new_log(void)
                             fname, strerror(saved_errno));
         free(fname);
         return 0xFFFF;
+    } else {
+        printf("Log open ----%s\n", fname);
     }
     free(fname);
     _write_offset = 0;
@@ -2458,6 +2465,19 @@ void DataFlash_File::_io_timer(void)
     }
 	//printf("Log Pre  %d\n", nbytes);
     ssize_t nwritten = ::write(_write_fd, head, nbytes);
+
+#ifdef LOG_DATA_STREAM_RATE_MONITOR
+    // Print log data stream rates.
+    static int cnts = 0;
+    cnts += nwritten;
+    static uint32_t last_time = 0;
+    if(AP_HAL::millis() - last_time > 1000) {
+        last_time = AP_HAL::millis();
+        printf("Log rate is %d bytes/second\n", cnts);
+        cnts = 0;
+    }
+#endif
+
 	//printf("Log nwritten  %d\n", nwritten);
     if (nwritten <= 0) {
 		gcs().send_text(MAV_SEVERITY_INFO, "Log write error");

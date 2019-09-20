@@ -206,7 +206,7 @@ void AP_BoardConfig::px4_setup_drivers(void)
 
     switch (px4_configured_board) {
 	case PX4_BOARD_UAVRS:
-        printf("px4_setup_drivers:: PX4_BOARD_UAVRS\n");
+        printf("dp_setup_drivers:: DP_BOARD_UAVRS\n");
         break;
     default:
         sensor_config_error("Unknown board type");

@@ -53,29 +53,34 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 static const AP_Scheduler::Task scheduler_test_tasks[]= {
                            // Units:   Hz      us
-    SCHED_TASK(one_second_loop,         1,    400),
+    SCHED_TASK(one_second_loop,         50,    400),
 };
 
 void Plane_test::one_second_loop() {
 
-//#define UART_TEST 1
+#define UART_TEST 1
 #ifdef UART_TEST
     int rx = 0;
     const char *send = "123456789";
-    char recv[128] = {0};
-    
-    if(hal.uartE != nullptr) {
-        //hal.uartE->write((uint8_t *)send, strlen(send));
+    char recv[256] = {0};
 
-        rx = hal.uartE->available();
+    AP_HAL::UARTDriver* uart = hal.uartC;
+
+    if(uart != nullptr) {
+        //uart->write((uint8_t *)send, strlen(send));
+
+        rx = uart->available();
         
         if((rx > 0) && (rx <= sizeof(recv))) {
             for(int i = 0; i < rx; i++) {
-                recv[i] = hal.uartE->read();
+                recv[i] = uart->read();
+                //printf("%c", recv[i]);
             }
-            printf("recv is %s, rx is %d\n", recv, rx);
-        } else {
             printf("rx is %d\n", rx);
+            printf("%s\n", recv);
+            //uart->write((uint8_t *)&recv[0], rx);
+        } else {
+            //printf("rx is %d\n", rx);
         }
     }
 #endif
