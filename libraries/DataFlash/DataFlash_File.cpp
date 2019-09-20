@@ -80,7 +80,7 @@ DataFlash_File::DataFlash_File(DataFlash_Class &front,
     _writebuf(0),
     _writebuf_raw_data(0),
     _writebuf_pos_data(0),
-    _writebuf_chunk(512),
+    _writebuf_chunk(4096),
     _writebuf_chunk_raw_data(512),
 	_writebuf_chunk_pos_data(512),//single camera information size
     _last_write_time(0),

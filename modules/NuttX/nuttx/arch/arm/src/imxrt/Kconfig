@@ -141,6 +141,10 @@ config ARCH_FAMILY_IMXRT106x
 
 # Peripheral support
 
+config IMXRT_USDHC
+       bool
+       default n
+
 config IMXRT_HAVE_LPUART
 	bool
 	default n
@@ -150,6 +154,10 @@ config IMXRT_LPI2C
 	default n
 
 config IMXRT_LPSPI
+	bool
+	default n
+
+config IMXRT_ENC
 	bool
 	default n
 
@@ -171,6 +179,12 @@ config IMXRT_EDMA
 	bool "eDMA"
 	default n
 	select ARCH_DMA
+
+config IMXRT_USBOTG
+	bool "USB EHCI"
+	default n
+	select USBHOST_HAVE_ASYNCH
+	select USBHOST_ASYNCH
 
 config IMXRT_ENET
 	bool "Ethernet"
@@ -247,6 +261,19 @@ config IMXRT_LPUART8
 	select IMXRT_HAVE_LPUART
 
 endmenu # LPUART Peripherals
+
+menu "LPUART Configuration"
+	depends on IMXRT_HAVE_LPUART
+
+config IMXRT_LPUART_INVERT
+	bool "Signal Invert Support"
+	default n
+	depends on IMXRT_HAVE_LPUART
+	---help---
+		Enable signal inversion UART support. The option enables support for the
+		TIOCSINVERT ioctl in the IMXRT serial driver.
+
+endmenu # LPUART Configuration
 
 menu "LPI2C Peripherals"
 
@@ -372,12 +399,329 @@ config IMXRT_SNVS_HPRTC
 	bool "HP RTC"
 	default n
 
-config IMXRT_USDHC
-	bool "USDHC"
+config IMXRT_USDHC1
+	bool "USDHC1"
 	default n
 	select ARCH_HAVE_SDIO
+	select IMXRT_USDHC
 	---help---
-		Support SD host controller
+		Support USDHC host controller 1
+
+config IMXRT_USDHC2
+	bool "USDHC2"
+	default n
+	select ARCH_HAVE_SDIO
+	select IMXRT_USDHC
+	---help---
+		Support USDHC host controller 2
+
+menu "ENC Peripherals"
+
+menuconfig IMXRT_ENC1
+	bool "ENC1"
+	default n
+	select IMXRT_ENC
+
+if IMXRT_ENC1
+
+config ENC1_INITVAL
+	int "Initial position counter value"
+	default 0
+
+config ENC1_DIR
+	bool "Reverse positive rotation direction"
+	default n
+	---help---
+		Select if PHASEB leading PHASEA pulses is positive rotation
+
+config ENC1_FILTPER
+	int "Input filter sample period in clock cycles"
+	default 0
+
+config ENC1_FILTCNT
+	int "Number of input samples that filter will compare"
+	default 0
+
+config ENC1_MOD
+	bool "Enable modulo counting"
+	default n
+
+if ENC1_MOD
+
+config ENC1_MODULUS
+	hex "Modulus to wrap around"
+	default 0xffffffff
+
+endif # ENC1_MOD
+
+config ENC1_HIP
+	bool "HOME signal initializes position counter"
+	default n
+
+if ENC1_HIP
+
+config ENC1_HNE
+	bool "Initialize on negedge of HOME"
+	default n
+
+endif # ENC1_HIP
+
+config ENC1_XIP
+	bool "INDEX signal initializes position counter"
+	default n
+
+if ENC1_XIP
+
+config ENC1_XNE
+	bool "Initialize on negedge of INDEX"
+	default n
+
+endif # ENC1_XIP
+
+if DEBUG_SENSORS
+
+config ENC1_TST_DIR
+	bool "Generate negative test counter advances"
+	default n
+
+config ENC1_TST_PER
+	int "Period of test pulses in clock cycles"
+	default 31
+
+endif # DEBUG_SENSORS
+
+endif # IMXRT_ENC1
+
+menuconfig IMXRT_ENC2
+	bool "ENC2"
+	default n
+	select IMXRT_ENC
+
+if IMXRT_ENC2
+
+config ENC2_INITVAL
+	int "Initial position counter value"
+	default 0
+
+config ENC2_DIR
+	bool "Reverse positive rotation direction"
+	default n
+	---help---
+		Select if PHASEB leading PHASEA pulses is positive rotation
+
+config ENC2_FILTPER
+	int "Input filter sample period in clock cycles"
+	default 0
+
+config ENC2_FILTCNT
+	int "Number of input samples that filter will compare"
+	default 0
+
+config ENC2_MOD
+	bool "Enable modulo counting"
+	default n
+
+if ENC2_MOD
+
+config ENC2_MODULUS
+	hex "Modulus to wrap around"
+	default 0xffffffff
+
+endif # ENC2_MOD
+
+config ENC2_HIP
+	bool "HOME signal initializes position counter"
+	default n
+
+if ENC2_HIP
+
+config ENC2_HNE
+	bool "Initialize on negedge of HOME"
+	default n
+
+endif # ENC2_HIP
+
+config ENC2_XIP
+	bool "INDEX signal initializes position counter"
+	default n
+
+if ENC2_XIP
+
+config ENC2_XNE
+	bool "Initialize on negedge of INDEX"
+	default n
+
+endif # ENC2_XIP
+
+if DEBUG_SENSORS
+
+config ENC2_TST_DIR
+	bool "Generate negative test counter advances"
+	default n
+
+config ENC2_TST_PER
+	int "Period of test pulses in clock cycles"
+	default 31
+
+endif # DEBUG_SENSORS
+
+endif # IMXRT_ENC2
+
+if ARCH_FAMILY_IMXRT105x || ARCH_FAMILY_IMXRT106x
+
+menuconfig IMXRT_ENC3
+	bool "ENC3"
+	default n
+	select IMXRT_ENC
+
+if IMXRT_ENC3
+
+config ENC3_INITVAL
+	int "Initial position counter value"
+	default 0
+
+config ENC3_DIR
+	bool "Reverse positive rotation direction"
+	default n
+	---help---
+		Select if PHASEB leading PHASEA pulses is positive rotation
+
+config ENC3_FILTPER
+	int "Input filter sample period in clock cycles"
+	default 0
+
+config ENC3_FILTCNT
+	int "Number of input samples that filter will compare"
+	default 0
+
+config ENC3_MOD
+	bool "Enable modulo counting"
+	default n
+
+if ENC3_MOD
+
+config ENC3_MODULUS
+	hex "Modulus to wrap around"
+	default 0xffffffff
+
+endif # ENC3_MOD
+
+config ENC3_HIP
+	bool "HOME signal initializes position counter"
+	default n
+
+if ENC3_HIP
+
+config ENC3_HNE
+	bool "Initialize on negedge of HOME"
+	default n
+
+endif # ENC3_HIP
+
+config ENC3_XIP
+	bool "INDEX signal initializes position counter"
+	default n
+
+if ENC3_XIP
+
+config ENC3_XNE
+	bool "Initialize on negedge of INDEX"
+	default n
+
+endif # ENC3_XIP
+
+if DEBUG_SENSORS
+
+config ENC3_TST_DIR
+	bool "Generate negative test counter advances"
+	default n
+
+config ENC3_TST_PER
+	int "Period of test pulses in clock cycles"
+	default 31
+
+endif # DEBUG_SENSORS
+
+endif # IMXRT_ENC3
+
+menuconfig IMXRT_ENC4
+	bool "ENC4"
+	default n
+	select IMXRT_ENC
+
+if IMXRT_ENC4
+
+config ENC4_INITVAL
+	int "Initial position counter value"
+	default 0
+
+config ENC4_DIR
+	bool "Reverse positive rotation direction"
+	default n
+	---help---
+		Select if PHASEB leading PHASEA pulses is positive rotation
+
+config ENC4_FILTPER
+	int "Input filter sample period in clock cycles"
+	default 0
+
+config ENC4_FILTCNT
+	int "Number of input samples that filter will compare"
+	default 0
+
+config ENC4_MOD
+	bool "Enable modulo counting"
+	default n
+
+if ENC4_MOD
+
+config ENC4_MODULUS
+	hex "Modulus to wrap around"
+	default 0xffffffff
+
+endif # ENC4_MOD
+
+config ENC4_HIP
+	bool "HOME signal initializes position counter"
+	default n
+
+if ENC4_HIP
+
+config ENC4_HNE
+	bool "Initialize on negedge of HOME"
+	default n
+
+endif # ENC4_HIP
+
+config ENC4_XIP
+	bool "INDEX signal initializes position counter"
+	default n
+
+if ENC4_XIP
+
+config ENC4_XNE
+	bool "Initialize on negedge of INDEX"
+	default n
+
+endif # ENC4_XIP
+
+if DEBUG_SENSORS
+
+config ENC4_TST_DIR
+	bool "Generate negative test counter advances"
+	default n
+
+config ENC4_TST_PER
+	int "Period of test pulses in clock cycles"
+	default 31
+
+endif # DEBUG_SENSORS
+
+endif # IMXRT_ENC4
+
+endif # ARCH_FAMILY_IMXRT105x | ARCH_FAMILY_IMXRT106x
+
+endmenu # ENC Peripherals
 
 endmenu # i.MX RT Peripheral Selection
 
@@ -428,7 +772,7 @@ config IMXRT_GPIO5_16_31_IRQ
 	default n
 
 config IMXRT_GPIO6_0_15_IRQ
-	bool "GPIO6 Pins 8-15 interrupts"
+	bool "GPIO6 Pins 0-15 interrupts"
 	default n
 	depends on IMXRT_HIGHSPEED_GPIO
 
@@ -668,11 +1012,33 @@ config IMXRT_USDHC_DMA
 		For most usages, SD accesses will cause data overruns if used without
 		DMA.
 
-config IMXRT_USDHC_WIDTH_D1_ONLY
-	bool "Use D1 only"
-	default n
-	---help---
-		Select 1-bit transfer mode.  Default: 4-bit transfer mode.
+choice
+	prompt "Bus width for USDHC1"
+	default IMXRT_USDHC1_WIDTH_D1_ONLY
+	depends on IMXRT_USDHC1
+
+config IMXRT_USDHC1_WIDTH_D1_ONLY
+	bool "One bit"
+
+config IMXRT_USDHC1_WIDTH_D1_D4
+	bool "Four bit"
+endchoice
+
+choice
+	depends on IMXRT_USDHC2
+	prompt "Bus width for USDHC2"
+	default IMXRT_USDHC2_WIDTH_D1_D4
+
+config IMXRT_USDHC2_WIDTH_D1_ONLY
+	bool "One bit"
+
+config IMXRT_USDHC2_WIDTH_D1_D4
+	bool "Four bit"
+
+config IMXRT_USDHC2_WIDTH_D1_D8
+	bool "Eight bit"
+endchoice
+
 endmenu # USDHC Configuration
 
 menu "eDMA Configuration"
@@ -930,6 +1296,43 @@ config IMXRT_DATA_RISING_EDGE
 	default y
 
 endmenu # LCD Configuration
+
+if IMXRT_USBOTG && USBHOST
+
+menu "USB host controller driver (HCD) options"
+
+config IMXRT_EHCI_NQHS
+	int "Number of Queue Head (QH) structures"
+	default 4
+	---help---
+		Configurable number of Queue Head (QH) structures.  The default is
+		one per Root hub port plus one for EP0 (4).
+
+config IMXRT_EHCI_NQTDS
+	int "Number of Queue Element Transfer Descriptor (qTDs)"
+	default 6
+	---help---
+		Configurable number of Queue Element Transfer Descriptor (qTDs).
+		The default is one per root hub plus three from EP0 (6).
+
+config IMXRT_EHCI_BUFSIZE
+	int "Size of one request/descriptor buffer"
+	default 128
+	---help---
+		The size of one request/descriptor buffer in bytes.  The TD buffe
+		size must be an even number of 32-bit words and must be large enough
+		to hangle the largest transfer via a SETUP request.
+
+config IMXRT_EHCI_PREALLOCATE
+	bool "Preallocate descriptor pool"
+	default y
+	---help---
+		Select this option to pre-allocate EHCI queue and descriptor
+		structure pools in .bss.  Otherwise, these pools will be
+		dynamically allocated using kmm_memalign().
+
+endmenu # USB host controller driver (HCD) options
+endif # IMXRT_USBOTG && USBHOST
 
 endif # ARCH_CHIP_IMXRT
 
