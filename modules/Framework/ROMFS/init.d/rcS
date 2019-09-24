@@ -14,7 +14,7 @@ else
     echo "failed mount micro sdcard"
     set HAVE_MICROSD 0
     echo "Trying format of microSD"
-    if mkfatfs /dev/mmcsd0
+    if mkfatfs -F 32 /dev/mmcsd0
     then
 		set MMCSD_FORMAT yes
 		echo "microSD card formatted"
