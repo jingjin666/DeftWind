@@ -21,21 +21,21 @@ MODULES         += drivers/fmu
 # System commands
 #
 #MODULES        += systemcmds/bl_update
-MODULES         += systemcmds/mixer
-MODULES         += systemcmds/perf
+#MODULES         += systemcmds/mixer
+#MODULES         += systemcmds/perf
 MODULES         += systemcmds/reboot
 MODULES         += systemcmds/top
 #MODULES        += systemcmds/nshterm
 MODULES         += systemcmds/mtd
-MODULES         += systemcmds/ver
+#MODULES         += systemcmds/ver
 MODULES         += systemcmds/usb_connected
-MODULES         += systemcmds/tests
+#MODULES         += systemcmds/tests
 
 #
 # Examples modules
 #
-MODULES         += examples/hello_world
-MODULES         += examples/hello_world_cxx
+#MODULES         += examples/hello_world
+#MODULES         += examples/hello_world_cxx
 
 #
 # Library modules

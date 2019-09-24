@@ -81,7 +81,7 @@ DataFlash_File::DataFlash_File(DataFlash_Class &front,
     _writebuf_raw_data(0),
     _writebuf_pos_data(0),
     _writebuf_chunk(4096),
-    _writebuf_chunk_raw_data(512),
+    _writebuf_chunk_raw_data(4096),
 	_writebuf_chunk_pos_data(512),//single camera information size
     _last_write_time(0),
     _perf_write(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "DF_write")),
@@ -2480,6 +2480,7 @@ void DataFlash_File::_io_timer(void)
 
 	//printf("Log nwritten  %d\n", nwritten);
     if (nwritten <= 0) {
+        printf("Log write error %d\n", nwritten);
 		gcs().send_text(MAV_SEVERITY_INFO, "Log write error");
         hal.util->perf_count(_perf_errors);
         close(_write_fd);
