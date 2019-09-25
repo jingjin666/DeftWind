@@ -255,7 +255,7 @@ static const struct spi_ops_s g_spi1ops =
 #endif
   .send         = imxrt_lpspi_send,
 #ifdef CONFIG_SPI_EXCHANGE
-  .exchange     = imxrt_lpspi_dma_exchange,
+  .exchange     = imxrt_lpspi_exchange,
 #else
   .sndblock     = imxrt_lpspi_sndblock,
   .recvblock    = imxrt_lpspi_recvblock,
@@ -1657,6 +1657,7 @@ static void imxrt_lpspi_dma_exchange(FAR struct spi_dev_s *dev, FAR const void *
                          FAR void *rxbuffer, size_t nwords)
 {
     FAR struct imxrt_lpspidev_s *priv = (FAR struct imxrt_lpspidev_s *)dev;
+    DEBUGASSERT(priv && priv->spibase);
 
     uint32_t regval = 0;
     uint16_t rxdummy = 0xffff;
@@ -1690,8 +1691,6 @@ static void imxrt_lpspi_dma_exchange(FAR struct spi_dev_s *dev, FAR const void *
     if(priv->spibase == IMXRT_LPSPI1_BASE)
         syslog(LOG_DEBUG, "txbuffer=%p rxbuffer=%p cmd=0x%02x nwords=%d\n", txbuffer, rxbuffer, cmd[0], nwords);
 #endif
-
-    DEBUGASSERT(priv && priv->spibase);
 
     /* Setup DMAs */
     spiinfo("begin Setup\n");
