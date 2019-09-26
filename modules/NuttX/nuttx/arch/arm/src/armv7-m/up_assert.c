@@ -436,6 +436,7 @@ void up_assert(const uint8_t *filename, int lineno)
 
   board_autoled_on(LED_ASSERTION);
 
+while(1) {
   /* Flush any buffered SYSLOG data (prior to the assertion) */
 
   (void)syslog_flush();
@@ -464,6 +465,8 @@ void up_assert(const uint8_t *filename, int lineno)
 
   (void)syslog_flush();
 
+  up_mdelay(1000);
+}
 #ifdef CONFIG_BOARD_CRASHDUMP
   board_crashdump(up_getsp(), running_task(), filename, lineno);
 #endif
