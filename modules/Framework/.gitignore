@@ -24,9 +24,14 @@ cscope.in.out
 cscope.po.out
 Firmware.sublime-workspace
 user.sublime*
+Images/*.prototype
 Images/*.bin
 Images/*.dp
 Images/*.hex
+!Images/*.iex
+!Images/*.txt
+!Images/*.dep
+!Images/*.htm
 mavlink/include/mavlink/v0.9/
 /Documentation/doxy.log
 /Documentation/html/

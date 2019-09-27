@@ -90,6 +90,22 @@ void AP_BoardConfig::px4_setup_pwm()
 }
 
 /*
+  setup flow control on UARTs
+ */
+void AP_BoardConfig::px4_setup_uart()
+{
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
+    /* Enable uart mavlink flow control */
+    if (hal.uartE != nullptr) {
+        hal.uartE->set_flow_control((AP_HAL::UARTDriver::flow_control)px4.ser1_rtscts.get());
+    }
+    if (hal.uartF != nullptr) {
+        hal.uartF->set_flow_control((AP_HAL::UARTDriver::flow_control)px4.ser2_rtscts.get());
+    }
+#endif
+}
+
+/*
   setup safety switch
  */
 void AP_BoardConfig::px4_setup_safety_mask()
@@ -385,6 +401,7 @@ void AP_BoardConfig::px4_setup()
     px4_setup_peripherals();
     px4_setup_pwm();
     px4_setup_safety_mask();
+    px4_setup_uart();
     px4_setup_sbus();
     px4_setup_drivers();
 }
