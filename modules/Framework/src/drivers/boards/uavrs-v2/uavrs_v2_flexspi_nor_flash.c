@@ -37,7 +37,7 @@ const struct flexspi_nor_config_s g_flash_config =
                               (1u << FLEXSPIMISC_OFFSET_SAFECONFIG_FREQ_EN) |
                               (1u << FLEXSPIMISC_OFFSET_DIFFCLKEN),
     .sflash_pad_type        = SERIAL_FLASH_8PADS,
-    .serial_clk_freq        = FLEXSPI_SERIAL_CLKFREQ_166MHz,
+    .serial_clk_freq        = FLEXSPI_SERIAL_CLKFREQ_133MHz,
     .sflash_a1size          = 64u * 1024u * 1024u,
     .data_valid_time        = {16u, 16u},
     .lookup_table           =

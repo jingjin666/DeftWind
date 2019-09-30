@@ -139,7 +139,7 @@ void DataFlash_File::Init()
     }
 
     if (ret == -1) {
-        hal.console->printf("Failed to create log directory %s\n", _log_directory);
+        printf("Failed to create log directory %s\n", _log_directory);
         return;
     }
 #endif
@@ -153,18 +153,16 @@ void DataFlash_File::Init()
 
     // If we can't allocate the full size, try to reduce it until we can allocate it
     while (!_writebuf.set_size(bufsize) && bufsize >= _writebuf_chunk) {
-        hal.console->printf("DataFlash_File: Couldn't set buffer size to=%u\n", (unsigned)bufsize);
+        printf("DataFlash_File: Couldn't set buffer size to=%u\n", (unsigned)bufsize);
         bufsize >>= 1;
     }
 
     if (!_writebuf.get_size()) {
-        hal.console->printf("Out of memory for logging\n");
+        printf("Out of memory for logging\n");
         return;
     } else {
         printf("Log data ringbuffer ok %d\n", _writebuf.get_size());
     }
-
-    hal.console->printf("DataFlash_File: buffer size=%u\n", (unsigned)bufsize);
 
     _initialised = true;
     hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&DataFlash_File::_io_timer, void));
@@ -620,10 +618,10 @@ void DataFlash_File::Prep_MinSpace()
             break;
         }
         if (file_exists(filename_to_remove)) {
-            hal.console->printf("Removing (%s) for minimum-space requirements (%.2f%% < %.0f%%)\n",
+            printf("Removing (%s) for minimum-space requirements (%.2f%% < %.0f%%)\n",
                                 filename_to_remove, (double)avail, (double)min_avail_space_percent);
             if (unlink(filename_to_remove) == -1) {
-                hal.console->printf("Failed to remove %s: %s\n", filename_to_remove, strerror(errno));
+                printf("Failed to remove %s: %s\n", filename_to_remove, strerror(errno));
                 free(filename_to_remove);
                 if (errno == ENOENT) {
                     // corruption - should always have a continuous
@@ -1419,7 +1417,7 @@ int16_t DataFlash_File::get_log_data(const uint16_t list_entry, const uint16_t p
             int saved_errno = errno;
             ::printf("Log read open fail for %s - %s\n",
                      fname, strerror(saved_errno));
-            hal.console->printf("Log read open fail for %s - %s\n",
+            printf("Log read open fail for %s - %s\n",
                                 fname, strerror(saved_errno));
             free(fname);
             return -1;            
@@ -1544,7 +1542,7 @@ int16_t DataFlash_File::get_raw_data(const uint16_t list_entry, const uint16_t p
             int saved_errno = errno;
             ::printf("Raw data read open fail for %s - %s\n",
                      fname, strerror(saved_errno));
-            hal.console->printf("Raw data read open fail for %s - %s\n",
+            printf("Raw data read open fail for %s - %s\n",
                                 fname, strerror(saved_errno));
             free(fname);
             return -1;            
@@ -1670,7 +1668,7 @@ int16_t DataFlash_File::get_pos_data(const uint16_t list_entry, const uint16_t p
             int saved_errno = errno;
             ::printf("Pos data read open fail for %s - %s\n",
                      fname, strerror(saved_errno));
-            hal.console->printf("Pos data read open fail for %s - %s\n",
+            printf("Pos data read open fail for %s - %s\n",
                                 fname, strerror(saved_errno));
             free(fname);
             return -1;            
@@ -1844,7 +1842,7 @@ uint16_t DataFlash_File::start_new_pos_data(void)
     }
 
     if (disk_space_avail() < _free_space_min_avail) {
-        hal.console->printf("Out of space for pos data store\n");
+        printf("Out of space for pos data store\n");
         _open_pos_data_error = true;
 		gcs().send_text(MAV_SEVERITY_INFO, "Out of space for pos data");
         return 0xffff;
@@ -1880,7 +1878,7 @@ uint16_t DataFlash_File::start_new_pos_data(void)
         int saved_errno = errno;
         ::printf("Pos data open fail for %s - %s\n",
                  fname, strerror(saved_errno));
-        hal.console->printf("Pos data open fail for %s - %s\n",
+        printf("Pos data open fail for %s - %s\n",
                             fname, strerror(saved_errno));
         free(fname);
         return 0xFFFF;
@@ -1977,7 +1975,7 @@ uint16_t DataFlash_File::start_new_raw_data(void)
     }
 
     if (disk_space_avail() < _free_space_min_avail) {
-        hal.console->printf("Out of space for raw data store\n");
+        printf("Out of space for raw data store\n");
         _open_raw_data_error = true;
 		gcs().send_text(MAV_SEVERITY_INFO, "Out of space for raw data");
         return 0xffff;
@@ -2013,7 +2011,7 @@ uint16_t DataFlash_File::start_new_raw_data(void)
         int saved_errno = errno;
         ::printf("Raw data open fail for %s - %s\n",
                  fname, strerror(saved_errno));
-        hal.console->printf("Raw data open fail for %s - %s\n",
+        printf("Raw data open fail for %s - %s\n",
                             fname, strerror(saved_errno));
         free(fname);
         return 0xFFFF;
@@ -2069,7 +2067,7 @@ uint16_t DataFlash_File::start_new_log(void)
     }
 
     if (disk_space_avail() < _free_space_min_avail) {
-        hal.console->printf("Out of space for logging\n");
+        printf("Out of space for logging\n");
         _open_error = true;
 		gcs().send_text(MAV_SEVERITY_INFO, "Out of space for logging");
         return 0xffff;
@@ -2099,7 +2097,7 @@ uint16_t DataFlash_File::start_new_log(void)
         int saved_errno = errno;
         ::printf("Log open fail for %s - %s\n",
                  fname, strerror(saved_errno));
-        hal.console->printf("Log open fail for %s - %s\n",
+        printf("Log open fail for %s - %s\n",
                             fname, strerror(saved_errno));
         free(fname);
         return 0xFFFF;
@@ -2436,7 +2434,7 @@ void DataFlash_File::_io_timer(void)
     if (tnow - _free_space_last_check_time > _free_space_check_interval) {
         _free_space_last_check_time = tnow;
         if (disk_space_avail() < _free_space_min_avail) {
-            hal.console->printf("Out of space for logging\n");
+            printf("Out of space for logging\n");
             stop_logging();
             _open_error = true; // prevent logging starting again
 			gcs().send_text(MAV_SEVERITY_INFO, "Out of space for logging");
