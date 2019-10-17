@@ -1856,25 +1856,21 @@ uint16_t DataFlash_File::start_new_pos_data(void)
     if (pos_data_num > MAX_POS_DATA_FILES) {
         pos_data_num = 1;
     }
-	printf("pos data file[%d] start loging++++++++\n", pos_data_num);
-	gcs().send_text(MAV_SEVERITY_INFO, "pos data file[%d] start loging++++++++", pos_data_num);
+
     char *fname = _pos_data_file_name(pos_data_num);
     if (fname == nullptr) {
         _open_pos_data_error = true;
         return 0xFFFF;
     }
 
-#ifndef PRE_OPEN_POS_FILE
-    int fd_pos_pre = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC);
-    if (fd_pos_pre == -1) {
-        printf("%d#######fd_pos_pre open failed\n", __LINE__);
-    } else {
-        printf("%d#######fd_pos_pre open sucess\n", __LINE__);
-        close(fd_pos_pre);
+    uint8_t open_index = 0;
+    for(open_index = 0; open_index < 2; open_index++) {
+        _write_pos_data_fd = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC);
+        if(_write_pos_data_fd > 0)
+            break;
+        else
+            printf("Open %s Failed %dst, Try to open again!\n", fname, open_index+1);
     }
-#endif
-
-    _write_pos_data_fd = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC);
     _cached_oldest_pos_data = 0;
 
     if (_write_pos_data_fd == -1) {
@@ -1884,30 +1880,28 @@ uint16_t DataFlash_File::start_new_pos_data(void)
                             fname, strerror(saved_errno));
         free(fname);
         return 0xFFFF;
+    } else {
+        printf("pos data file[%d] start loging++++++++\n", pos_data_num);
+	    gcs().send_text(MAV_SEVERITY_INFO, "pos data file[%d] start loging++++++++", pos_data_num);
     }
+    
     free(fname);
     _write_pos_data_offset = 0;
     _writebuf_pos_data.clear();
-
-#ifndef PRE_OPEN_LAST_POS_DATA_FILE
-    /* Try to solve LAST_POS_DATA.TXT file can't be read and write */
-    char *fname_temp = _last_pos_data_file_name();
-    int fd_temp = open(fname_temp, O_RDONLY);
-    free(fname_temp);
-    if (fd_temp == -1) {
-        printf("%d#######last pos file open failed\n", __LINE__);
-    } else {
-        printf("%d#######last pos file open sucess\n", __LINE__);
-        close(fd_temp);
-    }
-#endif
 
     // now update lastpos.txt with the new log number
     fname = _last_pos_data_file_name();
 
     // we avoid fopen()/fprintf() here as it is not available on as many
     // systems as open/write (specifically the QURT RTOS)
-    int fd = open(fname, O_WRONLY|O_CREAT|O_CLOEXEC, 0644);
+    int fd;
+    for(open_index = 0; open_index < 2; open_index++) {
+        fd = open(fname, O_WRONLY|O_CREAT|O_CLOEXEC, 0644);
+        if(fd > 0)
+            break;
+        else
+            printf("Open %s Failed %dst, Try to open again!\n", fname, open_index+1);
+    }
     free(fname);
     if (fd == -1) {
         _open_pos_data_error = true;
@@ -2010,25 +2004,21 @@ uint16_t DataFlash_File::start_new_raw_data(void)
     if (raw_data_num > MAX_RAW_DATA_FILES) {
         raw_data_num = 1;
     }
-	printf("raw data file[%d] start loging++++++++\n", raw_data_num);
-	gcs().send_text(MAV_SEVERITY_INFO, "raw data file[%d] start loging++++++++", raw_data_num);
+
     char *fname = _raw_data_file_name(raw_data_num);
     if (fname == nullptr) {
         _open_raw_data_error = true;
         return 0xFFFF;
     }
 
-#ifndef PRE_OPEN_RAW_FILE
-    int fd_raw_pre = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC);
-    if (fd_raw_pre == -1) {
-        printf("%d#######fd_raw_pre open failed\n", __LINE__);
-    } else {
-        printf("%d#######fd_raw_pre open sucess\n", __LINE__);
-        close(fd_raw_pre);
+    uint8_t open_index = 0;
+    for(open_index = 0; open_index < 2; open_index++) {
+        _write_raw_data_fd = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC);
+        if(_write_raw_data_fd > 0)
+            break;
+        else
+            printf("Open %s Failed %dst, Try to open again!\n", fname, open_index+1);
     }
-#endif
-
-    _write_raw_data_fd = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC);
     _cached_oldest_raw_data = 0;
 
     if (_write_raw_data_fd == -1) {
@@ -2038,30 +2028,28 @@ uint16_t DataFlash_File::start_new_raw_data(void)
                             fname, strerror(saved_errno));
         free(fname);
         return 0xFFFF;
+    } else {
+        printf("raw data file[%d] start loging++++++++\n", raw_data_num);
+        gcs().send_text(MAV_SEVERITY_INFO, "raw data file[%d] start loging++++++++", raw_data_num);
     }
+
     free(fname);
     _write_raw_data_offset = 0;
     _writebuf_raw_data.clear();
-
-#ifndef PRE_OPEN_LAST_RAW_DATA_FILE
-    /* Try to solve LAST_RAW_DATA.TXT file can't be read and write */
-    char *fname_temp = _last_raw_data_file_name();
-    int fd_temp = open(fname_temp, O_RDONLY);
-    free(fname_temp);
-    if (fd_temp == -1) {
-        printf("%d#######last raw file open failed\n", __LINE__);
-    } else {
-        printf("%d#######last raw file open sucess\n", __LINE__);
-        close(fd_temp);
-    }
-#endif
 
     // now update lastlog.txt with the new log number
     fname = _last_raw_data_file_name();
 
     // we avoid fopen()/fprintf() here as it is not available on as many
     // systems as open/write (specifically the QURT RTOS)
-    int fd = open(fname, O_WRONLY|O_CREAT|O_CLOEXEC, 0644);
+    int fd;
+    for(open_index = 0; open_index < 2; open_index++) {
+        fd = open(fname, O_WRONLY|O_CREAT|O_CLOEXEC, 0644);
+        if(fd > 0)
+            break;
+        else
+            printf("Open %s Failed %dst, Try to open again!\n", fname, open_index+1);
+    }
     free(fname);
     if (fd == -1) {
         _open_raw_data_error = true;
@@ -2124,54 +2112,47 @@ uint16_t DataFlash_File::start_new_log(void)
         return 0xFFFF;
     }
 
-#ifndef PRE_OPEN_LOG_FILE
-    int fd_log_pre = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC);
-    if (fd_log_pre == -1) {
-        printf("%d#######fd_log_pre open failed\n", __LINE__);
-    } else {
-        printf("%d#######fd_log_pre open sucess\n", __LINE__);
-        close(fd_log_pre);
+    uint8_t open_index = 0;
+    for(open_index = 0; open_index < 2; open_index++) {
+        _write_fd = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC);
+        if(_write_fd > 0)
+            break;
+        else
+            printf("Open %s Failed %dst, Try to open again!\n", fname, open_index+1);
     }
-#endif
-
-    _write_fd = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC);
     _cached_oldest_log = 0;
 
     if (_write_fd == -1) {
         _initialised = false;
         _open_error = true;
-		gcs().send_text(MAV_SEVERITY_INFO, "::open failed");
+        gcs().send_text(MAV_SEVERITY_INFO, "::open failed");
         int saved_errno = errno;
         printf("Log open fail for %s - %s\n",
                             fname, strerror(saved_errno));
         free(fname);
         return 0xFFFF;
     } else {
-        printf("Log open ----%s\n", fname);
+        printf("Log open succuess ----%s\n", fname);
+        gcs().send_text(MAV_SEVERITY_INFO, "Log open succuess");
     }
+
     free(fname);
     _write_offset = 0;
     _writebuf.clear();
-
-#ifndef PRE_OPEN_LASTLOG_FILE
-    /* Try to solve LASTLOG.TXT file can't be read and write */
-    char *fname_temp = _lastlog_file_name();
-    int fd_temp = open(fname_temp, O_RDONLY);
-    free(fname_temp);
-    if (fd_temp == -1) {
-        printf("%d#######last log file open failed\n", __LINE__);
-    } else {
-        printf("%d#######last log file open sucess\n", __LINE__);
-        close(fd_temp);
-    }
-#endif
 
     // now update lastlog.txt with the new log number
     fname = _lastlog_file_name();
 
     // we avoid fopen()/fprintf() here as it is not available on as many
     // systems as open/write (specifically the QURT RTOS)
-    int fd = open(fname, O_WRONLY|O_CREAT|O_CLOEXEC);
+    int fd;
+    for(open_index = 0; open_index < 2; open_index++) {
+        fd = open(fname, O_WRONLY|O_CREAT|O_CLOEXEC);
+        if(fd > 0)
+            break;
+        else
+            printf("Open %s Failed %dst, Try to open again!\n", fname, open_index+1);
+    }
     free(fname);
     if (fd == -1) {
         _open_error = true;
@@ -2454,6 +2435,19 @@ void DataFlash_File::_io_timer_raw_data(void)
     }
 
     ssize_t nwritten = ::write(_write_raw_data_fd, head, nbytes);
+
+#ifdef LOG_RAW_DATA_STREAM_RATE_MONITOR
+        // Print raw data stream rates.
+        static int cnts = 0;
+        cnts += nwritten;
+        static uint32_t last_time = 0;
+        if(AP_HAL::millis() - last_time > 1000) {
+            last_time = AP_HAL::millis();
+            printf("Raw data rate is %d bytes/second\n", cnts);
+            cnts = 0;
+        }
+#endif
+
 	//printf("Raw data nwritten  %d\n", nwritten);
 	if (nwritten <= 0) {
 		gcs().send_text(MAV_SEVERITY_INFO, "Raw data write error");

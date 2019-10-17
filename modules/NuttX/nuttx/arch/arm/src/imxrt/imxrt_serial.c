@@ -86,11 +86,11 @@
 /* Is DMA available on any (enabled) UART? */
 
 #undef SERIAL_HAVE_DMA
-#define CONFIG_IMXRT_LPUART2_RXDMA 1    // Rtk com2 input rtcm data and output raw position data
+#define CONFIG_IMXRT_LPUART2_RXDMA 1    // Rtk com2 recv raw data and send rtcm data
 //#define CONFIG_IMXRT_LPUART3_RXDMA 1    // Rtk com1 ouput position data
 //#define CONFIG_IMXRT_LPUART4_RXDMA 1    // Backup Peripheral usart
 #define CONFIG_IMXRT_LPUART5_RXDMA 1    // Backup Peripheral usart
-#define CONFIG_IMXRT_LPUART6_RXDMA 1    // Telecom MicroHard P900
+//#define CONFIG_IMXRT_LPUART6_RXDMA 1    // Telecom MicroHard P900
 #define CONFIG_IMXRT_LPUART7_RXDMA 1    // ttyS6: RC
 //#define CONFIG_IMXRT_LPUART8_RXDMA 1    // Backup Gps Ublox M8N
 #if defined(CONFIG_IMXRT_LPUART1_RXDMA) || defined(CONFIG_IMXRT_LPUART2_RXDMA) || \

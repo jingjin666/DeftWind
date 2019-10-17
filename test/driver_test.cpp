@@ -62,13 +62,13 @@ void Plane_test::one_second_loop() {
 #ifdef UART_TEST
     int rx = 0;
     const char *send = "123456789";
-    char recv[256] = {0};
+    char recv[1024] = {0};
 
-    AP_HAL::UARTDriver* uart = hal.uartC;
+    AP_HAL::UARTDriver* uart = hal.uartB;
 
     if(uart != nullptr) {
-        //uart->write((uint8_t *)send, strlen(send));
-
+        uart->write((uint8_t *)send, strlen(send));
+        return;
         rx = uart->available();
         
         if((rx > 0) && (rx <= sizeof(recv))) {
@@ -76,9 +76,9 @@ void Plane_test::one_second_loop() {
                 recv[i] = uart->read();
                 //printf("%c", recv[i]);
             }
-            printf("rx is %d\n", rx);
-            printf("%s\n", recv);
-            //uart->write((uint8_t *)&recv[0], rx);
+            //printf("rx is %d\n", rx);
+            //printf("%s\n", recv);
+            uart->write((uint8_t *)&recv[0], rx);
         } else {
             //printf("rx is %d\n", rx);
         }

@@ -16,14 +16,14 @@ using namespace UAVRS;
 #define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"	// Usb Mavlink
 #define UARTC_DEFAULT_DEVICE "/dev/ttyS2"	// Telecom MicroHard P900
 #define UARTD_DEFAULT_DEVICE "/dev/ttyS5"	// Rtk com1 ouput position data
-#define UARTB_DEFAULT_DEVICE "/dev/ttyS1"	// Rtk com2 input rtcm data and output raw position data
+#define UARTB_DEFAULT_DEVICE "/dev/ttyS1"	// Rtk com2 recv raw data and send rtcm data
 #define UARTE_DEFAULT_DEVICE "/dev/ttyS0"	// Backup Gps Ublox M8N
 // ttyS3: RC
 #define UARTF_DEFAULT_DEVICE "/dev/null"
 #define UARTG_DEFAULT_DEVICE "/dev/null"
 #elif defined(CONFIG_ARCH_BOARD_UAVRS_V2)
 #define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"	// Usb Mavlink
-#define UARTB_DEFAULT_DEVICE "/dev/ttyS1"	// Rtk com2 input rtcm data and output raw position data
+#define UARTB_DEFAULT_DEVICE "/dev/ttyS1"	// Rtk com2 recv raw data and send rtcm data
 #define UARTC_DEFAULT_DEVICE "/dev/ttyS2"	// Rtk com1 ouput position data
 #define UARTD_DEFAULT_DEVICE "/dev/ttyS3"	// Backup Peripheral usart
 #define UARTE_DEFAULT_DEVICE "/dev/ttyS4"	// Backup Peripheral usart

@@ -362,6 +362,21 @@ void UARTDriver::_timer_tick(void)
 
     // write any pending bytes
     n = _writebuf.available();
+
+#ifdef UART_STREAM_TEST
+    if (strcmp(_devpath, "/dev/ttyS5") == 0) {
+        uint64_t c_time = hrt_absolute_time();
+        static uint64_t last_time = 0;
+        static uint32_t data_cnts = 0;
+        if((c_time - last_time) > 1000000) {
+            ::printf("data_cnts is %d bytes / s\n", data_cnts);
+            data_cnts = 0;
+            last_time = c_time;
+        }
+        data_cnts += n;
+    }
+#endif
+
     if (n > 0) {
         ByteBuffer::IoVec vec[2];
         perf_begin(_perf_uart);
