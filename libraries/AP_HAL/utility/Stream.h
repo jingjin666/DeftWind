@@ -17,4 +17,5 @@ public:
      * -1 if nothing available, uint8_t value otherwise. */
     virtual int16_t read() = 0;
 
+    virtual uint32_t read_bytes(uint8_t *data, uint32_t len) = 0;
 };

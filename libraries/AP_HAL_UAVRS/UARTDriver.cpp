@@ -128,7 +128,7 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
             if (strcmp(_devpath, "/dev/ttyACM0") == 0) {
                 ((GPIO *)hal.gpio)->set_usb_connected();
             }
-            ::printf("initialised %s OK %u %u\n", _devpath,
+            ::printf("initialised %s OK baud[%u] tx[%u] rx[%u]\n", _devpath, _baudrate,
                      (unsigned)_writebuf.get_size(), (unsigned)_readbuf.get_size());
         }
         _initialised = true;
@@ -201,6 +201,21 @@ int16_t UARTDriver::read()
     }
 
     return byte;
+}
+
+uint32_t UARTDriver::read_bytes(uint8_t *data, uint32_t len)
+{
+    if (_uart_owner_pid != getpid()){
+        return -1;
+    }
+    if (!_initialised) {
+        try_initialise();
+        return -1;
+    }
+
+    uint32_t ret = _readbuf.read(data,len);
+
+    return ret;
 }
 
 /* UAVRS implementations of Print virtual methods */
