@@ -108,6 +108,7 @@ $(DP_ROOT)/Archives/uavrs-v2.export:
 .PHONY: uavrs-v1-clean
 uavrs-v1-clean: 
 	@echo "%%%% Cleaning target"
+	rm -rf $(BUILDROOT)
 	rm -rf $(DP_ROOT)/Archives
 	rm -rf $(DP_ROOT)/Build $(DP_ROOT)/Images/*.dp $(DP_ROOT)/Images/*.bin $(DP_ROOT)/Images/*.hex
 	rm -f $(SRCROOT)/*.o $(SRCROOT)/*.d
@@ -120,6 +121,7 @@ uavrs-v1-clean:
 .PHONY: uavrs-v2-clean
 uavrs-v2-clean: 
 	@echo "%%%% Cleaning target"
+	rm -rf $(BUILDROOT)
 	rm -rf $(DP_ROOT)/Archives
 	rm -rf $(DP_ROOT)/Build $(DP_ROOT)/Images/*.dp $(DP_ROOT)/Images/*.bin $(DP_ROOT)/Images/*.hex
 	rm -f $(SRCROOT)/*.o $(SRCROOT)/*.d
