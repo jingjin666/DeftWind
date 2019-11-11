@@ -153,7 +153,7 @@ void AP_BoardConfig_CAN::uavrs_setup_canbus(void)
             hal.scheduler->create_uavcan_thread();
 
             // Delay for airspeed and magnetometer discovery
-            hal.scheduler->delay(3000);
+            hal.scheduler->delay(1000);
         }
     }
 }
