@@ -412,17 +412,22 @@ void *Scheduler::_uavcan_thread(void *arg)
         poll(nullptr, 0, 1);
     }
 
+#ifdef UAVCAN_RGBLED
     static uint64_t time = hrt_absolute_time();
     uint8_t green = 0;
+#endif
+
     while (!_uavrs_thread_should_exit) {
         if (((UAVRSCANManager *)hal.can_mgr[uavcan_number])->is_initialized()) {
             if (((UAVRSCANManager *)hal.can_mgr[uavcan_number])->get_UAVCAN() != nullptr) {
                 (((UAVRSCANManager *)hal.can_mgr[uavcan_number])->get_UAVCAN())->do_cyclic();
+#ifdef UAVCAN_RGBLED
                 if((hrt_absolute_time() - time) > 500000) {
                     green = ~green;
                     (((UAVRSCANManager *)hal.can_mgr[uavcan_number])->get_UAVCAN())->do_cyclic_rgbled(0, green, 0);
                     time = hrt_absolute_time();
                 }
+#endif
             } else {
                 sched->delay_microseconds_semaphore(10000);
             }
