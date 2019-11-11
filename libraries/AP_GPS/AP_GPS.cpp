@@ -54,7 +54,7 @@
 extern const AP_HAL::HAL &hal;
 
 // baudrates to try to detect GPSes with
-const uint32_t AP_GPS::_baudrates[] = {4800U, 19200U, 38400U, 115200U, 57600U, 9600U, 230400U};
+const uint32_t AP_GPS::_baudrates[] = {4800U, 115200U, 19200U, 38400U, 57600U, 9600U, 230400U};
 
 // initialisation blobs to send to the GPS to try to get it into the
 // right mode
@@ -583,6 +583,7 @@ found_gps:
         state[instance].status = NO_FIX;
         drivers[instance] = new_gps;
         timing[instance].last_message_time_ms = now;
+        gcs().send_text(MAV_SEVERITY_INFO, "GPS %d found_gps", instance+1);
         new_gps->broadcast_gps_type();
         gps_type[instance] = new_gps->get_gps_type();
     }
@@ -637,11 +638,13 @@ void AP_GPS::update_instance(uint8_t instance)
     // detection to run again
     if (!result) {
         if (tnow - timing[instance].last_message_time_ms > 4000) {
+            gcs().send_text(MAV_SEVERITY_INFO, "re-initialise the GPS[%d]", instance+1);
             // free the driver before we run the next detection, so we
             // don't end up with two allocated at any time
             delete drivers[instance];
             drivers[instance] = nullptr;
             memset(&state[instance], 0, sizeof(state[instance]));
+            state[instance].instance = instance;
             state[instance].status = NO_GPS;
             state[instance].hdop = GPS_UNKNOWN_DOP;
             state[instance].vdop = GPS_UNKNOWN_DOP;
