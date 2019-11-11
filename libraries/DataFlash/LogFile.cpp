@@ -1690,25 +1690,23 @@ void DataFlash_Class::Log_Write_Raw_Data(const AP_SerialManager &manager)
 {
 	AP_HAL::UARTDriver *uart_raw;
 	uint8_t buffer[1024] = {0};
-	uint32_t i = 0;
 
 	uart_raw = manager.find_serial(AP_SerialManager::SerialProtocol_Nova_Rtcm, 0);
-	if(uart_raw != nullptr) {
-		int16_t nbytes = uart_raw->available();
+	if(uart_raw != nullptr)
+    {
+		uint32_t nbytes = uart_raw->available();
+        if(nbytes > 0)
+        {
+            if(nbytes > sizeof(buffer))
+			{
+                gcs().send_text(MAV_SEVERITY_INFO, "Log_Write_Raw_Data over len %d", nbytes);
+                printf( "Log_Write_Raw_Data over len %d\n", nbytes);
+                nbytes = sizeof(buffer);
+			}
 
-		if(nbytes > sizeof(buffer)) {
-			gcs().send_text(MAV_SEVERITY_INFO, "Log_Write_Raw_Data over len %d", nbytes);
-			//printf( "Log_Write_Raw_Data over len %d\n", nbytes);
-			nbytes = sizeof(buffer);
-		}
-
-		while(nbytes-- > 0) {
-			buffer[i++] = uart_raw->read();
-		}				
-
-		if(i > 0) {
-			WriteRawData(buffer, i);
-		}
+            nbytes = uart_raw->read_bytes(buffer, nbytes);
+            WriteRawData(buffer, nbytes);
+        }
 	}
 }
 
