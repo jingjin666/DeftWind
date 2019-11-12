@@ -1299,4 +1299,13 @@ struct imxrt_edmatcd_s
   uint16_t biter;         /* Offset: 0x001e  TCD Beginning Minor Loop Link, Major Loop Count */
 };
 
+/*! @brief eDMA interrupt source */
+
+typedef enum _edma_interrupt_enable
+{
+    kEDMA_ErrorInterruptEnable = 0x1U,                  /*!< Enable interrupt while channel error occurs. */
+    kEDMA_MajorInterruptEnable = 0x2U,                  /*!< Enable interrupt while major count exhausted. */
+    kEDMA_HalfInterruptEnable  = 0x4U,                  /*!< Enable interrupt while major count to half value. */
+} edma_interrupt_enable_t;
+
 #endif /* __ARCH_ARM_SRC_IMXRT_CHIP_IMXRT_EDMA_H */

@@ -261,7 +261,7 @@ static inline void imxrt_tcmenable(void)
 
   /* Enabled/disabled DTCM */
 
-#ifdef CONFIG_ARMV7M_DTCM
+#if 1//def CONFIG_ARMV7M_DTCM
   regval  = NVIC_TCMCR_EN | NVIC_TCMCR_RMW | NVIC_TCMCR_RETEN;
 #else
   regval  = getreg32(NVIC_DTCMCR);

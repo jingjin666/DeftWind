@@ -129,6 +129,11 @@ SECTIONS
 		_ebss = ABSOLUTE(.);
 	} > sram
 
+	.NonCacheable :
+	{
+		*(.NonCacheable  .NonCacheable.*)
+	} > dtcm AT > flash
+
 	/* Stabs debugging sections. */
 
 	.stab 0 : { *(.stab) }

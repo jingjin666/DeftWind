@@ -388,6 +388,13 @@ void imxrt_dmach_abort_transfer(DMACH_HANDLE handle);
 
 unsigned int imxrt_dmach_getcount(DMACH_HANDLE *handle);
 
+void imxrt_dmach_interrupt_enable(DMACH_HANDLE *handle, edma_interrupt_enable_t mask);
+
+void imxrt_dmach_auto_stop_request(    DMACH_HANDLE *handle, bool enable);
+
+void imxrt_dmach_lastsga_set(DMACH_HANDLE *handle, uint32_t sga);
+
+
 /************************************************************************************
  * Name: imxrt_dmasample
  *

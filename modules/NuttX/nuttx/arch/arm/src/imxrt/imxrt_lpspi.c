@@ -255,7 +255,11 @@ static const struct spi_ops_s g_spi1ops =
 #endif
   .send         = imxrt_lpspi_send,
 #ifdef CONFIG_SPI_EXCHANGE
+#ifdef CONFIG_IMXRT_LPSPI_DMA
   .exchange     = imxrt_lpspi_dma_exchange,
+#else
+  .exchange     = imxrt_lpspi_exchange,
+#endif
 #else
   .sndblock     = imxrt_lpspi_sndblock,
   .recvblock    = imxrt_lpspi_recvblock,

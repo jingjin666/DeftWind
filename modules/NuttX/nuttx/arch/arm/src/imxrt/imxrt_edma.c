@@ -1452,6 +1452,41 @@ unsigned int imxrt_dmach_getcount(DMACH_HANDLE *handle)
   return remaining;
 }
 
+void imxrt_dmach_auto_stop_request(    DMACH_HANDLE *handle, bool enable)
+{
+  struct imxrt_dmach_s *dmach = (struct imxrt_dmach_s *)handle;
+  uintptr_t regaddr;
+
+  regaddr = IMXRT_EDMA_TCD_CSR(dmach->chan);
+  if(enable)
+    modifyreg16(regaddr, 0, EDMA_TCD_CSR_DREQ);
+  else
+    modifyreg16(regaddr, EDMA_TCD_CSR_DREQ, 0);
+}
+
+void imxrt_dmach_interrupt_enable(    DMACH_HANDLE *handle, edma_interrupt_enable_t mask)
+{
+  struct imxrt_dmach_s *dmach = (struct imxrt_dmach_s *)handle;
+  uintptr_t regaddr;
+
+  regaddr = IMXRT_EDMA_TCD_CSR(dmach->chan);
+
+  if(mask & kEDMA_HalfInterruptEnable)
+    modifyreg16(regaddr, 0, EDMA_TCD_CSR_INTHALF);
+
+  if(mask & kEDMA_MajorInterruptEnable)
+    modifyreg16(regaddr, 0, EDMA_TCD_CSR_INTMAJOR);
+}
+
+void imxrt_dmach_lastsga_set(DMACH_HANDLE *handle, uint32_t sga)
+{
+  struct imxrt_dmach_s *dmach = (struct imxrt_dmach_s *)handle;
+  uintptr_t regaddr;
+
+  regaddr = IMXRT_EDMA_TCD_DLASTSGA(dmach->chan);
+  putreg32(sga, regaddr);
+}
+
 /****************************************************************************
  * Name: imxrt_dmasample
  *
