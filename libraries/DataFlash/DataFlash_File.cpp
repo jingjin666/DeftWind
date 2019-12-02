@@ -2112,6 +2112,11 @@ uint16_t DataFlash_File::start_new_log(void)
         return 0xFFFF;
     }
 
+    if (file_exists(fname)) {
+        printf("%s exists, delete it\n", fname);
+        unlink(fname);
+    }
+
     uint8_t open_index = 0;
     for(open_index = 0; open_index < 2; open_index++) {
         _write_fd = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC);
@@ -2434,6 +2439,11 @@ void DataFlash_File::_io_timer_raw_data(void)
         }
     }
 
+#ifdef RAW_DATA_WRITE_TIME_MONITOR
+    uint32_t start_time = 0;
+    start_time = AP_HAL::millis();
+#endif
+
     ssize_t nwritten = ::write(_write_raw_data_fd, head, nbytes);
 
 #ifdef LOG_RAW_DATA_STREAM_RATE_MONITOR
@@ -2462,6 +2472,13 @@ void DataFlash_File::_io_timer_raw_data(void)
         ::fsync(_write_raw_data_fd);
 		//printf("Raw data fsync %d\n", nwritten);
 		#endif
+
+#ifdef RAW_DATA_WRITE_TIME_MONITOR
+        uint32_t time_use = AP_HAL::millis() - start_time;
+        if(time_use > 100) {
+            printf("raw data write 4k use %dms\n", time_use);
+        }
+#endif
 	}
 }
 
