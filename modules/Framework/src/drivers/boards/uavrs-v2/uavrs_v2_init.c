@@ -209,14 +209,20 @@ static void board_gpio_init(const uint32_t list[], int count)
 
 __EXPORT void imxrt_boardinitialize(void)
 {
+    /* enable power peripheral */
+    dp_arch_configgpio(GPIO_PMIC_STBY_REQ);
+    dp_arch_gpiowrite(GPIO_PMIC_STBY_REQ, 1);
+    up_mdelay(200);
+    message("Peripheral power system enabled\n");
+
+    message("Board initialize start\n");
+
+    /* configure led */
 	led_init();
 
 	/* configure pins */
 	const uint32_t gpio[] = DP_GPIO_INIT_LIST;
 	board_gpio_init(gpio, arraySize(gpio));
-
-    /* enable power peripheral */
-    dp_arch_gpiowrite(GPIO_PMIC_STBY_REQ, 1);
 
     /* configuer pwm gpio pins */
     const uint32_t pwm_gpio[] = DP_GPIO_PWM_INIT_LIST;
@@ -234,6 +240,8 @@ __EXPORT void imxrt_boardinitialize(void)
 	imxrt_usb_initialize();
     
 	fmurt1052_timer_initialize();
+
+    message("Board initialize end\n");
 }
 
 #ifdef CONFIG_LIB_BOARDCTL

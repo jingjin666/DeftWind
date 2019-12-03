@@ -49,23 +49,7 @@ void GPIO::pinMode(uint8_t pin, uint8_t output)
             ioctl(_gpio_fmu_fd, GPIO_SET_INPUT, pinmask);
         }
         break;
-	
-#ifdef GPIO_CAMERA_TRIGGER
-	case UAVRS_GPIO_CAMER_TRRIGER_RELAY_PIN:
-        pinmask = GPIO_CAMERA_TRIGGER;
-        if (output) {
-            old_value = read(pin);
-            if (old_value) {
-                ioctl(_gpio_fmu_fd, GPIO_SET_OUTPUT_HIGH, pinmask);
-            } else {
-                ioctl(_gpio_fmu_fd, GPIO_SET_OUTPUT_LOW, pinmask);
-            }
-        } else {
-            ioctl(_gpio_fmu_fd, GPIO_SET_INPUT, pinmask);
-        }
-        break;
-#endif
-        }
+    }
 }
 
 int8_t GPIO::analogPinToDigitalPin(uint8_t pin)

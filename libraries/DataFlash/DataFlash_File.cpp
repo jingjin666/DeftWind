@@ -40,8 +40,8 @@ extern const AP_HAL::HAL& hal;
 
 #define MAX_LOG_FILES 30U
 #define DATAFLASH_PAGE_SIZE 1024UL
-#define MAX_RAW_DATA_FILES 100U
-#define MAX_POS_DATA_FILES 100U
+#define MAX_RAW_DATA_FILES 30U
+#define MAX_POS_DATA_FILES 30U
 #define MAX_ERASE_OVERRIDE 500U
 
 /*
@@ -662,6 +662,21 @@ bool DataFlash_File::NeedPrep()
         // should not have been called?!
         return false;
     }
+
+    int64_t avail = disk_space_avail();
+    int64_t total = disk_space();
+    float percent = (avail/(float)total)*100;
+    char *buf = nullptr;
+    asprintf(&buf, "Flash space [available / total] = %.1f%%\n          [%.3f / %.3f] GB, \n          [%.3f / %.3f] MB, \n          [%lld / %lld] Bytes\n", 
+        percent, 
+        ((float)avail)/1024/1024/1024, ((float)total)/1024/1024/1024, 
+        ((float)avail)/1024/1024, ((float)total)/1024/1024, 
+        avail, total);
+    if(buf != nullptr) {
+        printf("%s", buf);
+        free(buf);
+    }
+    gcs().send_text(MAV_SEVERITY_INFO, "Flash free space %.1f%%", percent);
 
     if (avail_space_percent() < min_avail_space_percent) {
         return true;
@@ -1807,8 +1822,8 @@ void DataFlash_File::write_last_pos_data(void)
 void DataFlash_File::stop_pos_data(void)
 {
     if (_write_pos_data_fd != -1) {
-		printf("pos data stop--------\n");
-		gcs().send_text(MAV_SEVERITY_INFO, "pos data stop--------");
+		printf("Pos data stop--------\n");
+		gcs().send_text(MAV_SEVERITY_INFO, "Pos data stop--------");
 		write_last_pos_data();
         int fd = _write_pos_data_fd;
         _write_pos_data_fd = -1;
@@ -1863,6 +1878,11 @@ uint16_t DataFlash_File::start_new_pos_data(void)
         return 0xFFFF;
     }
 
+    if (file_exists(fname)) {
+        printf("%s exists, delete it\n", fname);
+        unlink(fname);
+    }
+
     uint8_t open_index = 0;
     for(open_index = 0; open_index < 2; open_index++) {
         _write_pos_data_fd = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC);
@@ -1881,8 +1901,8 @@ uint16_t DataFlash_File::start_new_pos_data(void)
         free(fname);
         return 0xFFFF;
     } else {
-        printf("pos data file[%d] start loging++++++++\n", pos_data_num);
-	    gcs().send_text(MAV_SEVERITY_INFO, "pos data file[%d] start loging++++++++", pos_data_num);
+        printf("Pos data [%d] start++++++++\n", pos_data_num);
+	    gcs().send_text(MAV_SEVERITY_INFO, "Pos data [%d] start++++++++", pos_data_num);
     }
     
     free(fname);
@@ -1953,8 +1973,8 @@ void DataFlash_File::write_last_raw_data(void)
 void DataFlash_File::stop_raw_data(void)
 {
     if (_write_raw_data_fd != -1) {
-		printf("raw data stop--------\n");
-		gcs().send_text(MAV_SEVERITY_INFO, "raw data stop--------");
+		printf("Raw data stop--------\n");
+		gcs().send_text(MAV_SEVERITY_INFO, "Raw data stop--------");
 
 		write_last_raw_data();
 
@@ -2011,6 +2031,11 @@ uint16_t DataFlash_File::start_new_raw_data(void)
         return 0xFFFF;
     }
 
+    if (file_exists(fname)) {
+        printf("%s exists, delete it\n", fname);
+        unlink(fname);
+    }
+
     uint8_t open_index = 0;
     for(open_index = 0; open_index < 2; open_index++) {
         _write_raw_data_fd = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC);
@@ -2029,8 +2054,8 @@ uint16_t DataFlash_File::start_new_raw_data(void)
         free(fname);
         return 0xFFFF;
     } else {
-        printf("raw data file[%d] start loging++++++++\n", raw_data_num);
-        gcs().send_text(MAV_SEVERITY_INFO, "raw data file[%d] start loging++++++++", raw_data_num);
+        printf("Raw data [%d] start++++++++\n", raw_data_num);
+        gcs().send_text(MAV_SEVERITY_INFO, "Raw data [%d] start++++++++", raw_data_num);
     }
 
     free(fname);

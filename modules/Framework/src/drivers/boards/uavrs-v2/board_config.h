@@ -278,7 +278,6 @@
 /* The list of GPIO that will be initialized */
 
 #define DP_GPIO_INIT_LIST { \
-        GPIO_PMIC_STBY_REQ,     \
 		DP_ADC_GPIO,            \
 		GPIO_INS_PGOOD,         \
 		GPIO_P900_PGOOD,        \
