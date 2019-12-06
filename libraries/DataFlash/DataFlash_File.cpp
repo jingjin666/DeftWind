@@ -149,7 +149,7 @@ void DataFlash_File::Init()
     if (bufsize > 64) {
         bufsize = 64; // PixHawk has DMA limitations.
     }
-    bufsize *= 1024;
+    bufsize = log_buffer_size;
 
     // If we can't allocate the full size, try to reduce it until we can allocate it
     while (!_writebuf.set_size(bufsize) && bufsize >= _writebuf_chunk) {
@@ -180,7 +180,7 @@ void DataFlash_File::Init()
 		printf("Raw data directory is existed\n");
 	}
 	
-	uint32_t bufsizeRawData = 16*1024;
+	uint32_t bufsizeRawData = rawdata_buffer_size;
     while (!_writebuf_raw_data.set_size(bufsizeRawData) && bufsizeRawData >= _writebuf_chunk_raw_data) {
         printf("DataFlash_File: Couldn't set buffer size to=%u\n", (unsigned)bufsizeRawData);
         bufsizeRawData >>= 1;
@@ -2446,7 +2446,7 @@ void DataFlash_File::_io_timer_raw_data(void)
 
     if (nbytes > _writebuf_chunk_raw_data) {
         // be kind to the FAT PX4 filesystem
-		if(nbytes > 12*1024) {
+		if(nbytes > (rawdata_buffer_size - _writebuf_chunk_raw_data)) {
 			printf("io_raw_data ringbuffer ------------------nbytes [%d]\n", nbytes);
 		}
         nbytes = _writebuf_chunk_raw_data;
