@@ -115,11 +115,11 @@ static int main_loop(int argc, char **argv)
     hal.uartD->begin(57600);
     hal.uartE->begin(57600);
 #elif defined(CONFIG_ARCH_BOARD_UAVRS_V2)
-    //hal.uartA->begin(115200); //USB
+    hal.uartA->begin(115200);   //USB
     hal.uartB->begin(460800);   //RTK COM2
     hal.uartC->begin(115200);   //RTK COM1
-    //hal.uartD->begin(115200); //BACKUP UART
-    hal.uartE->begin(115200);   //BACKUP UART
+    //hal.uartD->begin(115200);   //BACKUP UART
+    //hal.uartE->begin(115200);   //BACKUP UART
     hal.uartF->begin(115200);   //TELECOM
     hal.uartG->begin(115200);   //BACKUP GPS
 #endif

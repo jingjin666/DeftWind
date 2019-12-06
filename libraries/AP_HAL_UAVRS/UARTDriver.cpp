@@ -393,22 +393,39 @@ void UARTDriver::_timer_tick(void)
 #endif
 
     if (n > 0) {
-        ByteBuffer::IoVec vec[2];
-        perf_begin(_perf_uart);
-        const auto n_vec = _writebuf.peekiovec(vec, n);
-        for (int i = 0; i < n_vec; i++) {
-            ret = _write_fd(vec[i].data, (uint16_t)vec[i].len);
-            if (ret < 0) {
-                break;
-            }
-            _writebuf.advance(ret);
-
-            /* We wrote less than we asked for, stop */
-            if ((unsigned)ret != vec[i].len) {
-                break;
+#if defined(CONFIG_ARCH_BOARD_UAVRS_V2)
+        // Write buffer must be alloc in dtcm memory
+        static uint8_t usb_write_buff[512] __attribute__ ((section (".NonCacheable"), aligned (4)));
+        if (strcmp(_devpath, "/dev/ttyACM0") == 0) {
+            if(n > 64) {
+                if(n > 512)
+                    n = 512;
+                else
+                    n = 64;
+                _writebuf.read(usb_write_buff, n);
+                _write_fd(usb_write_buff, n);
             }
         }
-        perf_end(_perf_uart);
+        else
+#endif
+        {
+            ByteBuffer::IoVec vec[2];
+            perf_begin(_perf_uart);
+            const auto n_vec = _writebuf.peekiovec(vec, n);
+            for (int i = 0; i < n_vec; i++) {
+                ret = _write_fd(vec[i].data, (uint16_t)vec[i].len);
+                if (ret < 0) {
+                    break;
+                }
+                _writebuf.advance(ret);
+
+                /* We wrote less than we asked for, stop */
+                if ((unsigned)ret != vec[i].len) {
+                    break;
+                }
+            }
+            perf_end(_perf_uart);
+        }
     }
 
     // try to fill the read buffer

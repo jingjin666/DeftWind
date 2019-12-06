@@ -47,7 +47,7 @@ extern const AP_HAL::HAL& hal;
 #define SERIAL6_PROTOCOL SerialProtocol_None
 #define SERIAL6_BAUD AP_SERIALMANAGER_BACKUP_BAUD/1000
 #elif defined(CONFIG_ARCH_BOARD_UAVRS_V2)
-#define SERIAL0_PROTOCOL SerialProtocol_None
+#define SERIAL0_PROTOCOL SerialProtocol_MAVLink2
 #define SERIAL0_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
 
 #define SERIAL1_PROTOCOL SerialProtocol_Nova_Rtcm
@@ -59,7 +59,7 @@ extern const AP_HAL::HAL& hal;
 #define SERIAL3_PROTOCOL SerialProtocol_None
 #define SERIAL3_BAUD AP_SERIALMANAGER_BACKUP_BAUD/1000
 
-#define SERIAL4_PROTOCOL SerialProtocol_MAVLink2
+#define SERIAL4_PROTOCOL SerialProtocol_None
 #define SERIAL4_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
 
 #define SERIAL5_PROTOCOL SerialProtocol_MAVLink2
