@@ -395,8 +395,12 @@ void UARTDriver::_timer_tick(void)
     if (n > 0) {
 #if defined(CONFIG_ARCH_BOARD_UAVRS_V2)
         // Write buffer must be alloc in dtcm memory
-        static uint8_t usb_write_buff[512] __attribute__ ((section (".NonCacheable"), aligned (4)));
+        // if memory not in dtcm
+        //static uint8_t usb_write_buff[512] __attribute__ ((section (".NonCacheable"), aligned (4)));
+        // else
+        static uint8_t usb_write_buff[512] = {0};
         if (strcmp(_devpath, "/dev/ttyACM0") == 0) {
+            // data flow control
             if(n > 64) {
                 if(n > 512)
                     n = 512;

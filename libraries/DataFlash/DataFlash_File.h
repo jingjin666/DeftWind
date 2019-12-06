@@ -252,7 +252,7 @@ private:
     uint32_t _free_space_last_check_time; // milliseconds
     const uint32_t _free_space_check_interval = 1000UL; // milliseconds
     const uint32_t _free_space_min_avail = 8388608; // bytes
-    const uint32_t log_buffer_size = 8*1024;
+    const uint32_t log_buffer_size = 12*1024;
     const uint32_t rawdata_buffer_size = 24*1024;
 
     AP_HAL::Semaphore *semaphore;

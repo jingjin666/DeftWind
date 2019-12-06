@@ -75,7 +75,7 @@ const struct file_operations usb_cdcacm_fops = {
     ioctl	: usb_cdcacm_ioctl,
     poll	: NULL,
 };
-
+#define SEND_BUFF
 USB_DMA_NONINIT_DATA_ALIGN(USB_DATA_ALIGN_SIZE) USB_LINK_USB_GLOBAL static uint8_t s_currRecvBuf[DATA_BUFF_SIZE];
 #ifdef SEND_BUFF
 USB_DMA_NONINIT_DATA_ALIGN(USB_DATA_ALIGN_SIZE) USB_LINK_USB_GLOBAL static uint8_t s_currSendBuf[DATA_BUFF_SIZE];
