@@ -276,3 +276,16 @@ $(PRODUCT_ELF): $(OBJS) $(MODULE_OBJS) $(GLOBAL_DEPS) $(LINK_DEPS) $(MODULE_MKFI
 	$(call LINK,$@,$(OBJS) $(MODULE_OBJS))
 
 -include $(DEP_INCLUDES)
+
+#
+# Utility rules
+#
+#
+#.PHONY: upload
+upload:	$(PRODUCT_BUNDLE) $(PRODUCT_BIN)
+	$(Q) $(MAKE) -f $(DP_MK_DIR)/upload.mk \
+		METHOD=serial \
+		CONFIG=$(CONFIG) \
+		BOARD=$(BOARD) \
+		BUNDLE=$(PRODUCT_BUNDLE) \
+		BIN=$(PRODUCT_BIN)

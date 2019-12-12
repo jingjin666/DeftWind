@@ -15,19 +15,27 @@ $(error "Configure board cannot be null")
 endif
 endif
 
+ifneq ($(upload), )
+ifeq ($(upload), y)
+UPLOAD = -upload
+else
+$(error ""Please make upload=y)
+endif
+endif
+
 #####################
 # 编译固件
 # 进入DeftPlane目录下进行make
 #####################
 .PHONY: plane
 plane:
-	@echo "%%%% Building TARGET:$(TARGET)"
-	@ $(MAKE) -C DeftPlane $(TARGET)
+	@echo "%%%% Building TARGET:$(TARGET)$(UPLOAD)"
+	@ $(MAKE) -C DeftPlane $(TARGET)$(UPLOAD)
 	
 .PHONY: plane-test
 plane-test:
-	@echo "%%%% Building TARGET:$(TARGET)"
-	@ $(MAKE) -C DeftPlane $(TARGET) TEST=DRIVER_TEST
+	@echo "%%%% Building TARGET:$(TARGET)$(UPLOAD)"
+	@ $(MAKE) -C DeftPlane $(TARGET)$(UPLOAD) TEST=DRIVER_TEST
 
 #####################
 # 配置硬件平台,每次切换硬件平台时必须重新配置,再编译固件

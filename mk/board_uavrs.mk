@@ -90,6 +90,12 @@ uavrs-v2: $(MAVLINK_HEADERS) $(UAVCAN_HEADERS) $(DP_ROOT)/Archives/uavrs-v2.expo
 	@ $(DP_MAKE) uavrs-v2_DeftWind
 	@ arm-none-eabi-size $(DP_ROOT)/Build/uavrs-v2_DeftWind.build/firmware.elf
 	@ cp $(DP_ROOT)/Images/uavrs-v2_DeftWind.dp $(BUILDROOT)/$(SKETCH)-v2.dp
+
+uavrs-v1-upload: uavrs-v1
+	@ $(DP_MAKE) uavrs-v1_DeftWind upload
+
+uavrs-v2-upload: uavrs-v2
+	@ $(DP_MAKE) uavrs-v2_DeftWind upload
 	
 #####################
 # xxx.export Îª±àÒë³öµÄNuttX¿â

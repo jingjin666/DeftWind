@@ -14,6 +14,8 @@ CONFIGS			?= $(KNOWN_CONFIGS)
 #$(info KNOWN_CONFIGS:$(KNOWN_CONFIGS))
 #$(info CONFIGS:$(CONFIGS))
 
+FIRMWARE_GOAL = firmware
+
 #####################
 # 编译xxx_DeftWind
 # 当MAKECMDGOALS为xxx_DeftWind时过滤出所需要的EXPLICIT_CONFIGS = 【xxx_DeftWind】,并修改CONFIGS 为 EXPLICIT_CONFIGS 
@@ -27,6 +29,20 @@ ifneq ($(EXPLICIT_CONFIGS),)
 CONFIGS := $(EXPLICIT_CONFIGS)
 .PHONY: $(EXPLICIT_CONFIGS)
 $(EXPLICIT_CONFIGS):	all
+endif
+
+#
+# If the user has asked to upload, they must have also specified exactly one
+# config.
+#
+ifneq ($(filter upload,$(MAKECMDGOALS)),)
+ifneq ($(words $(EXPLICIT_CONFIGS)),1)
+$(error In order to upload, exactly one board config must be specified)
+endif
+FIRMWARE_GOAL		 = upload
+.PHONY: upload
+upload:
+	@:
 endif
 
 #####################
@@ -56,7 +72,7 @@ $(STAGED_FIRMWARES): $(IMAGE_DIR)%.dp: $(BUILD_DIR)%.build/firmware.dp
 # FIRMWARES = 【~/DeftWind/modules/Framework/Build/xxx_DeftWind.build/firmware.dp】
 # 进入firmware.mk 开始编译FIRMWARE_GOAL = 【firmware】
 #####################
-FIRMWARE_GOAL = firmware
+
 .PHONY: $(FIRMWARES)
 $(BUILD_DIR)%.build/firmware.dp: config   = $(patsubst $(BUILD_DIR)%.build/firmware.dp,%,$@)
 $(BUILD_DIR)%.build/firmware.dp: work_dir = $(BUILD_DIR)$(config).build/
