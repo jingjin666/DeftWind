@@ -55,7 +55,7 @@ CCACHE = /usr/bin/ccache
 # 在C++11模式下uavcan库会编译出错，此处修改为C++03模式下编译
 SKETCHFLAGS = -DUAVCAN_CPP_VERSION=UAVCAN_CPP03 -DUAVCAN_NO_ASSERTIONS -DUAVCAN_NULLPTR=nullptr
 
-SKETCHFLAGS += $(SKETCHLIBINCLUDES) -DCONFIG_HAL_BOARD=HAL_BOARD_UAVRS -DSKETCHNAME="\\\"$(SKETCH)\\\"" -DSKETCH_MAIN=DeftWind_main
+SKETCHFLAGS += $(SKETCHLIBINCLUDES) -DCONFIG_HAL_BOARD=HAL_BOARD_UAVRS -DSKETCHNAME="\\\"$(SKETCH)\\\"" -DSKETCH_MAIN=DeftWind_main -DAPM_BUILD_DIRECTORY=APM_BUILD_$(SKETCH)
 
 WARNFLAGS = -Wall -Wextra -Wlogical-op -Werror -Wno-unknown-pragmas -Wno-redundant-decls -Wno-psabi -Wno-packed -Wno-error=double-promotion -Wno-error=unused-variable -Wno-error=reorder -Wno-error=float-equal -Wno-error=pmf-conversions -Wno-error=missing-declarations -Wno-error=unused-function -Wno-sign-compare -Wno-shadow
 OPTFLAGS = -fsingle-precision-constant
