@@ -23,6 +23,8 @@ public:
 
     uint32_t available_memory(void) override;
 
+    uint32_t total_memory(void) override;
+
     /*
       return a stream for access to nsh shell
      */

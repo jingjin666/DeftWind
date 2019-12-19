@@ -72,6 +72,11 @@ public:
     virtual uint32_t available_memory(void) { return 4096; }
 
     /**
+       how much total memory do we have in bytes. If unknown return 4096
+     */
+    virtual uint32_t total_memory(void) { return 4096; }
+
+    /**
        return commandline arguments, if available
      */
     virtual void commandline_arguments(uint8_t &argc, char * const *&argv) { argc = 0; }

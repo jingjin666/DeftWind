@@ -60,7 +60,7 @@ static GRAN_HANDLE dma_allocator;
  * We use a fundamental alignment / granule size of 64B; this is sufficient
  * to guarantee alignment for the largest STM32 DMA burst (16 beats x 32bits).
  */
-static uint8_t g_dma_heap[8192] __attribute__((aligned(64)));
+static uint8_t g_dma_heap[8192] __attribute__((section (".NonCacheable"), aligned(64)));
 //static perf_counter_t g_dma_perf;
 
 static void

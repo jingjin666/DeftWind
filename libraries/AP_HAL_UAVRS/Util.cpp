@@ -108,6 +108,14 @@ uint32_t UAVRSUtil::available_memory(void)
     return mallinfo().fordblks;
 }
 
+/**
+   how much total memory do we have in bytes.
+*/
+uint32_t UAVRSUtil::total_memory(void)
+{
+    return mallinfo().arena;
+}
+
 /*
   AP_HAL wrapper around UAVRS perf counters
  */

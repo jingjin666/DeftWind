@@ -55,10 +55,17 @@
  *                       72Mhz    = 576Mhz / 8
  *
  * Set Sys PLL (PLL2) to  fOut    = (24Mhz * (20+(2*(DIV_SELECT)))
- *                        528Mhz  = (24Mhz * (20+(2*(1)))
+ *                       528Mhz   = (24Mhz * (20+(2*(1)))
+ *                       CCM_CSCMR1_USDHC1_CLK_SEL_PLL2_PFD0
+ *                       pfd0_Out = 528Mhz*18/(PFD0_FRAC) = 528*18/24 = 396Mhz
+ *     USDHC1_CLK_ROOT            = pfd0_Out/(IMXRT_USDHC1_PODF_DIVIDER) = 396Mhz/2 = 198Mhz
+ *     USDHC1_CLK                 = IMXRT_USDHC1_CLK_ROOT/USDHC_SYSCTL_SDCLKFS_DIV/USDHC_SYSCTL_DVS_DIV = 198Mhz/8/1 = 24.75Mhz
  *
  * Set USB1 PLL (PLL3) to fOut    = (24Mhz * 20)
- *                         480Mhz = (24Mhz * 20)
+ *                       480Mhz   = (24Mhz * 20)
+ *                       CCM_CBCMR_LPSPI_CLK_SEL_PLL3_PFD0
+ *                       pfd0_Out = 480Mhz*18/(PFD0_FRAC) = 480*18/24 = 360Mhz
+ *     LPSPI_CLK_ROOT             = pfd0_Out/(IMXRT_LSPI_PODF_DIVIDER) = (360Mhz / 8) = 45Mhz
  *
  *     FLEXCAN CLK = PLL3_CLK / 6 = (480Mhz / 6) = 80Mhz
  *                       IMXRT_FLEXCAN_PODF_DIVIDER = 4

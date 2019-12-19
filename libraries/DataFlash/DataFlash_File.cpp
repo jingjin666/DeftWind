@@ -281,6 +281,7 @@ void DataFlash_File::periodic_1Hz(const uint32_t now)
 {
     if (!io_thread_alive()) {
         if (io_thread_warning_decimation_counter == 0) {
+            printf("No IO Thread Heartbeat\n");
             gcs().send_text(MAV_SEVERITY_CRITICAL, "No IO Thread Heartbeat");
         }
         if (io_thread_warning_decimation_counter++ > 57) {
@@ -291,18 +292,21 @@ void DataFlash_File::periodic_1Hz(const uint32_t now)
         // likely to cause a crash.
         _write_fd = -1;
         _initialised = false;
+        printf("periodic_1Hz: io_thread_alive is dead\n");
 		gcs().send_text(MAV_SEVERITY_INFO, "periodic_1Hz: io_thread_alive is dead");
     }
 
 	if(!io_thread_raw_data_alive()) {
 		_write_raw_data_fd = -1;
 		_initialised = false;
+        printf("periodic_1Hz: io_thread_raw_data_alive is dead\n");
 		gcs().send_text(MAV_SEVERITY_INFO, "periodic_1Hz: io_thread_raw_data_alive is dead");
 	}
 
 	if(!io_thread_pos_data_alive()) {
 		_write_pos_data_fd = -1;
 		_initialised = false;
+        printf("periodic_1Hz: io_thread_pos_data_alive is dead\n");
 		gcs().send_text(MAV_SEVERITY_INFO, "periodic_1Hz: io_thread_pos_data_alive is dead");
 	}
 }
@@ -1877,15 +1881,15 @@ uint16_t DataFlash_File::start_new_pos_data(void)
         _open_pos_data_error = true;
         return 0xFFFF;
     }
-
+#if 0
     if (file_exists(fname)) {
         printf("%s exists, delete it\n", fname);
         unlink(fname);
     }
-
+#endif
     uint8_t open_index = 0;
     for(open_index = 0; open_index < 2; open_index++) {
-        _write_pos_data_fd = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC);
+        _write_pos_data_fd = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0644);
         if(_write_pos_data_fd > 0)
             break;
         else
@@ -2030,15 +2034,15 @@ uint16_t DataFlash_File::start_new_raw_data(void)
         _open_raw_data_error = true;
         return 0xFFFF;
     }
-
+#if 0
     if (file_exists(fname)) {
         printf("%s exists, delete it\n", fname);
         unlink(fname);
     }
-
+#endif
     uint8_t open_index = 0;
     for(open_index = 0; open_index < 2; open_index++) {
-        _write_raw_data_fd = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC);
+        _write_raw_data_fd = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0644);
         if(_write_raw_data_fd > 0)
             break;
         else
@@ -2136,15 +2140,15 @@ uint16_t DataFlash_File::start_new_log(void)
 		gcs().send_text(MAV_SEVERITY_INFO, "failed to _log_file_name");
         return 0xFFFF;
     }
-
+#if 0
     if (file_exists(fname)) {
         printf("%s exists, delete it\n", fname);
         unlink(fname);
     }
-
+#endif
     uint8_t open_index = 0;
     for(open_index = 0; open_index < 2; open_index++) {
-        _write_fd = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC);
+        _write_fd = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0644);
         if(_write_fd > 0)
             break;
         else
@@ -2177,7 +2181,7 @@ uint16_t DataFlash_File::start_new_log(void)
     // systems as open/write (specifically the QURT RTOS)
     int fd;
     for(open_index = 0; open_index < 2; open_index++) {
-        fd = open(fname, O_WRONLY|O_CREAT|O_CLOEXEC);
+        fd = open(fname, O_WRONLY|O_CREAT|O_CLOEXEC, 0644);
         if(fd > 0)
             break;
         else
@@ -2629,12 +2633,14 @@ bool DataFlash_File::io_thread_pos_data_alive() const
 bool DataFlash_File::logging_failed() const
 {
     if (_open_error) {
+        printf("_open_error\n");
 		gcs().send_text(MAV_SEVERITY_INFO, "_open_error");
         return true;
     }
     if (!io_thread_alive()) {
         // No heartbeat in a second.  IO thread is dead?! Very Not
         // Good.
+        printf("Log::No heartbeat in a second\n");
 		gcs().send_text(MAV_SEVERITY_INFO, "Log::No heartbeat in a second");
         return true;
     }
@@ -2642,6 +2648,7 @@ bool DataFlash_File::logging_failed() const
 	if (!io_thread_raw_data_alive()) {
         // No heartbeat in a second.  IO thread is dead?! Very Not
         // Good.
+        printf("RawData::No heartbeat in a second\n");
 		gcs().send_text(MAV_SEVERITY_INFO, "RawData::No heartbeat in a second");
         return true;
     }
@@ -2649,6 +2656,7 @@ bool DataFlash_File::logging_failed() const
 	if (!io_thread_pos_data_alive()) {
         // No heartbeat in a second.  IO thread is dead?! Very Not
         // Good.
+        printf("PosData::No heartbeat in a second\n");
 		gcs().send_text(MAV_SEVERITY_INFO, "PosData::No heartbeat in a second");
         return true;
     }

@@ -515,7 +515,7 @@ void imxrt_clockconfig(void)
 
   reg  = getreg32(IMXRT_CCM_CBCMR);
   reg &= ~CCM_CBCMR_LPSPI_CLK_SEL_MASK;
-  reg |= CCM_CBCMR_LPSPI_CLK_SEL_PLL3_PFD0;
+  reg |= IMXRT_LPSPI_CLK_SELECT;
   putreg32(reg, IMXRT_CCM_CBCMR);
 
   /* Set LPSPI divider to IMXRT_LSPI_PODF_DIVIDER */

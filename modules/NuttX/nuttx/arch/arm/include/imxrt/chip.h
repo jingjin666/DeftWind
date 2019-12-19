@@ -74,7 +74,7 @@
  * MIMXRT1052DVL6A - Consumer, Full Feature, 600MHz
  */
 
-#  define IMXRT_OCRAM_SIZE            (512 * 1024) /* 512Kb OCRAM */
+#  define IMXRT_OCRAM_SIZE            (384 * 1024) /* 512Kb OCRAM */
 #  define IMXRT_GPIO_NPORTS            5           /* Five total ports */
 
 #elif defined(CONFIG_ARCH_CHIP_MIMXRT1061DVL6A) || \

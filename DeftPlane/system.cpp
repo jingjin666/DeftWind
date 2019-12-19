@@ -240,7 +240,7 @@ void Plane::init_ardupilot()
     // disable safety if requested
     BoardConfig.init_safety();
 
-    printf("\nInit %s Free RAM: %u\n", FIRMWARE_STRING, (unsigned)hal.util->available_memory());
+    printf("\nInit %s Free RAM: %u, Total RAM: %u\n", FIRMWARE_STRING, (unsigned)hal.util->available_memory(), (unsigned)hal.util->total_memory());
 }
 
 //********************************************************************************
