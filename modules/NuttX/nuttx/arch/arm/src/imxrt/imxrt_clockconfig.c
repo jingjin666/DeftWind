@@ -250,6 +250,8 @@ static void imxrt_pllsetup(void)
     {
     }
 
+#define HAVE_BOOTLOADER
+#ifdef HAVE_BOOTLOADER
   /* Init USB PLL3 */
 
   uint32_t pll3reg=getreg32(IMXRT_CCM_ANALOG_PFD_480);
@@ -269,7 +271,7 @@ static void imxrt_pllsetup(void)
     }
 
   putreg32(pll3reg,IMXRT_CCM_ANALOG_PFD_480);
-
+#endif
 #ifdef CONFIG_IMXRT_LCD
   /* Init Video PLL5 */
 

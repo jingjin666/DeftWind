@@ -212,7 +212,10 @@ __EXPORT void imxrt_boardinitialize(void)
     /* enable power peripheral */
     dp_arch_configgpio(GPIO_PMIC_STBY_REQ);
     dp_arch_gpiowrite(GPIO_PMIC_STBY_REQ, 1);
-    up_mdelay(200);
+
+    /* No need delay if have the bootloader */
+    //up_mdelay(200);
+
     message("Peripheral power system enabled\n");
 
     message("Board initialize start\n");
