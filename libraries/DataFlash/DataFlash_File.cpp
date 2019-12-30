@@ -192,7 +192,8 @@ void DataFlash_File::Init()
     } else {
 		printf("Raw data ringbuffer ok %d\n", _writebuf_raw_data.get_size());
 	}
-    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&DataFlash_File::_io_timer_raw_data, void));
+    _initialised_advance = true;
+    hal.scheduler->register_io_advance_process(FUNCTOR_BIND_MEMBER(&DataFlash_File::_io_timer_raw_data, void));
 	
 	/*     Pos data io thread::1KHZ 	*/
 	ret = stat(_pos_data_directory, &st);
@@ -219,7 +220,7 @@ void DataFlash_File::Init()
     } else {
 		printf("Pos data ringbuffer ok %d\n", _writebuf_pos_data.get_size());
 	}
-    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&DataFlash_File::_io_timer_pos_data, void));
+    hal.scheduler->register_io_advance_process(FUNCTOR_BIND_MEMBER(&DataFlash_File::_io_timer_pos_data, void));
 }
 
 bool DataFlash_File::file_exists(const char *filename) const
@@ -298,14 +299,14 @@ void DataFlash_File::periodic_1Hz(const uint32_t now)
 
 	if(!io_thread_raw_data_alive()) {
 		_write_raw_data_fd = -1;
-		_initialised = false;
+		_initialised_advance = false;
         printf("periodic_1Hz: io_thread_raw_data_alive is dead\n");
 		gcs().send_text(MAV_SEVERITY_INFO, "periodic_1Hz: io_thread_raw_data_alive is dead");
 	}
 
 	if(!io_thread_pos_data_alive()) {
 		_write_pos_data_fd = -1;
-		_initialised = false;
+		_initialised_advance = false;
         printf("periodic_1Hz: io_thread_pos_data_alive is dead\n");
 		gcs().send_text(MAV_SEVERITY_INFO, "periodic_1Hz: io_thread_pos_data_alive is dead");
 	}
@@ -327,7 +328,7 @@ uint32_t DataFlash_File::bufferspace_available()
 // return true for CardInserted() if we successfully initialized
 bool DataFlash_File::CardInserted(void) const
 {
-    return _initialised && !_open_error;
+    return _initialised && _initialised_advance && !_open_error && !_open_raw_data_error && !_open_pos_data_error;
 }
 
 // returns the amount of disk space available in _log_directory (in bytes)
@@ -1533,7 +1534,7 @@ uint16_t DataFlash_File::get_num_logs()
  */
 int16_t DataFlash_File::get_raw_data(const uint16_t list_entry, const uint16_t page, const uint32_t offset, const uint16_t len, uint8_t *data)
 {
-    if (!_initialised || _open_raw_data_error) {
+    if (!_initialised_advance || _open_raw_data_error) {
         return -1;
     }
 	
@@ -1657,7 +1658,7 @@ void DataFlash_File::get_raw_data_info(const uint16_t list_entry, uint32_t &size
  */
 int16_t DataFlash_File::get_pos_data(const uint16_t list_entry, const uint16_t page, const uint32_t offset, const uint16_t len, uint8_t *data)
 {
-    if (!_initialised || _open_pos_data_error) {
+    if (!_initialised_advance || _open_pos_data_error) {
         return -1;
     }
 	
@@ -1898,6 +1899,7 @@ uint16_t DataFlash_File::start_new_pos_data(void)
     _cached_oldest_pos_data = 0;
 
     if (_write_pos_data_fd == -1) {
+        _initialised_advance = false;
         _open_pos_data_error = true;
         int saved_errno = errno;
         printf("Pos data open fail for %s - %s\n",
@@ -2051,6 +2053,7 @@ uint16_t DataFlash_File::start_new_raw_data(void)
     _cached_oldest_raw_data = 0;
 
     if (_write_raw_data_fd == -1) {
+        _initialised_advance = false;
         _open_raw_data_error = true;
         int saved_errno = errno;
         printf("Raw data open fail for %s - %s\n",
@@ -2382,7 +2385,7 @@ void DataFlash_File::_io_timer_pos_data(void)
     uint32_t tnow = AP_HAL::millis();
     _io_timer_pos_data_heartbeat = tnow;
 
-    if (_write_pos_data_fd == -1 || !_initialised || _open_pos_data_error) {
+    if (_write_pos_data_fd == -1 || !_initialised_advance || _open_pos_data_error) {
         return;
     }
 
@@ -2419,6 +2422,7 @@ void DataFlash_File::_io_timer_pos_data(void)
 		hal.util->perf_count(_perf_errors);
 		close(_write_pos_data_fd);
 		_write_pos_data_fd = -1;
+        _initialised_advance = false;
 	} else {
 		_write_pos_data_offset += nwritten;
 		_writebuf_pos_data.advance(nwritten);
@@ -2435,7 +2439,7 @@ void DataFlash_File::_io_timer_raw_data(void)
     uint32_t tnow = AP_HAL::millis();
     _io_timer_raw_data_heartbeat = tnow;
 
-    if (_write_raw_data_fd == -1 || !_initialised || _open_raw_data_error) {
+    if (_write_raw_data_fd == -1 || !_initialised_advance || _open_raw_data_error) {
         return;
     }
 
@@ -2493,6 +2497,7 @@ void DataFlash_File::_io_timer_raw_data(void)
 		hal.util->perf_count(_perf_errors);
 		close(_write_raw_data_fd);
 		_write_raw_data_fd = -1;
+        _initialised_advance = false;
 	} else {
 		_write_raw_data_offset += nwritten;
 		_writebuf_raw_data.advance(nwritten);

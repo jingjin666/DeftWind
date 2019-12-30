@@ -19,6 +19,7 @@
 #define UAVRS_UART_PRIORITY        60
 #define UAVRS_STORAGE_PRIORITY     59
 #define UAVRS_IO_PRIORITY          58
+#define UAVRS_IO_ADVANCE_PRIORITY  58
 #define UAVRS_SHELL_PRIORITY       57
 #define UAVRS_OVERTIME_PRIORITY    10
 #define UAVRS_STARTUP_PRIORITY     10
@@ -39,6 +40,7 @@ public:
     void     register_delay_callback(AP_HAL::Proc, uint16_t min_time_ms);
     void     register_timer_process(AP_HAL::MemberProc);
     void     register_io_process(AP_HAL::MemberProc);
+    void     register_io_advance_process(AP_HAL::MemberProc);
     void     suspend_timer_procs();
     void     resume_timer_procs();
     bool     in_timerprocess();
@@ -66,11 +68,16 @@ private:
     uint8_t _num_io_procs;
     volatile bool _in_io_proc;
 
+    AP_HAL::MemberProc _io_advance_proc[UAVRS_SCHEDULER_MAX_TIMER_PROCS];
+    uint8_t _num_io_advance_procs;
+    volatile bool _in_io_advance_proc;
+
     volatile bool _timer_event_missed;
 
     pid_t _main_task_pid;
     pthread_t _timer_thread_ctx;
     pthread_t _io_thread_ctx;
+    pthread_t _io_advance_thread_ctx;
     pthread_t _storage_thread_ctx;
     pthread_t _uart_thread_ctx;
     pthread_t _uavcan_thread_ctx;
@@ -82,12 +89,14 @@ private:
 
     static void *_timer_thread(void *arg);
     static void *_io_thread(void *arg);
+    static void *_io_advance_thread(void *arg);
     static void *_storage_thread(void *arg);
     static void *_uart_thread(void *arg);
     static void *_uavcan_thread(void *arg);
 
     void _run_timers(bool called_from_timer_thread);
     void _run_io(void);
+    void _run_io_advance(void);
 
     void delay_microseconds_semaphore(uint16_t usec);
 

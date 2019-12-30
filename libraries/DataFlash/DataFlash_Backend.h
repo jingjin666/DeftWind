@@ -214,6 +214,7 @@ protected:
     virtual bool ReadPosData(void *pkt, uint16_t size) = 0;
 
     bool _initialised;
+    bool _initialised_advance;
 
 private:
 

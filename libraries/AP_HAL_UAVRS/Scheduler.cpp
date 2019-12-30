@@ -74,6 +74,15 @@ void Scheduler::init()
 
     pthread_create(&_io_thread_ctx, &thread_attr, &Scheduler::_io_thread, this);
 
+    // the IO advance thread runs at lower priority
+    pthread_attr_init(&thread_attr);
+    pthread_attr_setstacksize(&thread_attr, 2048);
+
+    param.sched_priority = UAVRS_IO_ADVANCE_PRIORITY;
+    (void)pthread_attr_setschedparam(&thread_attr, &param);
+    pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
+    pthread_create(&_io_advance_thread_ctx, &thread_attr, &Scheduler::_io_advance_thread, this);
+
     // the storage thread runs at just above IO priority
     pthread_attr_init(&thread_attr);
     pthread_attr_setstacksize(&thread_attr, 1024);
@@ -194,6 +203,22 @@ void Scheduler::register_io_process(AP_HAL::MemberProc k)
         _num_io_procs++;
     } else {
         hal.console->printf("Out of IO processes\n");
+    }
+}
+
+void Scheduler::register_io_advance_process(AP_HAL::MemberProc k)
+{
+    for (uint8_t i = 0; i < _num_io_advance_procs; i++) {
+        if (_io_advance_proc[i] == k) {
+            return;
+        }
+    }
+
+    if (_num_io_advance_procs < UAVRS_SCHEDULER_MAX_TIMER_PROCS) {
+        _io_advance_proc[_num_io_advance_procs] = k;
+        _num_io_advance_procs++;
+    } else {
+        hal.console->printf("Out of IO advance processes\n");
     }
 }
 
@@ -333,6 +358,25 @@ void Scheduler::_run_io(void)
     _in_io_proc = false;
 }
 
+void Scheduler::_run_io_advance(void)
+{
+    if (_in_io_advance_proc) {
+        return;
+    }
+    _in_io_advance_proc = true;
+
+    if (!_timer_suspended) {
+        // now call the IO advance based drivers
+        for (int i = 0; i < _num_io_advance_procs; i++) {
+            if (_io_advance_proc[i]) {
+                _io_advance_proc[i]();
+            }
+        }
+    }
+
+    _in_io_advance_proc = false;
+}
+
 void *Scheduler::_uart_thread(void *arg)
 {
     Scheduler *sched = (Scheduler *)arg;
@@ -374,6 +418,24 @@ void *Scheduler::_io_thread(void *arg)
         perf_begin(sched->_perf_io_timers);
         sched->_run_io();
         perf_end(sched->_perf_io_timers);
+    }
+    return nullptr;
+}
+
+void *Scheduler::_io_advance_thread(void *arg)
+{
+    Scheduler *sched = (Scheduler *)arg;
+
+    pthread_setname_np(pthread_self(), "uavrs_io_advance");
+
+    while (!sched->_hal_initialized) {
+        poll(nullptr, 0, 1);
+    }
+    while (!_uavrs_thread_should_exit) {
+        sched->delay_microseconds_semaphore(1000);
+
+        // run registered IO advance processes
+        sched->_run_io_advance();
     }
     return nullptr;
 }
