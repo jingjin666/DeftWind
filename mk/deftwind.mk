@@ -37,13 +37,30 @@ SKETCH =	$(lastword $(subst /, ,$(SRCROOT)))
 SKETCHBOOK = $(shell cd $(SRCROOT)/.. && pwd)
 #$(info SKETCHBOOK::$(SKETCHBOOK))
 
+#
+# Build工作区
+#
+TMPDIR			?=	/tmp
+
 #####################
 # 获取BUILDROOT = 【~/DeftWind/Build.DeftPlane】
 #####################
 ifneq ($(findstring uavrs, $(MAKECMDGOALS)),)
 BUILDROOT = $(SKETCHBOOK)/Build.$(SKETCH)
 endif
+
+ifeq ($(BUILDROOT),)
+BUILDROOT := $(SKETCHBOOK)/Build.$(SKETCH)
+endif
+
 #$(info BUILDROOT::$(BUILDROOT))
+
+#####################
+# 引入SITL编译
+#####################
+sitl: HAL_BOARD = HAL_BOARD_SITL
+sitl: TOOLCHAIN = NATIVE
+sitl: all
 
 #####################
 # 引入mavlink python生成器 = 【~/DeftWind/mk/mavgen.mk】
@@ -58,6 +75,9 @@ MAVLINK_SUBDIR=v2.0
 MAVLINK_WIRE_PROTOCOL=2.0
 endif
 include $(MK_DIR)/mavgen.mk
+
+# Add missing parts from libc and libstdc++ for all boards
+EXTRAFLAGS += -I$(SKETCHBOOK)/libraries/AP_Common/missing
 
 #####################
 # 引入uavcan python生成器 = 【~/DeftWind/mk/uavcangen.mk】
@@ -99,6 +119,14 @@ endif
 # Include paths for sketch libraries 
 #
 SRCSUFFIXES = *.cpp
+
+# Sketch source files
+SKETCHSRCS     := $(wildcard $(addprefix $(SRCROOT)/,$(SRCSUFFIXES)))
+SKETCHCPP      := $(SRCROOT)/$(SKETCH).cpp
+
+# Sketch object files
+SKETCHOBJS := $(subst $(SRCROOT),$(BUILDROOT),$(SKETCHSRCS))
+SKETCHOBJS := $(addsuffix .o,$(basename $(SKETCHOBJS)))
 
 ifneq ($(TEST), DRIVER_TEST)
 MAKE_INC=$(wildcard $(SRCROOT)/make.inc)
@@ -143,6 +171,21 @@ SKETCHLIBOBJS		:=	$(addsuffix .o,$(basename $(subst $(SKETCHBOOK),$(BUILDROOT),$
 SKETCHLIBINCLUDES	:=	-I$(SKETCHBOOK)/libraries/ -I$(BUILDROOT)/libraries/ -I$(BUILDROOT)/libraries/GCS_MAVLink/
 SKETCHLIBSRCSRELATIVE	:=	$(subst $(SKETCHBOOK)/,,$(SKETCHLIBSRCS))
 #$(info SKETCHLIBSRCSRELATIVE:$(SKETCHLIBSRCSRELATIVE))
+
+FORCE:
+$(BUILDROOT)/make.flags: FORCE
+	mkdir -p $(BUILDROOT)
+	@echo "// BUILDROOT=$(BUILDROOT) HAL_BOARD=$(HAL_BOARD) HAL_BOARD_SUBTYPE=$(HAL_BOARD_SUBTYPE) TOOLCHAIN=$(TOOLCHAIN) EXTRAFLAGS=$(EXTRAFLAGS)" > $(BUILDROOT)/make.flags.new
+	@cmp $(BUILDROOT)/make.flags $(BUILDROOT)/make.flags.new > /dev/null 2>&1 || rm -f $(SRCROOT)/*.o
+	@cmp $(BUILDROOT)/make.flags $(BUILDROOT)/make.flags.new > /dev/null 2>&1 || mv $(BUILDROOT)/make.flags.new $(BUILDROOT)/make.flags
+	@rm -f $(BUILDROOT)/make.flags.new
+	@cat $(BUILDROOT)/make.flags
+
+# common header for rules, prints what is being built
+define RULEHDR
+	@echo %% $(subst $(BUILDROOT)/,,$@)
+	@mkdir -p $(dir $@)
+endef
 
 # uavcan includes
 include $(SKETCHBOOK)/modules/uavcan/libuavcan/include.mk

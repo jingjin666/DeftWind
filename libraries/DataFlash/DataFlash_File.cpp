@@ -193,7 +193,11 @@ void DataFlash_File::Init()
 		printf("Raw data ringbuffer ok %d\n", _writebuf_raw_data.get_size());
 	}
     _initialised_advance = true;
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
     hal.scheduler->register_io_advance_process(FUNCTOR_BIND_MEMBER(&DataFlash_File::_io_timer_raw_data, void));
+#else
+    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&DataFlash_File::_io_timer_raw_data, void));
+#endif
 	
 	/*     Pos data io thread::1KHZ 	*/
 	ret = stat(_pos_data_directory, &st);
@@ -220,7 +224,11 @@ void DataFlash_File::Init()
     } else {
 		printf("Pos data ringbuffer ok %d\n", _writebuf_pos_data.get_size());
 	}
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
     hal.scheduler->register_io_advance_process(FUNCTOR_BIND_MEMBER(&DataFlash_File::_io_timer_pos_data, void));
+#else
+    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&DataFlash_File::_io_timer_pos_data, void));
+#endif
 }
 
 bool DataFlash_File::file_exists(const char *filename) const

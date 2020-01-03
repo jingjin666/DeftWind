@@ -1707,7 +1707,7 @@ void DataFlash_Class::Log_Write_Raw_Data(const AP_SerialManager &manager)
         if(nbytes > 0) {
             if(nbytes > sizeof(buffer)) {
                 gcs().send_text(MAV_SEVERITY_INFO, "Log_Write_Raw_Data over len %d", nbytes);
-                printf( "Log_Write_Raw_Data over len %d\n", nbytes);
+                //printf( "Log_Write_Raw_Data over len %d\n", nbytes);
                 nbytes = sizeof(buffer);
             }
 

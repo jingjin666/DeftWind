@@ -60,6 +60,17 @@ const uint32_t AP_GPS::_baudrates[] = {4800U, 115200U, 19200U, 38400U, 57600U, 9
 // right mode
 const char AP_GPS::_initialisation_blob[] = UBLOX_SET_BINARY MTK_SET_BINARY SIRF_SET_BINARY;
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
+#define GPS_TYPE_PRIMARY    15
+#define GPS_TYPE_SECOND     1
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#define GPS_TYPE_PRIMARY    1
+#define GPS_TYPE_SECOND     1
+#else
+#define GPS_TYPE_PRIMARY    1
+#define GPS_TYPE_SECOND     1
+#endif
+
 // table of user settable parameters
 const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: TYPE
@@ -68,7 +79,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:UAVCAN,10:SBF,11:GSOF,12:QURT,13:ERB,14:MAV,15:NOVA
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("TYPE",    0, AP_GPS, _type[0], 15),
+    AP_GROUPINFO("TYPE",    0, AP_GPS, _type[0], GPS_TYPE_PRIMARY),
 
     // @Param: TYPE2
     // @DisplayName: 2nd GPS type
@@ -76,7 +87,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:UAVCAN,10:SBF,11:GSOF,12:QURT,13:ERB,14:MAV,15:NOVA
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("TYPE2",   1, AP_GPS, _type[1], 1),
+    AP_GROUPINFO("TYPE2",   1, AP_GPS, _type[1], GPS_TYPE_SECOND),
 
     // @Param: NAVFILTER
     // @DisplayName: Navigation filter setting

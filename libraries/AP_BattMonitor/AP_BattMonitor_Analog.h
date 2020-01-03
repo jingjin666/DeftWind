@@ -19,6 +19,13 @@
  # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
  # define AP_BATT_COPTER_VOLT_PIN		    3
  # define AP_BATT_STEERING_GEAR_VOLT_PIN	9
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+ # define AP_BATT_VOLT_PIN                  13
+ # define AP_BATT_CURR_PIN                  12
+ # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1f
+ # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
+ # define AP_BATT_COPTER_VOLT_PIN           -1
+ # define AP_BATT_STEERING_GEAR_VOLT_PIN    -1
 #else
  # define AP_BATT_VOLT_PIN                  -1
  # define AP_BATT_CURR_PIN                  -1

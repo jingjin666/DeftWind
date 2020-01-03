@@ -57,24 +57,25 @@ extern const AP_HAL::HAL& hal;
 
 HAL_UAVRS::HAL_UAVRS() :
     AP_HAL::HAL(
-        &uartADriver,
-        &uartBDriver,
-        &uartCDriver,
-        &uartDDriver,            
-        &uartEDriver,            
-        &uartFDriver,
-        &uartGDriver,
-        &i2c_mgr_instance,            /*i2c*/
-        &spi_mgr_instance,
-        &analogIn,
-        &storageDriver,
-        &uartADriver,
-        &gpioDriver,
-        &rcinDriver,
-        &rcoutDriver,
-        &schedulerInstance,
-        &utilInstance,
-        nullptr)
+        &uartADriver,   /* uartA */
+        &uartBDriver,   /* uartB */
+        &uartCDriver,   /* uartC */
+        &uartDDriver,   /* uartD */
+        &uartEDriver,   /* uartE */
+        &uartFDriver,   /* uartF */
+        &uartGDriver,   /* uartG */
+        &i2c_mgr_instance,  /*i2c*/
+        &spi_mgr_instance,  /*spi*/
+        &analogIn,  /* analogin */
+        &storageDriver, /* storage */
+        &uartADriver,   /* console */
+        &gpioDriver,    /* gpio */
+        &rcinDriver,    /* rcinput */
+        &rcoutDriver,   /* rcoutput */
+        &schedulerInstance, /* scheduler */
+        &utilInstance,  /* util */
+        nullptr,    /* no onboard optical flow */
+        nullptr)    /* CAN */
 {}
 
 bool _uavrs_thread_should_exit = false;        /**< Daemon exit flag */

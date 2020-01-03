@@ -45,9 +45,6 @@ EXTRAFLAGS += -I$(BUILDROOT)/libraries/GCS_MAVLink/include/mavlink
 EXTRAFLAGS += -I$(UAVCAN_DIRECTORY)/libuavcan/include
 EXTRAFLAGS += -I$(UAVCAN_DIRECTORY)/libuavcan/include/dsdlc_generated
 
-# Add missing parts from libc and libstdc++ for all boards
-EXTRAFLAGS += -I$(SKETCHBOOK)/libraries/AP_Common/missing
-
 CCACHE = /usr/bin/ccache
 
 # Since actual compiler mode is C++11, the library will default to UAVCAN_CPP11, but it will fail to compile

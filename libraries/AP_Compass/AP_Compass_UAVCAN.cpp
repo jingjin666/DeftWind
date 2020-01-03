@@ -79,7 +79,7 @@ AP_Compass_Backend *AP_Compass_UAVCAN::probe(Compass &compass)
             }
         }
     }
-
+    printf("AP_Compass_UAVCAN probe error!\n");
     return sensor;
 }
 

@@ -17,8 +17,11 @@
 #pragma once
 
 #include "HAL.h"
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
 #include <apps/platform/cxxinitialize.h>
-
+#elif(CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#define up_cxxinitialize()
+#endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
 #define AP_MAIN __EXPORT DeftWind_main
