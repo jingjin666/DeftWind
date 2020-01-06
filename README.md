@@ -3,8 +3,8 @@
 > 基于NXP IMXRT平台的飞行自驾仪
 
 ## The DeftWind project is made up of: ##
-- DeftCopter : [code](http://192.168.0.12/uav/DeftWind), [wiki](http://192.168.0.12/uav/DeftWind)
-- DeftPlane  : [code](http://192.168.0.12/uav/DeftWind), [wiki](http://192.168.0.12/uav/DeftWind)
+- DeftCopter : [code](http://192.168.0.12/uav/DeftWind/tree/copter), [wiki](http://192.168.0.12/uav/DeftWind/tree/copter)
+- DeftPlane  : [code](http://192.168.0.12/uav/DeftWind/tree/master), [wiki](http://192.168.0.12/uav/DeftWind/tree/master)
 
 ## Board information ##
 - UAVRS-V1 : STM32F427(Flash: 2M, RAM: 256Kbyte)
