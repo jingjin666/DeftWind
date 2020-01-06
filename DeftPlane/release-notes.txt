@@ -5,6 +5,7 @@ This is the first beta release for the 2.2.0 firmware. This release
 has the following changes over 2.1.9:
 
  - support for startup with bootloader
+ - support for SITL
  - apply the plane (ardupilot plane 3.8.5) official patch
 
 Happy flying!
