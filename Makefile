@@ -25,17 +25,17 @@ endif
 
 #####################
 # 编译固件
-# 进入DeftPlane目录下进行make
+# 进入DeftCopter目录下进行make
 #####################
-.PHONY: plane
-plane:
+.PHONY: copter
+copter:
 	@echo "%%%% Building TARGET:$(TARGET)$(UPLOAD)"
-	@ $(MAKE) -C DeftPlane $(TARGET)$(UPLOAD)
+	@ $(MAKE) -C DeftCopter $(TARGET)$(UPLOAD)
 	
-.PHONY: plane-test
-plane-test:
+.PHONY: copter-test
+copter-test:
 	@echo "%%%% Building TARGET:$(TARGET)$(UPLOAD)"
-	@ $(MAKE) -C DeftPlane $(TARGET)$(UPLOAD) TEST=DRIVER_TEST
+	@ $(MAKE) -C DeftCopter $(TARGET)$(UPLOAD) TEST=DRIVER_TEST
 
 #####################
 # 配置硬件平台,每次切换硬件平台时必须重新配置,再编译固件
@@ -52,12 +52,12 @@ configure:
 
 #####################
 # 清除目标文件,但不会重置board
-# clean依赖于plane,相关的清除操作会在deftwind.mk下执行
+# clean依赖于copter,相关的清除操作会在deftwind.mk下执行
 #####################
 ifneq ($(TARGET),)
 $(info TARGET=$(TARGET))
 board:=$(TARGET)
 .PHONY: clean
 clean: TARGET=$(board)-clean
-clean: plane
+clean: copter
 endif
