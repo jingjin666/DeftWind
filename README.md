@@ -2,7 +2,7 @@
 
 > 中级无人飞行自动驾驶仪
 
-[![release](https://img.shields.io/badge/release Beta-v2.2.0-ff0000.svg)](http://192.168.0.12/uav/DeftWind/tags/Version2.2.0_beta) [![license](https://img.shields.io/badge/license-GPL v3.0-blue.svg)](http://192.168.0.12/uav/DeftWind/tree/master#license)
+[![release](https://img.shields.io/badge/release Beta-v2.2.0-ff0000.svg)](http://192.168.0.12/uav/DeftWind/tags/Version2.2.0_beta) [![license](https://img.shields.io/badge/license-GPL v3.0-blue.svg)](http://192.168.0.12/uav/DeftWind/blob/master/LICENSE)
 
 ## The DeftWind project is made up of: ##
 - DeftCopter : [code](http://192.168.0.12/uav/DeftWind/tree/copter), [wiki](http://192.168.0.12/uav/DeftWind/tree/copter)
