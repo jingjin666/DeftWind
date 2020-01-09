@@ -48,6 +48,7 @@ AP_GPS_NOVA::AP_GPS_NOVA(AP_GPS &_gps, AP_GPS::GPS_State &_state,
 #if 0    
     const char *init_str = _initialisation_blob[0];
     const char *init_str1 = _initialisation_blob[1];
+    
     port->write((const uint8_t*)init_str, strlen(init_str));
     port->write((const uint8_t*)init_str1, strlen(init_str1));
 #endif
@@ -60,6 +61,7 @@ AP_GPS_NOVA::read(void)
 {
 #if 0    
     uint32_t now = AP_HAL::millis();
+
     if (_init_blob_index < (sizeof(_initialisation_blob) / sizeof(_initialisation_blob[0]))) {
         const char *init_str = _initialisation_blob[_init_blob_index];
 

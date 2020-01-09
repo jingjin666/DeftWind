@@ -18,9 +18,6 @@
 
 #define AP_BATT_MONITOR_TIMEOUT             5000
 
-#define AP_BATT_MONITOR_RES_EST_TC_1        0.5f
-#define AP_BATT_MONITOR_RES_EST_TC_2        0.1f
-
 // declare backend class
 class AP_BattMonitor_Backend;
 class AP_BattMonitor_Analog;
@@ -51,12 +48,6 @@ public:
         BattMonitor_TYPE_MAXELL                     = 7
     };
 
-    // low voltage sources (used for BATT_LOW_TYPE parameter)
-    enum BattMonitor_LowVoltage_Source {
-        BattMonitor_LowVoltageSource_Raw            = 0,
-        BattMonitor_LowVoltageSource_SagCompensated = 1
-    };
-
     struct cells {
         uint16_t cells[MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN];
     };
@@ -71,12 +62,10 @@ public:
         float       current_total_mah;  // total current draw since start-up
         uint32_t    last_time_micros;   // time when voltage and current was last read
         uint32_t    low_voltage_start_ms;  // time when voltage dropped below the minimum
-        uint32_t    low_voltage2_start_ms;  // time when voltage dropped below the minimum
+        uint32_t    low_voltage2_start_ms;
         cells       cell_voltages;      // battery cell voltages in millivolts, 10 cells matches the MAVLink spec
         float       temperature;        // battery temperature in celsius
         uint32_t    temperature_time;   // timestamp of the last recieved temperature message
-        float       voltage_resting_estimate; // voltage with sag removed based on current and resistance estimate
-        float       resistance;         // resistance calculated by comparing resting voltage vs in flight voltage
         float		copter_voltage;
 		float		steer_voltage;
     };
@@ -114,12 +103,6 @@ public:
 	/// voltage - returns battery voltage in millivolts
     float steer_voltage(uint8_t instance) const;
     float steer_voltage() const { return steer_voltage(AP_BATT_PRIMARY_INSTANCE); }
-
-    /// get voltage with sag removed (based on battery current draw and resistance)
-    /// this will always be greater than or equal to the raw voltage
-    float voltage_resting_estimate(uint8_t instance) const;
-    float voltage_resting_estimate() const { return voltage_resting_estimate(AP_BATT_PRIMARY_INSTANCE); }
-
     /// current_amps - returns the instantaneous current draw in amperes
     float current_amps(uint8_t instance) const;
     float current_amps() const { return current_amps(AP_BATT_PRIMARY_INSTANCE); }
@@ -158,18 +141,12 @@ public:
     bool overpower_detected(uint8_t instance) const;
 
     // cell voltages
-    bool has_cell_voltages() { return has_cell_voltages(AP_BATT_PRIMARY_INSTANCE); }
-    bool has_cell_voltages(const uint8_t instance) const;
-    const cells & get_cell_voltages() const { return get_cell_voltages(AP_BATT_PRIMARY_INSTANCE); }
+    const cells & get_cell_voltages() { return get_cell_voltages(AP_BATT_PRIMARY_INSTANCE); };
     const cells & get_cell_voltages(const uint8_t instance) const;
 
     // temperature
     bool get_temperature(float &temperature) const { return get_temperature(temperature, AP_BATT_PRIMARY_INSTANCE); };
     bool get_temperature(float &temperature, const uint8_t instance) const;
-
-    // get battery resistance estimate in ohms
-    float get_resistance() const { return get_resistance(AP_BATT_PRIMARY_INSTANCE); }
-    float get_resistance(uint8_t instance) const { return state[instance].resistance; }
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -185,10 +162,12 @@ protected:
     AP_Int32    _pack_capacity[AP_BATT_MONITOR_MAX_INSTANCES];      /// battery pack capacity less reserve in mAh
     AP_Int16    _watt_max[AP_BATT_MONITOR_MAX_INSTANCES];           /// max battery power allowed. Reduce max throttle to reduce current to satisfy this limit
     AP_Int32    _serial_numbers[AP_BATT_MONITOR_MAX_INSTANCES];     /// battery serial number, automatically filled in on SMBus batteries
-    AP_Int8     _low_voltage_timeout;                               /// timeout in seconds before a low voltage event will be triggered
-    AP_Int8     _low_voltage_source;                                /// voltage type used for detection of low voltage event
+
+    AP_Int8     _volt_timeout;
     AP_Int8     _copter_volt_pin[AP_BATT_MONITOR_MAX_INSTANCES];    /// board pin used to measure battery voltage
     AP_Int8     _steer_volt_pin[AP_BATT_MONITOR_MAX_INSTANCES];     /// board pin used to measure battery voltage
+
+    AP_Int8    _check_who;
 
 private:
     BattMonitor_State state[AP_BATT_MONITOR_MAX_INSTANCES];

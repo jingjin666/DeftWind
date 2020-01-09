@@ -103,6 +103,12 @@ void AP_AHRS_NavEKF::update(bool skip_ins_update)
     // call AHRS_update hook if any
     AP_Module::call_hook_AHRS_update(*this);
 
+    // push gyros if optical flow present
+    if (hal.opticalflow) {
+        const Vector3f &exported_gyro_bias = get_gyro_drift();
+        hal.opticalflow->push_gyro_bias(exported_gyro_bias.x, exported_gyro_bias.y);
+    }
+
     if (_view != nullptr) {
         // update optional alternative attitude view
         _view->update(skip_ins_update);
@@ -295,10 +301,9 @@ void AP_AHRS_NavEKF::update_SITL(void)
                                   radians(fdm.yawRate));
 
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            Vector3f accel(fdm.xAccel,
-                           fdm.yAccel,
-                           fdm.zAccel);
-            _accel_ef_ekf[i] = _dcm_matrix * get_rotation_autopilot_body_to_vehicle_body() * accel;
+            _accel_ef_ekf[i] = Vector3f(fdm.xAccel,
+                                        fdm.yAccel,
+                                        fdm.zAccel);
         }
         _accel_ef_ekf_blended = _accel_ef_ekf[0];
 
@@ -382,7 +387,7 @@ bool AP_AHRS_NavEKF::get_position(struct Location &loc) const
         return AP_AHRS_DCM::get_position(loc);
 
     case EKF_TYPE2:
-        if (EKF2.getLLH(loc) && EKF2.getPosD(-1,ned_pos.z) && EKF2.getOriginLLH(-1,origin)) {
+        if (EKF2.getLLH(loc) && EKF2.getPosD(-1,ned_pos.z) && EKF2.getOriginLLH(origin)) {
             // fixup altitude using relative position from EKF origin
             loc.alt = origin.alt - ned_pos.z*100;
             return true;
@@ -390,7 +395,7 @@ bool AP_AHRS_NavEKF::get_position(struct Location &loc) const
         break;
 
     case EKF_TYPE3:
-        if (EKF3.getLLH(loc) && EKF3.getPosD(-1,ned_pos.z) && EKF3.getOriginLLH(-1,origin)) {
+        if (EKF3.getLLH(loc) && EKF3.getPosD(-1,ned_pos.z) && EKF3.getOriginLLH(origin)) {
             // fixup altitude using relative position from EKF origin
             loc.alt = origin.alt - ned_pos.z*100;
             return true;
@@ -589,14 +594,6 @@ bool AP_AHRS_NavEKF::set_origin(const Location &loc)
     case EKF_TYPE3:
         return ret3;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    case EKF_TYPE_SITL: {
-        struct SITL::sitl_fdm &fdm = _sitl->state;
-        fdm.home = loc;
-        return true;
-    }
-#endif
-
     default:
         return false;
     }
@@ -793,8 +790,8 @@ bool AP_AHRS_NavEKF::get_relative_position_NED_home(Vector3f &vec) const
 
     Vector3f offset = location_3d_diff_NED(originLLH, _home);
 
-    vec.x = originNED.x + offset.x;
-    vec.y = originNED.y + offset.y;
+    vec.x = originNED.x - offset.x;
+    vec.y = originNED.y - offset.y;
     vec.z = originNED.z - offset.z;
     return true;
 }
@@ -842,8 +839,8 @@ bool AP_AHRS_NavEKF::get_relative_position_NE_home(Vector2f &posNE) const
 
     Vector2f offset = location_diff(originLLH, _home);
 
-    posNE.x = originNE.x + offset.x;
-    posNE.y = originNE.y + offset.y;
+    posNE.x = originNE.x - offset.x;
+    posNE.y = originNE.y - offset.y;
     return true;
 }
 
@@ -999,7 +996,7 @@ AP_AHRS_NavEKF::EKF_TYPE AP_AHRS_NavEKF::active_EKF_type(void) const
             return EKF_TYPE_NONE;
         }
         if (!filt_state.flags.horiz_vel ||
-            (!filt_state.flags.horiz_pos_abs && !filt_state.flags.horiz_pos_rel)) {
+            !filt_state.flags.horiz_pos_abs) {
             if ((!_compass || !_compass->use_for_yaw()) &&
                 _gps.status() >= AP_GPS::GPS_OK_FIX_3D &&
                 _gps.ground_speed() < 2) {
@@ -1408,22 +1405,21 @@ bool AP_AHRS_NavEKF::get_origin(Location &ret) const
 
     case EKF_TYPE2:
     default:
-        if (!EKF2.getOriginLLH(-1,ret)) {
+        if (!EKF2.getOriginLLH(ret)) {
             return false;
         }
         return true;
 
     case EKF_TYPE3:
-        if (!EKF3.getOriginLLH(-1,ret)) {
+        if (!EKF3.getOriginLLH(ret)) {
             return false;
         }
         return true;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKF_TYPE_SITL:
-        const struct SITL::sitl_fdm &fdm = _sitl->state;
-        ret = fdm.home;
-        return true;
+        ret = get_home();
+        return ret.lat != 0 || ret.lng != 0;
 #endif
     }
 }

@@ -20,8 +20,6 @@ public:
     // callback for UAVCAN messages
     virtual void handle_baro_msg(float pressure, float temperature) {}
 
-    void backend_update(uint8_t instance);
-
 protected:
     // reference to frontend object
     AP_Baro &_frontend;
@@ -30,7 +28,4 @@ protected:
 
     // semaphore for access to shared frontend data
     AP_HAL::Semaphore *_sem;    
-
-    virtual void update_healthy_flag(uint8_t instance);
-
 };

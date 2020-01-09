@@ -35,8 +35,8 @@ extern const AP_HAL::HAL &hal;
 #define MS4525D0_I2C_BUS 1
 #endif
 
-AP_Airspeed_MS4525::AP_Airspeed_MS4525(AP_Airspeed &_frontend, uint8_t _instance) :
-    AP_Airspeed_Backend(_frontend, _instance)
+AP_Airspeed_MS4525::AP_Airspeed_MS4525(AP_Airspeed &_frontend) :
+    AP_Airspeed_Backend(_frontend)
 {
 }
 
@@ -177,12 +177,9 @@ void AP_Airspeed_MS4525::_collect()
     float press2 = _get_pressure(dp_raw2);
     float temp  = _get_temperature(dT_raw);
     float temp2 = _get_temperature(dT_raw2);
-
-	/* close voltage correction */
-#if 0	
+    
     _voltage_correction(press, temp);
     _voltage_correction(press2, temp2);
-#endif
 
     if (sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         _press_sum += press + press2;

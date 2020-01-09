@@ -130,7 +130,6 @@ void last_letter::update(const struct sitl_input &input)
     sync_frame_time();
 
     update_position();
-    time_advance();
     // update magnetic field
     update_mag_field_bf();
 }

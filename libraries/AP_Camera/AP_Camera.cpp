@@ -3,7 +3,7 @@
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 #include <drivers/drv_input_capture.h>
 #include <drivers/drv_pwm_output.h>
 #include <sys/types.h>
@@ -26,23 +26,23 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @Param: DURATION
     // @DisplayName: Duration that shutter is held open
     // @Description: How long the shutter will be held open in 10ths of a second (i.e. enter 10 for 1second, 50 for 5seconds)
-    // @Units: ds
+    // @Units: deciseconds
     // @Range: 0 50
     // @User: Standard
     AP_GROUPINFO("DURATION",    1, AP_Camera, _trigger_duration, AP_CAMERA_TRIGGER_DEFAULT_DURATION),
 
     // @Param: SERVO_ON
     // @DisplayName: Servo ON PWM value
-    // @Description: PWM value in microseconds to move servo to when shutter is activated
-    // @Units: PWM
+    // @Description: PWM value to move servo to when shutter is activated
+    // @Units: pwm
     // @Range: 1000 2000
     // @User: Standard
     AP_GROUPINFO("SERVO_ON",    2, AP_Camera, _servo_on_pwm, AP_CAMERA_SERVO_ON_PWM),
 
     // @Param: SERVO_OFF
     // @DisplayName: Servo OFF PWM value
-    // @Description: PWM value in microseconds to move servo to when shutter is deactivated
-    // @Units: PWM
+    // @Description: PWM value to move servo to when shutter is deactivated
+    // @Units: pwm
     // @Range: 1000 2000
     // @User: Standard
     AP_GROUPINFO("SERVO_OFF",   3, AP_Camera, _servo_off_pwm, AP_CAMERA_SERVO_OFF_PWM),
@@ -51,7 +51,7 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @DisplayName: Camera trigger distance
     // @Description: Distance in meters between camera triggers. If this value is non-zero then the camera will trigger whenever the GPS position changes by this number of meters regardless of what mode the APM is in. Note that this parameter can also be set in an auto mission using the DO_SET_CAM_TRIGG_DIST command, allowing you to enable/disable the triggering of the camera during the flight.
     // @User: Standard
-    // @Units: m
+    // @Units: meters
     // @Range: 0 1000
     AP_GROUPINFO("TRIGG_DIST",  4, AP_Camera, _trigg_dist, 0),
 
@@ -66,7 +66,7 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @DisplayName: Minimum time between photos
     // @Description: Postpone shooting if previous picture was taken less than preset time(ms) ago.
     // @User: Standard
-    // @Units: ms
+    // @Units: milliseconds
     // @Range: 0 10000
     AP_GROUPINFO("MIN_INTERVAL",  6, AP_Camera, _min_interval, 0),
 
@@ -74,7 +74,7 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @DisplayName: Maximum photo roll angle.
     // @Description: Postpone shooting if roll is greater than limit. (0=Disable, will shoot regardless of roll).
     // @User: Standard
-    // @Units: deg
+    // @Units: Degrees
     // @Range: 0 180
     AP_GROUPINFO("MAX_ROLL",  7, AP_Camera, _max_roll, 0),
  
@@ -214,12 +214,14 @@ void AP_Camera::configure(float shooting_mode, float shutter_speed, float apertu
     GCS_MAVLINK::send_to_components(&msg);
 }
 
-void AP_Camera::control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id)
+bool AP_Camera::control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id)
 {
+    bool ret = false;
+    
     // take picture
     if (is_equal(shooting_cmd,1.0f)) {
         trigger_pic(false);
-        log_picture();
+        ret = true;
     }
 
     mavlink_message_t msg;
@@ -239,12 +241,13 @@ void AP_Camera::control(float session, float zoom_pos, float zoom_step, float fo
 
     // send to all components
     GCS_MAVLINK::send_to_components(&msg);
+    return ret;
 }
 
 /*
   Send camera feedback to the GCS
  */
-void AP_Camera::send_feedback(mavlink_channel_t chan)
+void AP_Camera::send_feedback(mavlink_channel_t chan, AP_GPS &gps, const AP_AHRS &ahrs, const Location &current_loc)
 {
     float altitude, altitude_rel;
     if (current_loc.flags.relative_alt) {
@@ -264,44 +267,43 @@ void AP_Camera::send_feedback(mavlink_channel_t chan)
         0.0f,CAMERA_FEEDBACK_PHOTO);
 }
 
-/*  update; triggers by distance moved
-*/
-void AP_Camera::update()
-{
-    if (gps.status() < AP_GPS::GPS_OK_FIX_3D) {
-        return;
-    }
 
+/*  update location, for triggering by GPS distance moved
+    This function returns true if a picture should be taken
+    The caller is responsible for taking the picture based on the return value of this function.
+    The caller is also responsible for logging the details about the photo
+*/
+bool AP_Camera::update_location(const struct Location &loc, const AP_AHRS &ahrs)
+{
     if (is_zero(_trigg_dist)) {
-        return;
+        return false;
     }
     if (_last_location.lat == 0 && _last_location.lng == 0) {
-        _last_location = current_loc;
-        return;
+        _last_location = loc;
+        return false;
     }
-    if (_last_location.lat == current_loc.lat && _last_location.lng == current_loc.lng) {
-        // we haven't moved - this can happen as update() may
+    if (_last_location.lat == loc.lat && _last_location.lng == loc.lng) {
+        // we haven't moved - this can happen as update_location() may
         // be called without a new GPS fix
-        return;
+        return false;
     }
 
-    if (get_distance(current_loc, _last_location) < _trigg_dist) {
-        return;
+    if (get_distance(loc, _last_location) < _trigg_dist) {
+        return false;
     }
 
     if (_max_roll > 0 && labs(ahrs.roll_sensor/100) > _max_roll) {
-        return;
+        return false;
     }
 
     uint32_t tnow = AP_HAL::millis();
     if (tnow - _last_photo_time < (unsigned) _min_interval) {
-        return;
+        return false;
+    }  else {
+        _last_location = loc;
+        _last_photo_time = tnow;
+        return true;
     }
-
-    take_picture();
-
-    _last_location = current_loc;
-    _last_photo_time = tnow;
 }
 
 /*
@@ -340,7 +342,7 @@ bool AP_Camera::check_trigger_pin(void)
     return false;
 }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 /*
   callback for timer capture on PX4
  */
@@ -362,61 +364,36 @@ void AP_Camera::setup_feedback_callback(void)
         return;
     }
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    /*
+      special case for pin 53 on PX4. We can use the fast timer support
+     */
+    if (_feedback_pin == 53) {
+        int fd = open("/dev/px4fmu", 0);
+        if (fd != -1) {
+            if (ioctl(fd, PWM_SERVO_SET_MODE, PWM_SERVO_MODE_3PWM1CAP) != 0) {
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "Camera: unable to setup 3PWM1CAP\n");
+                close(fd);
+                goto failed;
+            }   
+            if (up_input_capture_set(3, _feedback_polarity==1?Rising:Falling, 0, capture_callback, this) != 0) {
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "Camera: unable to setup timer capture\n");
+                close(fd);
+                goto failed;
+            }
+            close(fd);
+            _timer_installed = true;
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "Camera: setup fast trigger capture\n");
+        }
+    }
+failed:
+#endif // CONFIG_HAL_BOARD
 
     if (!_timer_installed) {
         // install a 1kHz timer to check feedback pin
         hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Camera::feedback_pin_timer, void));
     }
     _timer_installed = true;
-}
-
-// log_picture - log picture taken and send feedback to GCS
-void AP_Camera::log_picture()
-{
-    DataFlash_Class *df = DataFlash_Class::instance();
-    if (df == nullptr) {
-        return;
-    }
-    if (!using_feedback_pin()) {
-		_image_index++;
-        gcs().send_message(MSG_CAMERA_FEEDBACK);
-        if (df->should_log(log_camera_bit)) {
-            df->Log_Write_Camera(ahrs, gps, current_loc);
-        }
-	df->Pos_Write_CameraInfo(LOG_CAMERA_MSG, ahrs, gps, current_loc);
-    } else {
-        if (df->should_log(log_camera_bit)) {
-            df->Log_Write_Trigger(ahrs, gps, current_loc);
-        }
-    }
-}
-
-// take_picture - take a picture
-void AP_Camera::take_picture()
-{
-    trigger_pic(true);
-    log_picture();
-}
-
-/*
-  update camera trigger - 50Hz
- */
-void AP_Camera::update_trigger()
-{
-    setup_feedback_callback();
-
-    trigger_pic_cleanup();
-    if (check_trigger_pin()) {
-		_image_index++;
-        gcs().send_message(MSG_CAMERA_FEEDBACK);
-        DataFlash_Class *df = DataFlash_Class::instance();
-        if (df != nullptr) {
-            if (df->should_log(log_camera_bit)) {
-                df->Log_Write_Camera(ahrs, gps, current_loc);
-            }
-		df->Pos_Write_CameraInfo(LOG_CAMERA_MSG, ahrs, gps, current_loc);
-        }
-    }
 }
 
 void AP_Camera::reset_image_index()

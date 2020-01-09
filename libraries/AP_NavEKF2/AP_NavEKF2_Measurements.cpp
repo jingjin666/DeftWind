@@ -215,7 +215,7 @@ void NavEKF2_core::readMagData()
                 // if the magnetometer is allowed to be used for yaw and has a different index, we start using it
                 if (_ahrs->get_compass()->use_for_yaw(tempIndex) && tempIndex != magSelectIndex) {
                     magSelectIndex = tempIndex;
-                    gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u switching to compass %u",(unsigned)imu_index,magSelectIndex);
+                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u switching to compass %u",(unsigned)imu_index,magSelectIndex);
                     // reset the timeout flag and timer
                     magTimeout = false;
                     lastHealthyMagTime_ms = imuSampleTime_ms;
@@ -434,6 +434,9 @@ void NavEKF2_core::readGpsData()
             gpsDataNew.vel = _ahrs->get_gps().velocity();
 
             gpsDataNew.hdg = ToRad(_ahrs->get_gps().get_heading());
+            gpsDataNew.stat = _ahrs->get_gps().status();
+            gpsDataNew.hstat = _ahrs->get_gps().heading_status();
+            gpsDataNew.have_hdg = _ahrs->get_gps().have_heading();
 
             // Use the speed and position accuracy from the GPS if available, otherwise set it to zero.
             // Apply a decaying envelope filter with a 5 second time constant to the raw accuracy data
@@ -501,8 +504,8 @@ void NavEKF2_core::readGpsData()
                 // and set the corresponding variances and covariances
                 alignMagStateDeclination();
 
-                // Set the height of the NED origin
-                ekfGpsRefHgt = (double)0.01 * (double)gpsloc.alt + (double)outputDataNew.position.z;
+                // Set the height of the NED origin to ‘height of baro height datum relative to GPS height datum'
+                EKF_origin.alt = gpsloc.alt - baroDataNew.hgt;
 
                 // Set the uncertinty of the GPS origin height
                 ekfOriginHgtVar = sq(gpsHgtAccuracy);
@@ -512,7 +515,7 @@ void NavEKF2_core::readGpsData()
             // convert GPS measurements to local NED and save to buffer to be fused later if we have a valid origin
             if (validOrigin) {
                 gpsDataNew.pos = location_diff(EKF_origin, gpsloc);
-                gpsDataNew.hgt = (float)((double)0.01 * (double)gpsloc.alt - ekfGpsRefHgt);
+                gpsDataNew.hgt = 0.01f * (gpsloc.alt - EKF_origin.alt);
                 storedGPS.push(gpsDataNew);
                 // declare GPS available for use
                 gpsNotAvailable = false;
@@ -587,8 +590,10 @@ void NavEKF2_core::calcFiltBaroOffset()
     baroHgtOffset += 0.1f * constrain_float(baroDataDelayed.hgt + stateStruct.position.z - baroHgtOffset, -5.0f, 5.0f);
 }
 
-// correct the height of the EKF origin to be consistent with GPS Data using a Bayes filter.
-void NavEKF2_core::correctEkfOriginHeight()
+// calculate filtered offset between GPS height measurement and EKF height estimate
+// offset should be subtracted from GPS measurement to match filter estimate
+// offset is used to switch reversion to GPS from alternate height data source
+void NavEKF2_core::calcFiltGpsHgtOffset()
 {
     // Estimate the WGS-84 height of the EKF's origin using a Bayes filter
 
@@ -602,8 +607,9 @@ void NavEKF2_core::correctEkfOriginHeight()
         // use the worse case expected terrain gradient and vehicle horizontal speed
         const float maxTerrGrad = 0.25f;
         ekfOriginHgtVar += sq(maxTerrGrad * norm(stateStruct.velocity.x , stateStruct.velocity.y) * deltaTime);
-    } else {
-        // by definition our height source is absolute so cannot run this filter
+    } else if (activeHgtSource == HGT_SOURCE_GPS) {
+        // by definition we are using GPS height as the EKF datum in this mode
+        // so cannot run this filter
         return;
     }
     lastOriginHgtTime_ms = imuDataDelayed.time_ms;
@@ -621,10 +627,10 @@ void NavEKF2_core::correctEkfOriginHeight()
     // check the innovation variance ratio
     float ratio = sq(innovation) / (ekfOriginHgtVar + originHgtObsVar);
 
-    // correct the EKF origin and variance estimate if the innovation is less than 5-sigma
-    if (ratio < 25.0f && gpsAccuracyGood) {
-        ekfGpsRefHgt -= (double)(gain * innovation);
-        ekfOriginHgtVar -= MAX(gain * ekfOriginHgtVar , 0.0f);
+    // correct the EKF origin and variance estimate if the innovation variance ratio is < 5-sigma
+    if (ratio < 5.0f) {
+        EKF_origin.alt -= (int)(100.0f * gain * innovation);
+        ekfOriginHgtVar -= fmaxf(gain * ekfOriginHgtVar , 0.0f);
     }
 }
 
@@ -740,6 +746,9 @@ void NavEKF2_core::readRngBcnData()
                     // set the NE earth magnetic field states using the published declination
                     // and set the corresponding variances and covariances
                     alignMagStateDeclination();
+
+                    // Set the height of the NED origin to ‘height of baro height datum relative to GPS height datum'
+                    EKF_origin.alt = origin_loc.alt - baroDataNew.hgt;
 
                     // Set the uncertainty of the origin height
                     ekfOriginHgtVar = sq(beaconVehiclePosErr);

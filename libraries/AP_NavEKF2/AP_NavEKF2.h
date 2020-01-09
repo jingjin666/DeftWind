@@ -156,11 +156,10 @@ public:
     // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
     bool getLLH(struct Location &loc) const;
 
-    // Return the latitude and longitude and height used to set the NED origin for the specified instance
-    // An out of range instance (eg -1) returns data for the the primary instance
+    // return the latitude and longitude and height used to set the NED origin
     // All NED positions calculated by the filter are relative to this location
     // Returns false if the origin has not been set
-    bool getOriginLLH(int8_t instance, struct Location &loc) const;
+    bool getOriginLLH(struct Location &loc) const;
 
     // set the latitude and longitude and height used to set the NED origin
     // All NED positions calculated by the filter will be relative to this location
@@ -378,6 +377,7 @@ private:
     AP_Int8 _originHgtMode;         // Bitmask controlling post alignment correction and reporting of the EKF origin height.
 	AP_Float _yawGpsHeadNoise;      // gps heading yaw measurement noise:rad
     AP_Int16 _yawGHInnovGate;       //Percentage number of standard deviations applied to gps heading yaw innovation consistency check
+    AP_Int8  _primary_imu_num;
 
     // Tuning parameters
     const float gpsNEVelVarAccScale;    // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration

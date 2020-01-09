@@ -198,7 +198,7 @@ void AP_BoardConfig::sensor_config_error(const char *reason)
     */
     while (true) {
         printf("Sensor failure: %s\n", reason);
-        gcs().send_text(MAV_SEVERITY_ERROR, "Check BRD_TYPE: %s", reason);
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_ERROR, "Check BRD_TYPE: %s", reason);
         hal.scheduler->delay(3000);
     }
 }

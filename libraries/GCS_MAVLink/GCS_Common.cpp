@@ -16,13 +16,14 @@
  */
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 
 #include "ap_version.h"
 #include "GCS.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #include <drivers/drv_pwm_output.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -215,98 +216,6 @@ bool GCS_MAVLINK::send_battery_status(const AP_BattMonitor &battery) const
     for(uint8_t i = 0; i < battery.num_instances(); i++) {
         CHECK_PAYLOAD_SIZE(BATTERY_STATUS);
         send_battery_status(battery, i);
-    }
-    return true;
-}
-
-void GCS_MAVLINK::send_distance_sensor(const RangeFinder &rangefinder, const uint8_t instance) const
-{
-    if (rangefinder.status(instance) != RangeFinder::RangeFinder_NotConnected &&
-        rangefinder.status(instance) != RangeFinder::RangeFinder_NoData) {
-        mavlink_msg_distance_sensor_send(
-                chan,
-                AP_HAL::millis(),                       // time since system boot TODO: take time of measurement
-                rangefinder.min_distance_cm(instance),  // minimum distance the sensor can measure in centimeters
-                rangefinder.max_distance_cm(instance),  // maximum distance the sensor can measure in centimeters
-                rangefinder.distance_cm(instance),      // current distance reading
-                rangefinder.get_sensor_type(instance),  // type from MAV_DISTANCE_SENSOR enum
-                instance,                               // onboard ID of the sensor == instance
-                rangefinder.get_orientation(instance),  // direction the sensor faces from MAV_SENSOR_ORIENTATION enum
-                0);                                     // Measurement covariance in centimeters, 0 for unknown / invalid readings
-    }
-}
-
-bool GCS_MAVLINK::send_distance_sensor(const RangeFinder &rangefinder) const
-{
-    for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
-        CHECK_PAYLOAD_SIZE(DISTANCE_SENSOR);
-        send_distance_sensor(rangefinder, i);
-    }
-    return true;
-}
-
-void GCS_MAVLINK::send_distance_sensor_downward(const RangeFinder &rangefinder) const
-{
-    // exit immediately if rangefinder is disabled or not downward looking
-    if (!rangefinder.has_data_orient(ROTATION_PITCH_270)) {
-        return;
-    }
-    uint8_t instance;
-    rangefinder.find_instance(ROTATION_PITCH_270, instance);
-    send_distance_sensor(rangefinder, instance);
-}
-
-void GCS_MAVLINK::send_rangefinder_downward(const RangeFinder &rangefinder) const
-{
-    // exit immediately if rangefinder is disabled or not downward looking
-    if (!rangefinder.has_data_orient(ROTATION_PITCH_270)) {
-        // no sonar to report
-        return;
-    }
-    mavlink_msg_rangefinder_send(
-            chan,
-            rangefinder.distance_cm_orient(ROTATION_PITCH_270) * 0.01f,
-            rangefinder.voltage_mv_orient(ROTATION_PITCH_270) * 0.001f);
-}
-
-bool GCS_MAVLINK::send_proximity(const AP_Proximity &proximity) const
-{
-    // return immediately if no proximity sensor is present
-    if (proximity.get_status() == AP_Proximity::Proximity_NotConnected) {
-        return false;
-    }
-    // send horizontal distances
-    AP_Proximity::Proximity_Distance_Array dist_array;
-    if (proximity.get_horizontal_distances(dist_array)) {
-        for (uint8_t i = 0; i < PROXIMITY_MAX_DIRECTION; i++) {
-            CHECK_PAYLOAD_SIZE(DISTANCE_SENSOR);
-            mavlink_msg_distance_sensor_send(
-                    chan,
-                    AP_HAL::millis(),                               // time since system boot
-                    (uint16_t)(proximity.distance_min() * 100.0f),  // minimum distance the sensor can measure in centimeters
-                    (uint16_t)(proximity.distance_max() * 100.0f),  // maximum distance the sensor can measure in centimeters
-                    (uint16_t)(dist_array.distance[i] * 100.0f),    // current distance reading
-                    MAV_DISTANCE_SENSOR_LASER,                      // type from MAV_DISTANCE_SENSOR enum
-                    PROXIMITY_SENSOR_ID_START + i,                  // onboard ID of the sensor
-                    dist_array.orientation[i],                      // direction the sensor faces from MAV_SENSOR_ORIENTATION enum
-                    0);                                             // Measurement covariance in centimeters, 0 for unknown / invalid readings
-        }
-    }
-
-    // send upward distance
-    float dist_up;
-    if (proximity.get_upward_distance(dist_up)) {
-        CHECK_PAYLOAD_SIZE(DISTANCE_SENSOR);
-        mavlink_msg_distance_sensor_send(
-                chan,
-                AP_HAL::millis(),                                         // time since system boot
-                (uint16_t)(proximity.distance_min() * 100.0f),            // minimum distance the sensor can measure in centimeters
-                (uint16_t)(proximity.distance_max() * 100.0f),            // maximum distance the sensor can measure in centimeters
-                (uint16_t)(dist_up * 100.0f),                             // current distance reading
-                MAV_DISTANCE_SENSOR_LASER,                                // type from MAV_DISTANCE_SENSOR enum
-                PROXIMITY_SENSOR_ID_START + PROXIMITY_MAX_DIRECTION + 1,  // onboard ID of the sensor
-                MAV_SENSOR_ROTATION_PITCH_90,                             // direction upwards
-                0);                                                       // Measurement covariance in centimeters, 0 for unknown / invalid readings
     }
     return true;
 }
@@ -573,14 +482,10 @@ void GCS_MAVLINK::handle_gimbal_report(AP_Mount &mount, mavlink_message_t *msg) 
 }
 
 
-void GCS_MAVLINK::send_text(MAV_SEVERITY severity, const char *fmt, ...)
+void
+GCS_MAVLINK::send_text(MAV_SEVERITY severity, const char *str)
 {
-    char text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] {};
-    va_list arg_list;
-    va_start(arg_list, fmt);
-    hal.util->vsnprintf((char *)text, sizeof(text), fmt, arg_list);
-    va_end(arg_list);
-    gcs().send_statustext(severity, (1<<chan), text);
+    GCS_MAVLINK::send_statustext_chan(severity, chan, str);
 }
 
 void GCS_MAVLINK::handle_radio_status(mavlink_message_t *msg, DataFlash_Class &dataflash, bool log_radio)
@@ -952,6 +857,7 @@ GCS_MAVLINK::update(run_cli_fn run_cli, uint32_t max_time_us)
         }
 
         bool parsed_packet = false;
+        
         // Try to get a new message
         if (mavlink_parse_char(chan, c, &msg, &status)) {
             hal.util->perf_begin(_perf_packet);
@@ -1255,6 +1161,34 @@ void GCS_MAVLINK::send_ahrs(AP_AHRS &ahrs)
 }
 
 /*
+  send a statustext message to all active MAVLink connections
+ */
+void GCS_MAVLINK::send_statustext_all(MAV_SEVERITY severity, const char *fmt, ...)
+{
+    char text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1] {};
+    va_list arg_list;
+    va_start(arg_list, fmt);
+    hal.util->vsnprintf((char *)text, sizeof(text)-1, fmt, arg_list);
+    va_end(arg_list);
+    text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] = 0;
+    gcs().send_statustext(severity, mavlink_active | chan_is_streaming, text);
+}
+
+/*
+    send a statustext message to specific MAVLink channel, zero indexed
+*/
+void GCS_MAVLINK::send_statustext_chan(MAV_SEVERITY severity, uint8_t dest_chan, const char *fmt, ...)
+{
+    char text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] {};
+    va_list arg_list;
+    va_start(arg_list, fmt);
+    hal.util->vsnprintf((char *)text, sizeof(text), fmt, arg_list);
+    va_end(arg_list);
+    gcs().send_statustext(severity, (1<<dest_chan), text);
+}
+
+
+/*
     send a statustext text string to specific MAVLink bitmask
 */
 void GCS::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text)
@@ -1286,11 +1220,6 @@ void GCS::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const cha
 
     // try and send immediately if possible
     service_statustext();
-
-    AP_Notify *notify = AP_Notify::instance();
-    if (notify) {
-        notify->send_text(text);
-    }
 }
 
 /*
@@ -1341,72 +1270,6 @@ void GCS::service_statustext(void)
     }
 }
 
-void GCS::reset_cli_timeout()
-{
-    for (uint8_t i=0; i<num_gcs(); i++) {
-        chan(i).reset_cli_timeout();
-    }
-}
-
-void GCS::send_message(enum ap_message id)
-{
-    for (uint8_t i=0; i<num_gcs(); i++) {
-        if (chan(i).initialised) {
-            chan(i).send_message(id);
-        }
-    }
-}
-
-void GCS::data_stream_send()
-{
-    for (uint8_t i=0; i<num_gcs(); i++) {
-        if (chan(i).initialised) {
-            chan(i).data_stream_send();
-        }
-    }
-}
-
-void GCS::update(void)
-{
-    for (uint8_t i=0; i<num_gcs(); i++) {
-        if (chan(i).initialised) {
-            chan(i).update(_run_cli);
-        }
-    }
-}
-
-void GCS::send_mission_item_reached_message(uint16_t mission_index)
-{
-    for (uint8_t i=0; i<num_gcs(); i++) {
-        if (chan(i).initialised) {
-            chan(i).mission_item_reached_index = mission_index;
-            chan(i).send_message(MSG_MISSION_ITEM_REACHED);
-        }
-    }
-}
-
-void GCS::setup_uarts(AP_SerialManager &serial_manager)
-{
-    for (uint8_t i = 1; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
-        chan(i).setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, i);
-    }
-}
-
-void GCS::handle_interactive_setup()
-{
-    if (cli_enabled()) {
-        AP_HAL::BetterStream* _cliSerial = cliSerial();
-        const char *msg = "\nPress ENTER 3 times to start interactive setup\n";
-        _cliSerial->printf("%s\n", msg);
-        if (chan(1).initialised && (chan(1).get_uart() != NULL)) {
-            chan(1).get_uart()->printf("%s\n", msg);
-        }
-        if (num_gcs() > 2 && chan(2).initialised && (chan(2).get_uart() != NULL)) {
-            chan(2).get_uart()->printf("%s\n", msg);
-        }
-    }
-}
-
 // report battery2 state
 void GCS_MAVLINK::send_battery2(const AP_BattMonitor &battery)
 {
@@ -1453,6 +1316,43 @@ void GCS_MAVLINK::handle_set_mode(mavlink_message_t* msg, set_mode_fn set_mode)
     mavlink_msg_command_ack_send_buf(msg, chan, MAVLINK_MSG_ID_SET_MODE, result);
 }
 
+#if AP_AHRS_NAVEKF_AVAILABLE
+/*
+  send OPTICAL_FLOW message
+ */
+void GCS_MAVLINK::send_opticalflow(AP_AHRS_NavEKF &ahrs, const OpticalFlow &optflow)
+{
+    // exit immediately if no optical flow sensor or not healthy
+    if (!optflow.healthy()) {
+        return;
+    }
+
+    // get rates from sensor
+    const Vector2f &flowRate = optflow.flowRate();
+    const Vector2f &bodyRate = optflow.bodyRate();
+    float hagl = 0;
+
+    if (ahrs.have_inertial_nav()) {
+
+        ahrs.get_hagl(hagl);
+    }
+
+    // populate and send message
+    mavlink_msg_optical_flow_send(
+        chan,
+        AP_HAL::millis(),
+        0, // sensor id is zero
+        flowRate.x,
+        flowRate.y,
+        bodyRate.x,
+        bodyRate.y,
+        optflow.quality(),
+        hagl,  // ground distance (in meters) set to zero
+        flowRate.x,
+        flowRate.y);
+}
+#endif
+
 /*
   send AUTOPILOT_VERSION packet
  */
@@ -1477,11 +1377,11 @@ void GCS_MAVLINK::send_autopilot_version(uint8_t major_version, uint8_t minor_ve
 #if defined(GIT_VERSION)
     strncpy((char *)flight_custom_version, GIT_VERSION, 8);
 #else
-    memset(flight_custom_version,0,8);
+    memset(middleware_custom_version,0,8);
 #endif
 
-#if defined(DP_GIT_VERSION)
-    strncpy((char *)middleware_custom_version, DP_GIT_VERSION, 8);
+#if defined(PX4_GIT_VERSION)
+    strncpy((char *)middleware_custom_version, PX4_GIT_VERSION, 8);
 #else
     memset(middleware_custom_version,0,8);
 #endif
@@ -1565,6 +1465,53 @@ void GCS_MAVLINK::send_home(const Location &home) const
     }
 }
 
+void GCS_MAVLINK::send_home_all(const Location &home)
+{
+    const float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};
+    for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
+        if ((1U<<i) & mavlink_active) {
+            mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0+i);
+            if (HAVE_PAYLOAD_SPACE(chan, HOME_POSITION)) {
+                mavlink_msg_home_position_send(
+                    chan,
+                    home.lat,
+                    home.lng,
+                    home.alt * 10,
+                    0.0f, 0.0f, 0.0f,
+                    q,
+                    0.0f, 0.0f, 0.0f);
+            }
+        }
+    }
+}
+
+void GCS_MAVLINK::send_ekf_origin(const Location &ekf_origin) const
+{
+    if (HAVE_PAYLOAD_SPACE(chan, GPS_GLOBAL_ORIGIN)) {
+        mavlink_msg_gps_global_origin_send(
+            chan,
+            ekf_origin.lat,
+            ekf_origin.lng,
+            ekf_origin.alt * 10);
+    }
+}
+
+void GCS_MAVLINK::send_ekf_origin_all(const Location &ekf_origin)
+{
+    for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
+        if ((1U<<i) & mavlink_active) {
+            mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0+i);
+            if (HAVE_PAYLOAD_SPACE(chan, GPS_GLOBAL_ORIGIN)) {
+                mavlink_msg_gps_global_origin_send(
+                    chan,
+                    ekf_origin.lat,
+                    ekf_origin.lng,
+                    ekf_origin.alt * 10);
+            }
+        }
+    }
+}
+
 /*
   wrapper for sending heartbeat
  */
@@ -1617,13 +1564,13 @@ float GCS_MAVLINK::adjust_rate_for_stream_trigger(enum streams stream_num)
 }
 
 // are we still delaying telemetry to try to avoid Xbee bricking?
-bool GCS_MAVLINK::telemetry_delayed() const
+bool GCS_MAVLINK::telemetry_delayed(mavlink_channel_t _chan)
 {
     uint32_t tnow = AP_HAL::millis() >> 10;
     if (tnow > telem_delay()) {
         return false;
     }
-    if (chan == MAVLINK_COMM_0 && hal.gpio->usb_connected()) {
+    if (_chan == MAVLINK_COMM_0 && hal.gpio->usb_connected()) {
         // this is USB telemetry, so won't be an Xbee
         return false;
     }
@@ -1683,7 +1630,7 @@ void GCS_MAVLINK::send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_C
     }
 }
 
-void GCS_MAVLINK::send_accelcal_vehicle_position(uint32_t position)
+void GCS_MAVLINK::send_accelcal_vehicle_position(uint8_t position)
 {
     if (HAVE_PAYLOAD_SPACE(chan, COMMAND_LONG)) {
         mavlink_msg_command_long_send(
@@ -1709,7 +1656,7 @@ uint8_t GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &packe
 {
     if (is_equal(packet.param1,1.0f) || is_equal(packet.param1,3.0f)) {
         if (disable_overrides) {
-#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
             // disable overrides while rebooting
             int px4io_fd = open("/dev/px4io", 0);
             if (px4io_fd >= 0) {
@@ -1743,7 +1690,7 @@ uint8_t GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &packe
 /*
   handle a R/C bind request (for spektrum)
  */
-MAV_RESULT GCS_MAVLINK::handle_rc_bind(const mavlink_command_long_t &packet)
+uint8_t GCS_MAVLINK::handle_rc_bind(const mavlink_command_long_t &packet)
 {
     // initiate bind procedure. We accept the DSM type from either
     // param1 or param2 due to a past mixup with what parameter is the
@@ -1782,33 +1729,6 @@ void GCS_MAVLINK::handle_timesync(mavlink_message_t *msg)
         );
 }
 
-void GCS_MAVLINK::handle_statustext(mavlink_message_t *msg)
-{
-    DataFlash_Class *df = DataFlash_Class::instance();
-    if (df == nullptr) {
-        return;
-    }
-    // ignore any statustext messages not from our GCS:
-    if (msg->sysid != sysid_my_gcs()) {
-        return;
-    }
-    mavlink_statustext_t packet;
-    mavlink_msg_statustext_decode(msg, &packet);
-    char text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1+4] = { 'G','C','S',':'};
-    memcpy(&text[4], packet.text, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN);
-    df->Log_Write_Message(text);
-}
-
-
-void GCS_MAVLINK::handle_common_gps_message(mavlink_message_t *msg)
-{
-    AP_GPS *gps = get_gps();
-    if (gps == nullptr) {
-        return;
-    }
-
-    gps->handle_msg(msg);
-}
 
 /*
   handle messages which don't require vehicle specific data
@@ -1831,60 +1751,6 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
     case MAVLINK_MSG_ID_TIMESYNC:
         handle_timesync(msg);
         break;
-    case MAVLINK_MSG_ID_LOG_REQUEST_LIST:
-        /* fall through */
-    case MAVLINK_MSG_ID_LOG_REQUEST_DATA:
-        /* fall through */
-    case MAVLINK_MSG_ID_LOG_ERASE:
-        /* fall through */
-    case MAVLINK_MSG_ID_LOG_REQUEST_END:
-        /* fall through */
-    case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
-        /* fall through */
-	case MAVLINK_MSG_ID_RAW_DATA_REQUEST_LIST:
-        /* fall through */
-    case MAVLINK_MSG_ID_RAW_DATA_REQUEST_DATA:
-        /* fall through */
-    case MAVLINK_MSG_ID_RAW_DATA_ERASE:
-        /* fall through */
-    case MAVLINK_MSG_ID_RAW_DATA_REQUEST_END:
-        /* fall through */
-	case MAVLINK_MSG_ID_POS_DATA_REQUEST_LIST:
-        /* fall through */
-    case MAVLINK_MSG_ID_POS_DATA_REQUEST_DATA:
-        /* fall through */
-    case MAVLINK_MSG_ID_POS_DATA_ERASE:
-        /* fall through */
-    case MAVLINK_MSG_ID_POS_DATA_REQUEST_END:
-        /* fall through */
-        DataFlash_Class::instance()->handle_mavlink_msg(*this, msg);
-        break;
-
-
-    case MAVLINK_MSG_ID_MISSION_WRITE_PARTIAL_LIST:
-        /* fall through */
-    case MAVLINK_MSG_ID_MISSION_REQUEST_LIST:
-        /* fall through */
-    case MAVLINK_MSG_ID_MISSION_COUNT:
-        /* fall through */
-    case MAVLINK_MSG_ID_MISSION_CLEAR_ALL:
-        /* fall through */
-    case MAVLINK_MSG_ID_MISSION_ITEM:
-        /* fall through */
-    case MAVLINK_MSG_ID_MISSION_ITEM_INT:
-        /* fall through */
-    case MAVLINK_MSG_ID_MISSION_REQUEST_INT:
-        /* fall through */
-    case MAVLINK_MSG_ID_MISSION_REQUEST:
-        /* fall through */
-    case MAVLINK_MSG_ID_MISSION_ACK:
-        /* fall through */
-    case MAVLINK_MSG_ID_MISSION_SET_CURRENT:
-        /* fall through */
-    case MAVLINK_MSG_ID_MISSION_SINGLE:
-        handle_common_mission_message(msg);
-        break;
-
     case MAVLINK_MSG_ID_GPS_RTCM_DATA:
 		mavlink_gps_rtcm_data_t packet;
 		mavlink_msg_gps_rtcm_data_decode(msg, &packet);
@@ -1901,162 +1767,7 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
 		}
 		#endif
 		break;
-        /* fall through */
-    case MAVLINK_MSG_ID_GPS_INPUT:
-        /* fall through */
-    case MAVLINK_MSG_ID_HIL_GPS:
-        handle_common_gps_message(msg);
-        break;
-
-    case MAVLINK_MSG_ID_STATUSTEXT:
-        handle_statustext(msg);
-        break;
-
-    case MAVLINK_MSG_ID_RALLY_POINT:
-        /* fall through */
-    case MAVLINK_MSG_ID_RALLY_FETCH_POINT:
-        handle_common_rally_message(msg);
-        break;
     }
-
-}
-
-void GCS_MAVLINK::handle_common_mission_message(mavlink_message_t *msg)
-{
-    AP_Mission *_mission = get_mission();
-    if (_mission == nullptr) {
-        return;
-    }
-    switch (msg->msgid) {
-    case MAVLINK_MSG_ID_MISSION_WRITE_PARTIAL_LIST: // MAV ID: 38
-    {
-        handle_mission_write_partial_list(*_mission, msg);
-        break;
-    }
-
-    // GCS has sent us a mission item, store to EEPROM
-    case MAVLINK_MSG_ID_MISSION_ITEM:           // MAV ID: 39
-    case MAVLINK_MSG_ID_MISSION_ITEM_INT:
-    {
-        if (handle_mission_item(msg, *_mission)) {
-            DataFlash_Class::instance()->Log_Write_EntireMission(*_mission);
-        }
-        break;
-    }
-
-    // read an individual command from EEPROM and send it to the GCS
-    case MAVLINK_MSG_ID_MISSION_REQUEST_INT:
-    case MAVLINK_MSG_ID_MISSION_REQUEST:     // MAV ID: 40, 51
-    {
-        handle_mission_request(*_mission, msg);
-        break;
-    }
-
-    case MAVLINK_MSG_ID_MISSION_SET_CURRENT:    // MAV ID: 41
-    {
-        handle_mission_set_current(*_mission, msg);
-        break;
-    }
-
-    // GCS request the full list of commands, we return just the number and leave the GCS to then request each command individually
-    case MAVLINK_MSG_ID_MISSION_REQUEST_LIST:       // MAV ID: 43
-    {
-        handle_mission_request_list(*_mission, msg);
-        break;
-    }
-
-    // GCS provides the full number of commands it wishes to upload
-    //  individual commands will then be sent from the GCS using the MAVLINK_MSG_ID_MISSION_ITEM message
-    case MAVLINK_MSG_ID_MISSION_COUNT:          // MAV ID: 44
-    {
-        handle_mission_count(*_mission, msg);
-        break;
-    }
-
-    case MAVLINK_MSG_ID_MISSION_CLEAR_ALL:      // MAV ID: 45
-    {
-        handle_mission_clear_all(*_mission, msg);
-        break;
-    }
-
-    case MAVLINK_MSG_ID_MISSION_ACK:
-        /* not used */
-        break;
-    case MAVLINK_MSG_ID_MISSION_SINGLE:
-        handle_single_point_message(*_mission, msg);
-        break;
-    }
-}
-
-MAV_RESULT GCS_MAVLINK::handle_command_preflight_set_sensor_offsets(const mavlink_command_long_t &packet)
-{
-    Compass *compass = get_compass();
-    if (compass == nullptr) {
-        return MAV_RESULT_UNSUPPORTED;
-    }
-
-    uint8_t compassNumber = -1;
-    if (is_equal(packet.param1, 2.0f)) {
-        compassNumber = 0;
-    } else if (is_equal(packet.param1, 5.0f)) {
-        compassNumber = 1;
-    } else if (is_equal(packet.param1, 6.0f)) {
-        compassNumber = 2;
-    }
-    if (compassNumber == (uint8_t) -1) {
-        return MAV_RESULT_FAILED;
-    }
-    compass->set_and_save_offsets(compassNumber, packet.param2, packet.param3, packet.param4);
-    return MAV_RESULT_ACCEPTED;
-}
-
-MAV_RESULT GCS_MAVLINK::handle_command_mag_cal(const mavlink_command_long_t &packet)
-{
-    Compass *compass = get_compass();
-    if (compass == nullptr) {
-        return MAV_RESULT_UNSUPPORTED;
-    }
-    return compass->handle_mag_cal_command(packet);
-}
-
-MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &packet)
-{
-    MAV_RESULT result = MAV_RESULT_FAILED;
-
-    switch (packet.command) {
-
-    case MAV_CMD_DO_START_MAG_CAL:
-    case MAV_CMD_DO_ACCEPT_MAG_CAL:
-    case MAV_CMD_DO_CANCEL_MAG_CAL: {
-        result = handle_command_mag_cal(packet);
-        break;
-    }
-
-    case MAV_CMD_START_RX_PAIR:
-        result = handle_rc_bind(packet);
-        break;
-
-    case MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS: {
-        result = handle_command_preflight_set_sensor_offsets(packet);
-        break;
-    }
-
-    case MAV_CMD_DO_SET_SERVO:
-        /* fall through */
-    case MAV_CMD_DO_REPEAT_SERVO:
-        /* fall through */
-    case MAV_CMD_DO_SET_RELAY:
-        /* fall through */
-    case MAV_CMD_DO_REPEAT_RELAY:
-        /* fall through */
-        result = handle_servorelay_message(packet);
-        break;
-
-    default:
-        result = MAV_RESULT_UNSUPPORTED;
-    }
-
-    return result;
 }
 
 GCS &gcs()

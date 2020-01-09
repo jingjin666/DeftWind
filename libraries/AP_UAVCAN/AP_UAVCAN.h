@@ -1,4 +1,5 @@
 /*
+ * AP_UAVCAN.h
  *
  *      Author: Eugene Shamaev
  */
@@ -15,8 +16,6 @@
 #include <AP_GPS/GPS_Backend.h>
 #include <AP_Baro/AP_Baro_Backend.h>
 #include <AP_Compass/AP_Compass.h>
-#include <AP_Airspeed/AP_Airspeed_Backend.h>
-
 
 #include <uavcan/helpers/heap_based_pool_allocator.hpp>
 
@@ -36,8 +35,6 @@
 #define AP_UAVCAN_MAX_GPS_NODES 4
 #define AP_UAVCAN_MAX_MAG_NODES 4
 #define AP_UAVCAN_MAX_BARO_NODES 4
-#define AP_UAVCAN_MAX_AIRSPEED_NODES 4
-
 
 #define AP_UAVCAN_SW_VERS_MAJOR 1
 #define AP_UAVCAN_SW_VERS_MINOR 0
@@ -57,12 +54,8 @@ public:
     // if preferred_channel > 0 then listener will be added to specific channel
     // return value is the number of assigned channel or 0 if fault
     // channel numbering starts from 1
-    uint8_t register_gps_listener(AP_GPS_Backend* new_listener, uint8_t preferred_channel);
-
-    uint8_t register_gps_listener_to_node(AP_GPS_Backend* new_listener, uint8_t node);
-
-    uint8_t find_gps_without_listener(void);
-
+    uint8_t register_gps_listener(AP_GPS_Backend* new_listener,
+                                  uint8_t preferred_channel);
     // Removes specified listener from all nodes
     void remove_gps_listener(AP_GPS_Backend* rem_listener);
 
@@ -80,34 +73,22 @@ public:
         float temperature_variance;
     };
 
-    uint8_t register_baro_listener(AP_Baro_Backend* new_listener, uint8_t preferred_channel);
-    uint8_t register_baro_listener_to_node(AP_Baro_Backend* new_listener, uint8_t node);
+    uint8_t register_baro_listener(AP_Baro_Backend* new_listener,
+                                   uint8_t preferred_channel);
     void remove_baro_listener(AP_Baro_Backend* rem_listener);
     Baro_Info *find_baro_node(uint8_t node);
-    uint8_t find_smallest_free_baro_node();
     void update_baro_state(uint8_t node);
 
     struct Mag_Info {
         Vector3f mag_vector;
     };
 
-    uint8_t register_mag_listener(AP_Compass_Backend* new_listener, uint8_t preferred_channel);
+    uint8_t register_mag_listener(AP_Compass_Backend* new_listener,
+                                  uint8_t preferred_channel);
     void remove_mag_listener(AP_Compass_Backend* rem_listener);
     Mag_Info *find_mag_node(uint8_t node);
-    uint8_t find_smallest_free_mag_node();
-    uint8_t register_mag_listener_to_node(AP_Compass_Backend* new_listener, uint8_t node);
     void update_mag_state(uint8_t node);
-    struct AirSpeed_Info {
-        uint16_t pressure;
-        uint16_t temperature;
-		uint16_t pressure2;
-        uint16_t temperature2;
-    };
 
-	uint8_t register_airspeed_listener_to_id(AP_Airspeed_Backend* new_listener, uint8_t id);
-	AirSpeed_Info *find_airspeed_node(uint8_t node);
-    uint8_t find_smallest_free_airspeed_node();
-	void update_airspeed_state(uint8_t node);
     // synchronization for RC output
     bool rc_out_sem_take();
     void rc_out_sem_give();
@@ -139,13 +120,6 @@ private:
     Mag_Info _mag_node_state[AP_UAVCAN_MAX_MAG_NODES];
     uint8_t _mag_listener_to_node[AP_UAVCAN_MAX_LISTENERS];
     AP_Compass_Backend* _mag_listeners[AP_UAVCAN_MAX_LISTENERS];
-	
-	// ------------------------- AirSpeed
-    uint8_t _airspeed_nodes[AP_UAVCAN_MAX_AIRSPEED_NODES];
-    uint8_t _airspeed_node_taken[AP_UAVCAN_MAX_AIRSPEED_NODES];
-    AirSpeed_Info _airspeed_node_state[AP_UAVCAN_MAX_AIRSPEED_NODES];
-    uint8_t _airspeed_listener_to_node[AP_UAVCAN_MAX_AIRSPEED_NODES];
-    AP_Airspeed_Backend* _airspeed_listeners[AP_UAVCAN_MAX_AIRSPEED_NODES];
 
     struct {
         uint16_t pulse;
@@ -217,16 +191,10 @@ private:
     uavcan::HeapBasedPoolAllocator<UAVCAN_NODE_POOL_BLOCK_SIZE, AP_UAVCAN::RaiiSynchronizer> _node_allocator;
 
     AP_Int8 _uavcan_node;
-    AP_Int32 _servo_bm;
-    AP_Int32 _esc_bm;
-
-    uint8_t _uavcan_i;
-
-    AP_HAL::CANManager* _parent_can_mgr;
 
 public:
-    void do_cyclic_rgbled(uint8_t red, uint8_t green, uint8_t blue);
     void do_cyclic(void);
+    void do_cyclic_rgbled(uint8_t red, uint8_t green, uint8_t blue);
     bool try_init(void);
 
     void rco_set_safety_pwm(uint32_t chmask, uint16_t pulse_len);
@@ -235,11 +203,6 @@ public:
     void rco_force_safety_off(void);
     void rco_arm_actuators(bool arm);
     void rco_write(uint16_t pulse_len, uint8_t ch);
-
-    void set_parent_can_mgr(AP_HAL::CANManager* parent_can_mgr)
-    {
-        _parent_can_mgr = parent_can_mgr;
-    }
 };
 
 #endif /* AP_UAVCAN_H_ */

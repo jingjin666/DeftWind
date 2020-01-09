@@ -26,7 +26,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
-#define SERIALMANAGER_NUM_PORTS 7
+#define SERIALMANAGER_NUM_PORTS 6
 
  // console default baud rates and buffer sizes
 #ifdef HAL_SERIAL0_BAUD_DEFAULT
@@ -39,8 +39,8 @@
 
 // mavlink default baud rates and buffer sizes
 #define AP_SERIALMANAGER_MAVLINK_BAUD           115200
-#define AP_SERIALMANAGER_MAVLINK_BUFSIZE_RX     128
-#define AP_SERIALMANAGER_MAVLINK_BUFSIZE_TX     256
+#define AP_SERIALMANAGER_MAVLINK_BUFSIZE_RX     512
+#define AP_SERIALMANAGER_MAVLINK_BUFSIZE_TX     512
 
 // FrSky default baud rates, use default buffer sizes
 #define AP_SERIALMANAGER_FRSKY_D_BAUD           9600
@@ -50,8 +50,8 @@
 
 // GPS default baud rates and buffer sizes
 // we need a 256 byte buffer for some GPS types (eg. UBLOX)
-#define AP_SERIALMANAGER_GPS_BAUD               115200
-#define AP_SERIALMANAGER_GPS_BUFSIZE_RX         256
+#define AP_SERIALMANAGER_GPS_BAUD               38400
+#define AP_SERIALMANAGER_GPS_BUFSIZE_RX         512
 #define AP_SERIALMANAGER_GPS_BUFSIZE_TX         16
 
 // AlexMos Gimbal protocol default baud rates and buffer sizes
@@ -71,17 +71,24 @@
 
 // Nova RTK default baud rates and buffer sizes
 #define AP_SERIALMANAGER_RTCM_BAUD           460800
-#define AP_SERIALMANAGER_RTCM_BUFSIZE_RX     4096
-#define AP_SERIALMANAGER_RTCM_BUFSIZE_TX     256
+#define AP_SERIALMANAGER_RTCM_BUFSIZE_RX     2048
+#define AP_SERIALMANAGER_RTCM_BUFSIZE_TX     512
 
-// Backup
-#define AP_SERIALMANAGER_BACKUP_BAUD           115200
-#define AP_SERIALMANAGER_BACKUP_BUFSIZE_RX     256
-#define AP_SERIALMANAGER_BACKUP_BUFSIZE_TX     256
+
+#define AP_SERIALMANAGER_Z6KA7_BAUD           115200
+#define AP_SERIALMANAGER_Z6KA7_BUFSIZE_RX     128
+#define AP_SERIALMANAGER_Z6KA7_BUFSIZE_TX     128
+
+// save log default baud rates and buffer sizes
+#define AP_SERIALMANAGER_SAVELOG_BAUD           460800
+#define AP_SERIALMANAGER_SAVELOG_BUFSIZE_RX     16
+#define AP_SERIALMANAGER_SAVELOG_BUFSIZE_TX     1024
+
 
 class AP_SerialManager {
 
 public:
+
     enum SerialProtocol {
         SerialProtocol_None = -1,
         SerialProtocol_Console = 0, // unused
@@ -98,7 +105,9 @@ public:
         SerialProtocol_Lidar360 = 11,                // Lightware SF40C or TeraRanger Tower
         SerialProtocol_Aerotenna_uLanding      = 12, // Ulanding support
         SerialProtocol_Beacon = 13,
-        SerialProtocol_Nova_Rtcm = 14
+        SerialProtocol_Nova_Rtcm = 14,
+        SerialProtocol_Save_Log = 15,
+        SerialProtocol_Z6ka7 = 16
     };
 
     // Constructor
@@ -138,7 +147,8 @@ public:
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 
-private:	
+private:
+
     // array of uart info
     struct {
         AP_Int8 protocol;

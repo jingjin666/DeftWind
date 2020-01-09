@@ -23,7 +23,7 @@ public:
     bool usb_connected(void);
 
     /* return true if imu data ready */
-	virtual bool imu_data_ready(void){};
+	virtual bool imu_data_ready(void){ return false;};
 
 	/* reset imu by hardware io */
 	virtual void imu_reset(bool level){};

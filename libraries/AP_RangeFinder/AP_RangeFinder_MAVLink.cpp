@@ -26,7 +26,7 @@ extern const AP_HAL::HAL& hal;
    already know that we should setup the rangefinder
 */
 AP_RangeFinder_MAVLink::AP_RangeFinder_MAVLink(RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state) :
-    AP_RangeFinder_Backend(_ranger, instance, _state, MAV_DISTANCE_SENSOR_UNKNOWN)
+    AP_RangeFinder_Backend(_ranger, instance, _state)
 {
     last_update_ms = AP_HAL::millis();
     distance_cm = 0;
@@ -56,7 +56,6 @@ void AP_RangeFinder_MAVLink::handle_msg(mavlink_message_t *msg)
         last_update_ms = AP_HAL::millis();
         distance_cm = packet.current_distance;
     }
-    sensor_type = (MAV_DISTANCE_SENSOR)packet.type;
 }
 
 /*

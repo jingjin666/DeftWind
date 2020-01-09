@@ -18,7 +18,7 @@ public:
 
     void internal_error();
 
-    virtual bool CardInserted(void) const = 0;
+    virtual bool CardInserted(void) = 0;
 
     // erase handling
     virtual void EraseAll() = 0;
@@ -37,8 +37,7 @@ public:
         return WritePrioritisedBlock(pBuffer, size, true);
     }
 
-    bool WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical);
-	
+    virtual bool WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical) = 0;
     /* Write a block of data at current offset */
     bool WriteRawData(const void *pBuffer, uint16_t size) {
         return WriteRawData(pBuffer, size, false);
@@ -52,7 +51,6 @@ public:
 	}
 
     bool WritePosData(const void *pBuffer, uint16_t size, bool is_critical);
-
     // high level interface
     virtual uint16_t find_last_log() = 0;
 	virtual uint16_t find_last_raw_data() = 0;
@@ -77,26 +75,26 @@ public:
     virtual void ShowDeviceInfo(AP_HAL::BetterStream *port) = 0;
     virtual void ListAvailableLogs(AP_HAL::BetterStream *port) = 0;
 
-    virtual bool logging_started(void) const = 0;
-	
+    void EnableWrites(bool enable) { _writes_enabled = enable; }
+    virtual bool logging_started(void) const { return log_write_started; }
+
     virtual bool raw_data_started(void) const = 0;
 	
     virtual bool pos_data_started(void) const = 0;
-
-    virtual void Init() { }
+	
+    virtual void Init(const AP_SerialManager& serial_manager) {
+        _writes_enabled = true;
+    }
 
     void set_mission(const AP_Mission *mission);
 
     virtual uint32_t bufferspace_available() = 0;
 
-    virtual void PrepForArming() { }
-
     virtual uint16_t start_new_log(void) = 0;
-
+    bool log_write_started;
 	virtual uint16_t start_new_raw_data(void) = 0;
 
 	virtual uint16_t start_new_pos_data(void) = 0;
-
     /* stop logging - close output files etc etc.
      *
      * note that this doesn't stop logging from starting up again
@@ -111,7 +109,7 @@ public:
 	
     void Log_Fill_Format(const struct LogStructure *structure, struct log_Format &pkt);
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     // currently only DataFlash_File support this:
     virtual void flush(void) { }
 #endif
@@ -176,14 +174,13 @@ protected:
                           print_mode_fn print_mode,
                           AP_HAL::BetterStream *port);
 
-    bool ShouldLog(bool is_critical);	
     bool ShouldPosData();
-    virtual bool WritesOK() const = 0;
+    virtual bool WritesOK() const;
     virtual bool RawDataWritesOK() const = 0;
     virtual bool PosDataWritesOK() const = 0;
-    virtual bool StartNewLogOK() const;
     virtual bool StartNewRawDataOK() const;
     virtual bool StartNewPosDataOK() const;
+    bool _writes_enabled = false;
 
     /*
       read a block
@@ -203,8 +200,6 @@ protected:
     // must be called when a new log is being started:
     virtual void start_new_log_reset_variables();
 
-    virtual bool _WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical) = 0;
-
     virtual bool _WriteRawData(const void *pBuffer, uint16_t size, bool is_critical) = 0;
 	
     virtual bool ReadRawData(void *pkt, uint16_t size) = 0;
@@ -212,13 +207,8 @@ protected:
     virtual bool _WritePosData(const void *pBuffer, uint16_t size, bool is_critical) = 0;
 	
     virtual bool ReadPosData(void *pkt, uint16_t size) = 0;
-
-    bool _initialised;
-    bool _initialised_advance;
-
 private:
 
     uint32_t _last_periodic_1Hz;
     uint32_t _last_periodic_10Hz;
-    bool have_logged_armed;
 };

@@ -32,6 +32,13 @@
 #define AP_MAX_NAME_SIZE 16
 
 /*
+  maximum size of embedded parameter file
+ */
+#ifndef AP_PARAM_MAX_EMBEDDED_PARAM
+#define AP_PARAM_MAX_EMBEDDED_PARAM 8192
+#endif
+
+/*
   flags for variables in var_info and group tables
  */
 
@@ -92,9 +99,6 @@
 // declare a subgroup entry in a group var_info. This is for having another arbitrary object as a member of the parameter list of
 // an object
 #define AP_SUBGROUPINFO(element, name, idx, thisclazz, elclazz) { AP_PARAM_GROUP, idx, name, AP_VAROFFSET(thisclazz, element), { group_info : elclazz::var_info }, AP_PARAM_FLAG_NESTED_OFFSET }
-
-// declare a second parameter table for the same object
-#define AP_SUBGROUPEXTENSION(name, idx, clazz, vinfo) { AP_PARAM_GROUP, idx, name, 0, { group_info : clazz::vinfo }, AP_PARAM_FLAG_NESTED_OFFSET }
 
 // declare a pointer subgroup entry in a group var_info
 #define AP_SUBGROUPPTR(element, name, idx, thisclazz, elclazz) { AP_PARAM_GROUP, idx, name, AP_VAROFFSET(thisclazz, element), { group_info : elclazz::var_info }, AP_PARAM_FLAG_POINTER }
@@ -444,6 +448,19 @@ private:
 
     static uint16_t             _frame_type_flags;
 
+    /*
+      structure for built-in defaults file that can be modified using apj_tool.py
+     */
+    struct PACKED param_defaults_struct {
+        char magic_str[8];
+        uint8_t param_magic[8];
+        uint16_t max_length;
+        volatile uint16_t length;
+        volatile char data[AP_PARAM_MAX_EMBEDDED_PARAM];
+    };
+    static const param_defaults_struct param_defaults_data;
+    
+    
     static bool                 check_group_info(const struct GroupInfo *group_info, uint16_t *total_size, 
                                                  uint8_t max_bits, uint8_t prefix_length);
     static bool                 duplicate_key(uint16_t vindex, uint16_t key);
@@ -522,15 +539,22 @@ private:
     // find a default value given a pointer to a default value in flash
     static float get_default_value(const AP_Param *object_ptr, const float *def_value_ptr);
 
+    static bool parse_param_line(char *line, char **vname, float &value);
+    
 #if HAL_OS_POSIX_IO == 1
     /*
       load a parameter defaults file. This happens as part of load_all()
      */
-    static bool parse_param_line(char *line, char **vname, float &value);
     static bool count_defaults_in_file(const char *filename, uint16_t &num_defaults, bool panic_on_error);
     static bool read_param_defaults_file(const char *filename);
     static bool load_defaults_file(const char *filename, bool panic_on_error);
 #endif
+
+    /*
+      load defaults from embedded parameters
+     */
+    static bool count_embedded_param_defaults(uint16_t &count, bool panic_on_error);
+    static void load_embedded_param_defaults(bool panic_on_error);
     
     // send a parameter to all GCS instances
     void send_parameter(const char *name, enum ap_var_type param_header_type, uint8_t idx) const;

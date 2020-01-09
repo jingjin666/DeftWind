@@ -15,15 +15,17 @@
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
-#include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_RPM/AP_RPM.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <DataFlash/LogStructure.h>
 #include <AP_Motors/AP_Motors.h>
 #include <AP_Rally/AP_Rally.h>
 #include <AP_Beacon/AP_Beacon.h>
-#include <AP_Proximity/AP_Proximity.h>
 #include <stdint.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#include <uORB/topics/esc_status.h>
+#endif
 
 #include "DFMessageWriter.h"
 
@@ -47,10 +49,8 @@ class DataFlash_Class
 public:
     FUNCTOR_TYPEDEF(print_mode_fn, void, AP_HAL::BetterStream*, uint8_t);
     FUNCTOR_TYPEDEF(vehicle_startup_message_Log_Writer, void);
-    DataFlash_Class(const char *firmware_string, const AP_Int32 &log_bitmask, const AP_Int32 &rawdata_bitmask) :
-        _firmware_string(firmware_string),
-        _log_bitmask(log_bitmask),
-        _rawdata_bitmask(rawdata_bitmask)
+    DataFlash_Class(const char *firmware_string) :
+        _firmware_string(firmware_string)
         {
             AP_Param::setup_object_defaults(this, var_info);
             if (_instance != nullptr) {
@@ -67,14 +67,17 @@ public:
     void set_mission(const AP_Mission *mission);
 
     // initialisation
-    void Init(const struct LogStructure *structure, uint8_t num_types);
+    void Init(const struct LogStructure *structure, uint8_t num_types, const AP_SerialManager& serial_manager);
     bool CardInserted(void);
 
     // erase handling
     bool NeedErase(void);
     void EraseAll();
-	void EraseAllRawData();
-	void EraseAllPosData();
+    void EraseAllRawData();
+    void EraseAllPosData();
+    // possibly expensive calls to start log system:
+    bool NeedPrep();
+    void Prep();
 
     // get a pointer to structures
     const struct LogStructure *get_structures(uint8_t &num_types) {
@@ -96,6 +99,9 @@ public:
     void get_log_boundaries(uint16_t log_num, uint16_t & start_page, uint16_t & end_page);
     void get_raw_data_boundaries(uint16_t raw_num, uint16_t & start_page, uint16_t & end_page);
     void get_pos_data_boundaries(uint16_t pos_num, uint16_t & start_page, uint16_t & end_page);
+    void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc);
+    void get_raw_data_info(uint16_t raw_data_num, uint32_t &size, uint32_t &time_utc);
+    void get_pos_data_info(uint16_t raw_data_num, uint32_t &size, uint32_t &time_utc);
     int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data);
     int16_t get_raw_data(uint16_t raw_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data);
     int16_t get_pos_data(uint16_t pos_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data);
@@ -112,10 +118,10 @@ public:
 
     void setVehicle_Startup_Log_Writer(vehicle_startup_message_Log_Writer writer);
 
-    void PrepForArming();
+    /* poke backends to start if they're not already started */
+    void StartUnstartedLogging(void);
 
-    void EnableWrites(bool enable) { _writes_enabled = enable; }
-    bool WritesEnabled() const { return _writes_enabled; }
+    void EnableWrites(bool enable);
 
     void StopLogging();
 
@@ -137,7 +143,7 @@ public:
     void Log_Write_AHRS2(AP_AHRS &ahrs);
     void Log_Write_POS(AP_AHRS &ahrs);
 #if AP_AHRS_NAVEKF_AVAILABLE
-    void Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled);
+    void Log_Write_EKF(AP_AHRS_NavEKF &ahrs);
 #endif
     bool Log_Write_MavCmd(uint16_t cmd_total, const mavlink_mission_item_t& mav_cmd);
     void Log_Write_Radio(const mavlink_radio_t &packet);
@@ -169,7 +175,6 @@ public:
     void Log_Write_VisualOdom(float time_delta, const Vector3f &angle_delta, const Vector3f &position_delta, float confidence);
     void Log_Write_AOA_SSA(AP_AHRS &ahrs);
     void Log_Write_Beacon(AP_Beacon &beacon);
-    void Log_Write_Proximity(AP_Proximity &proximity);
 
     void Log_Write(const char *name, const char *labels, const char *fmt, ...);
 
@@ -185,21 +190,20 @@ public:
 
     void Log_Write_PID(uint8_t msg_type, const PID_Info &info);
 
-    // returns true if logging of a message should be attempted
-    bool should_log(uint32_t mask) const;
-	
     bool should_raw_data(uint32_t mask) const;
 
     bool should_pos_data(uint32_t mask) const;
-
     bool logging_started(void);
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     // currently only DataFlash_File support this:
     void flush(void);
 #endif
 
-    void handle_mavlink_msg(class GCS_MAVLINK &, mavlink_message_t* msg);
+    // for DataFlash_MAVLink:
+    void remote_log_block_status_msg(mavlink_channel_t chan,
+                                     mavlink_message_t* msg);
+    // end for DataFlash_MAVLink:
 
     void periodic_tasks(); // may want to split this into GCS/non-GCS duties
 
@@ -220,6 +224,7 @@ public:
         AP_Int8 file_disarm_rot;
         AP_Int8 log_disarmed;
         AP_Int8 log_replay;
+        AP_Int8 save_type;  //0:sdcard 1: serial
     } _params;
 
     const struct LogStructure *structure(uint16_t num) const;
@@ -234,13 +239,10 @@ public:
     void set_vehicle_armed(bool armed_state);
     bool vehicle_is_armed() const { return _armed; }
 
-    void handle_log_send(class GCS_MAVLINK &);
-    void handle_raw_data_send(class GCS_MAVLINK &);
-    void handle_pos_data_send(class GCS_MAVLINK &);
-    bool in_log_download() const { return _in_log_download; }
     bool in_raw_data_download() const { return _in_raw_data_download; }
     bool in_pos_data_download() const { return _in_pos_data_download; }
-
+    void set_in_raw_data_download(bool yes) { _in_raw_data_download = yes; }
+    void set_in_pos_data_download(bool yes) { _in_pos_data_download = yes; }
 protected:
 
     const struct LogStructure *_structures;
@@ -257,8 +259,6 @@ private:
     uint8_t _next_backend;
     DataFlash_Backend *backends[DATAFLASH_MAX_BACKENDS];
     const char *_firmware_string;
-    const AP_Int32 &_log_bitmask;
-    const AP_Int32 &_rawdata_bitmask;
 
     void internal_error() const;
 
@@ -299,8 +299,8 @@ private:
     bool _armed;
 
 #if AP_AHRS_NAVEKF_AVAILABLE
-    void Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled);
-    void Log_Write_EKF3(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled);
+    void Log_Write_EKF2(AP_AHRS_NavEKF &ahrs);
+    void Log_Write_EKF3(AP_AHRS_NavEKF &ahrs);
 #endif
 
     void backend_starting_new_log(const DataFlash_Backend *backend);
@@ -308,154 +308,17 @@ private:
 private:
     static DataFlash_Class *_instance;
 
-    void validate_structures(const struct LogStructure *logstructures, const uint8_t num_types);
-    void dump_structure_field(const struct LogStructure *logstructure, const char *label, const uint8_t fieldnum);
-    void dump_structures(const struct LogStructure *logstructures, const uint8_t num_types);
+    void validate_structures(const struct LogStructure *structures, const uint8_t num_types);
+    void dump_structure_field(const struct LogStructure *structure, const char *label, const uint8_t fieldnum);
+    void dump_structures(const struct LogStructure *structures, const uint8_t num_types);
 
     void Log_Write_EKF_Timing(const char *name, uint64_t time_us, const struct ekf_timing &timing);
 
-    // possibly expensive calls to start log system:
-    void Prep();
-
-    bool _writes_enabled;
-
-    /* support for retrieving logs via mavlink: */
-    uint8_t  _log_listing:1; // sending log list
-    uint8_t  _log_sending:1; // sending log data
-
-    // bolean replicating old vehicle in_log_download flag:
-    bool _in_log_download:1;
-
-    // next log list entry to send
-    uint16_t _log_next_list_entry;
-
-    // last log list entry to send
-    uint16_t _log_last_list_entry;
-
-    // number of log files
-    uint16_t _log_num_logs;
-
-    // log number for data send
-    uint16_t _log_num_data;
-
-    // offset in log
-    uint32_t _log_data_offset;
-
-    // size of log file
-    uint32_t _log_data_size;
-
-    // number of bytes left to send
-    uint32_t _log_data_remaining;
-
-    // start page of log data
-    uint16_t _log_data_page;
-
-    int8_t _log_sending_chan = -1;
-
-    bool should_handle_log_message();
-    void handle_log_message(class GCS_MAVLINK &, mavlink_message_t *msg);
-
-    void handle_log_request_list(class GCS_MAVLINK &, mavlink_message_t *msg);
-    void handle_log_request_data(class GCS_MAVLINK &, mavlink_message_t *msg);
-    void handle_log_request_erase(class GCS_MAVLINK &, mavlink_message_t *msg);
-    void handle_log_request_end(class GCS_MAVLINK &, mavlink_message_t *msg);
-    void handle_log_send_listing(class GCS_MAVLINK &);
-    bool handle_log_send_data(class GCS_MAVLINK &);
-
-    void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc);
-    /* support for retrieving logs via mavlink: */
-	
-    uint8_t  _raw_data_listing:1; // sending raw_data list
-    uint8_t  _raw_data_sending:1; // sending raw_data data
-
+public:
     // bolean replicating old vehicle in_raw_data_download flag:
     bool _in_raw_data_download:1;
-
-    // next raw_data list entry to send
-    uint16_t _raw_data_next_list_entry;
-
-    // last raw_data list entry to send
-    uint16_t _raw_data_last_list_entry;
-
-    // number of raw_data files
-    uint16_t _raw_data_num;
-
-    // raw_data number for data send
-    uint16_t _raw_data_num_data;
-
-    // offset in raw_data
-    uint32_t _raw_data_data_offset;
-
-    // size of raw_data file
-    uint32_t _raw_data_data_size;
-
-    // number of bytes left to send
-    uint32_t _raw_data_data_remaining;
-
-    // start page of raw_data data
-    uint16_t _raw_data_data_page;
-
-    int8_t _raw_data_sending_chan = -1;
-
-    bool should_handle_raw_data_message();
-    void handle_raw_data_message(class GCS_MAVLINK &, mavlink_message_t *msg);
-
-    void handle_raw_data_request_list(class GCS_MAVLINK &, mavlink_message_t *msg);
-    void handle_raw_data_request_data(class GCS_MAVLINK &, mavlink_message_t *msg);
-    void handle_raw_data_request_erase(class GCS_MAVLINK &, mavlink_message_t *msg);
-    void handle_raw_data_request_end(class GCS_MAVLINK &, mavlink_message_t *msg);
-    void handle_raw_data_send_listing(class GCS_MAVLINK &);
-    bool handle_raw_data_send_data(class GCS_MAVLINK &);
-
-	
-    void get_raw_data_info(uint16_t raw_data_num, uint32_t &size, uint32_t &time_utc);
-    /* end support for retrieving raw_datas via mavlink: */
-
-	uint8_t  _pos_data_listing:1; // sending pos_data list
-    uint8_t  _pos_data_sending:1; // sending pos_data data
-
     // bolean replicating old vehicle in_pos_data_download flag:
     bool _in_pos_data_download:1;
-
-    // next pos_data list entry to send
-    uint16_t _pos_data_next_list_entry;
-
-    // last pos_data list entry to send
-    uint16_t _pos_data_last_list_entry;
-
-    // number of pos_data files
-    uint16_t _pos_data_num;
-
-    // pos_data number for data send
-    uint16_t _pos_data_num_data;
-
-    // offset in pos_data
-    uint32_t _pos_data_data_offset;
-
-    // size of pos_data file
-    uint32_t _pos_data_data_size;
-
-    // number of bytes left to send
-    uint32_t _pos_data_data_remaining;
-
-	// start page of pos_data data
-	uint16_t _pos_data_data_page;
-	
-	int8_t _pos_data_sending_chan = -1;
-	
-	bool should_handle_pos_data_message();
-    void handle_pos_data_message(class GCS_MAVLINK &, mavlink_message_t *msg);
-
-    void handle_pos_data_request_list(class GCS_MAVLINK &, mavlink_message_t *msg);
-    void handle_pos_data_request_data(class GCS_MAVLINK &, mavlink_message_t *msg);
-    void handle_pos_data_request_erase(class GCS_MAVLINK &, mavlink_message_t *msg);
-    void handle_pos_data_request_end(class GCS_MAVLINK &, mavlink_message_t *msg);
-    void handle_pos_data_send_listing(class GCS_MAVLINK &);
-    bool handle_pos_data_send_data(class GCS_MAVLINK &);
-
-	
-    void get_pos_data_info(uint16_t pos_data_num, uint32_t &size, uint32_t &time_utc);
-    /* end support for retrieving pos_datas via mavlink: */
-public:
-	bool ppk_status;
+	// bolean ppk status
+	bool ppk_status:1;
 };

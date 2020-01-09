@@ -5,7 +5,10 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_GPS/GPS_Backend.h>
 #include <AP_InertialSensor/AP_InertialSensor_Backend.h>
+
+
 
 class AP_Arming {
 public:
@@ -69,8 +72,6 @@ protected:
     AP_Int16                checks_to_perform;      // bitmask for which checks are required
     AP_Float                accel_error_threshold;
     AP_Float                _min_voltage[AP_BATT_MONITOR_MAX_INSTANCES];
-    AP_Float                _steer_voltage[2]; // max and min
-    AP_Float                _copter_voltage;
 
     // references
     const AP_AHRS           &ahrs;
@@ -108,5 +109,5 @@ public:
 
     virtual enum HomeState home_status() const = 0;
 
-    bool ppk_checks(bool report);
+	bool ppk_checks(bool report);
 };

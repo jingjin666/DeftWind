@@ -64,23 +64,10 @@ static const double WGS84_B = (WGS84_A * (1 - WGS84_F));
 // Eccentricity of the Earth
 static const double WGS84_E = (sqrt(2 * WGS84_F - WGS84_F * WGS84_F));
 
-// air density at 15C at sea level in kg/m^3
-#define AIR_DENSITY_SEA_LEVEL    1.225f
-
-#define C_TO_KELVIN 273.15f
-
-// Gas Constant is from Aerodynamics for Engineering Students, Third Edition, E.L.Houghton and N.B.Carruthers
-#define ISA_GAS_CONSTANT 287.26f
-#define ISA_LAPSE_RATE 0.0065f
-
-/*
-  use AP_ prefix to prevent conflict with OS headers, such as NuttX
-  clock.h
- */
-#define AP_NSEC_PER_SEC   1000000000ULL
-#define AP_NSEC_PER_USEC  1000ULL
-#define AP_USEC_PER_SEC   1000000ULL
-#define AP_USEC_PER_MSEC  1000ULL
-#define AP_MSEC_PER_SEC   1000ULL
-#define AP_SEC_PER_WEEK   (7ULL * 86400ULL)
-#define AP_MSEC_PER_WEEK  (AP_SEC_PER_WEEK * AP_MSEC_PER_SEC)
+#define AP_NSEC_PER_SEC    1000000000ULL
+#define AP_NSEC_PER_USEC   1000ULL
+#define AP_USEC_PER_SEC    1000000ULL
+#define AP_USEC_PER_MSEC   1000ULL
+#define AP_MSEC_PER_SEC    1000ULL
+#define AP_SEC_PER_WEEK    (7ULL * 86400ULL)
+#define AP_MSEC_PER_WEEK   (AP_SEC_PER_WEEK * AP_MSEC_PER_SEC)

@@ -24,7 +24,7 @@
  # define Debug(fmt, args ...)
 #endif
 
-#include <GCS_MAVLink/GCS.h>
+#include <GCS_MAVLink/GCS.h> // for send_statustext_all
 
 extern const AP_HAL::HAL& hal;
 
@@ -141,7 +141,7 @@ void AP_GPS_Backend::_detection_message(char *buffer, const uint8_t buflen) cons
     const uint8_t instance = state.instance;
     const struct AP_GPS::detect_state dstate = gps.detect_state[instance];
 
-    if (dstate.auto_detected_baud) {
+    if (dstate.detect_started_ms > 0) {
         hal.util->snprintf(buffer, buflen,
                  "GPS %d: detected as %s at %d baud",
                  instance + 1,
@@ -160,27 +160,12 @@ void AP_GPS_Backend::broadcast_gps_type() const
 {
     char buffer[64];
     _detection_message(buffer, sizeof(buffer));
-    gcs().send_text(MAV_SEVERITY_INFO, buffer);
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, buffer);
 }
 
 void AP_GPS_Backend::Write_DataFlash_Log_Startup_messages() const
 {
     char buffer[64];
     _detection_message(buffer, sizeof(buffer));
-    DataFlash_Class::instance()->Log_Write_Message(buffer);
-}
-
-bool AP_GPS_Backend::should_df_log() const
-{
-    DataFlash_Class *instance = DataFlash_Class::instance();
-    if (instance == nullptr) {
-        return false;
-    }
-    if (gps._log_gps_bit == (uint32_t)-1) {
-        return false;
-    }
-    if (!instance->should_log(gps._log_gps_bit)) {
-        return false;
-    }
-    return true;
+    gps._DataFlash->Log_Write_Message(buffer);
 }

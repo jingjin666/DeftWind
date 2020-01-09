@@ -1,3 +1,4 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include "RangeFinder.h"
@@ -18,17 +19,11 @@ public:
     void update(void);
 
 private:
-    // detect uLanding Firmware Version
-    bool detect_version(void);
-
     // get a reading
     bool get_reading(uint16_t &reading_cm);
 
-    AP_HAL::UARTDriver *uart;
-    uint8_t  _linebuf[6];
-    uint8_t  _linebuf_len;
-    uint32_t _last_reading_ms;
-    bool     _version_known;
-    uint8_t  _header;
-    uint8_t  _version;
+    AP_HAL::UARTDriver *uart = nullptr;
+    uint32_t last_reading_ms = 0;
+    uint8_t linebuf[10];
+    uint8_t linebuf_len = 0;
 };

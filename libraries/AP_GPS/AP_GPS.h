@@ -32,14 +32,13 @@
 #define GPS_BLENDED_INSTANCE GPS_MAX_RECEIVERS  // the virtual blended GPS is always the highest instance (2)
 #define GPS_RTK_INJECT_TO_ALL 127
 #define GPS_MAX_RATE_MS 200 // maximum value of rate_ms (i.e. slowest update rate) is 5hz or 200ms
-#define GPS_UNKNOWN_DOP UINT16_MAX // set unknown DOP's to maximum value, which is also correct for MAVLink
-#define GPS_WORST_LAG_SEC 0.22f // worst lag value any GPS driver is expected to return, expressed in seconds
 
 // the number of GPS leap seconds
 #define GPS_LEAPSECONDS_MILLIS 18000ULL
 
 #define UNIX_OFFSET_MSEC (17000ULL * 86400ULL + 52ULL * 10ULL * AP_MSEC_PER_WEEK - GPS_LEAPSECONDS_MILLIS)
 
+class DataFlash_Class;
 class AP_GPS_Backend;
 
 /// @class AP_GPS
@@ -159,7 +158,7 @@ public:
     };
 
     /// Startup initialisation.
-    void init(const AP_SerialManager& serial_manager);
+    void init(DataFlash_Class *dataflash, const AP_SerialManager& serial_manager);
 
     /// Update GPS state based on possible bytes received from the module.
     /// This routine must be called periodically (typically at 10Hz or
@@ -372,11 +371,8 @@ public:
 
 
     // the expected lag (in seconds) in the position and velocity readings from the gps
-    // return true if the GPS hardware configuration is known or the lag parameter has been set manually
-    bool get_lag(uint8_t instance, float &lag_sec) const;
-    bool get_lag(float &lag_sec) const {
-        return get_lag(primary_instance, lag_sec);
-    }
+    float get_lag(uint8_t instance) const;
+    float get_lag(void) const { return get_lag(primary_instance); }
 
     // return a 3D vector defining the offset of the GPS antenna in meters relative to the body frame origin
     const Vector3f &get_antenna_offset(uint8_t instance) const;
@@ -424,8 +420,8 @@ public:
     void send_blob_update(uint8_t instance);
 
     // return last fix time since the 1/1/1970 in microseconds
-    uint64_t time_epoch_usec(uint8_t instance) const;
-    uint64_t time_epoch_usec(void) const {
+    uint64_t time_epoch_usec(uint8_t instance);
+    uint64_t time_epoch_usec(void) {
         return time_epoch_usec(primary_instance);
     }
 
@@ -436,10 +432,10 @@ public:
 
     void Write_DataFlash_Log_Startup_messages();
 
-    // indicate which bit in LOG_BITMASK indicates gps logging enabled
-    void set_log_gps_bit(uint32_t bit) { _log_gps_bit = bit; }
-
 protected:
+
+    // dataflash for logging, if available
+    DataFlash_Class *_DataFlash;
 
     // configuration parameters
     AP_Int8 _type[GPS_MAX_RECEIVERS];
@@ -464,17 +460,14 @@ protected:
     uint32_t _log_gps_bit = -1;
 
 private:
-    // returns the desired gps update rate in milliseconds
-    // this does not provide any guarantee that the GPS is updating at the requested
-    // rate it is simply a helper for use in the backends for determining what rate
-    // they should be configuring the GPS to run at
+    // return gps update rate in milliseconds
     uint16_t get_rate_ms(uint8_t instance) const;
 
     struct GPS_timing {
         // the time we got our last fix in system milliseconds
         uint32_t last_fix_time_ms;
 
-        // the time we got our last message in system milliseconds
+        // the time we got our last fix in system milliseconds
         uint32_t last_message_time_ms;
     };
     // Note allowance for an additional instance to contain blended data
@@ -496,9 +489,9 @@ private:
 
     // state of auto-detection process, per instance
     struct detect_state {
+        uint32_t detect_started_ms;
         uint32_t last_baud_change_ms;
         uint8_t current_baud;
-        bool auto_detected_baud;
         struct UBLOX_detect_state ublox_detect_state;
         struct MTK_detect_state mtk_detect_state;
         struct MTK19_detect_state mtk19_detect_state;
@@ -560,11 +553,4 @@ private:
 
     // calculate the blended state
     void calc_blended_state(void);
-
-    // Auto configure types
-    enum GPS_AUTO_CONFIG {
-        GPS_AUTO_CONFIG_DISABLE = 0,
-        GPS_AUTO_CONFIG_ENABLE  = 1
-    };
-
 };

@@ -118,8 +118,8 @@ void DFMessageWriter_WriteSysInfo::process() {
         // no break
 
     case ws_blockwriter_stage_git_versions:
-#if defined(DP_GIT_VERSION)
-        if (! _dataflash_backend->Log_Write_Message("DEFTWIND: " DP_GIT_VERSION)) {
+#if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
+        if (! _dataflash_backend->Log_Write_Message("PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION)) {
             return; // call me again
         }
 #endif

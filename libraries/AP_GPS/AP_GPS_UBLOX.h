@@ -116,8 +116,8 @@ public:
     void broadcast_configuration_failure_reason(void) const override;
     void Write_DataFlash_Log_Startup_messages() const override;
 
-    // get the velocity lag, returns true if the driver is confident in the returned value
-    bool get_lag(float &lag_sec) const override;
+    // return velocity lag
+    float get_lag(void) const override;
 
     const char *name() const override { return "u-blox"; }
     int8_t get_gps_type() const override {return DEVTYPE_BLOX_M8N;} 
@@ -478,9 +478,7 @@ private:
         UBLOX_5,
         UBLOX_6,
         UBLOX_7,
-        UBLOX_M8,
-        UBLOX_UNKNOWN_HARDWARE_GENERATION = 0xff // not in the ublox spec used for
-                                                 // flagging state in the driver
+        UBLOX_M8
     };
 
     enum config_step {

@@ -43,11 +43,6 @@ public:
     // Constructor
     AP_Notify();   
 
-    // get singleton instance
-    static AP_Notify *instance(void) {
-        return _instance;
-    }
-
     // Oreo LED Themes
     enum Oreo_LED_Theme {
         OreoLED_Disabled        = 0,    // Disabled the OLED driver entirely
@@ -137,8 +132,6 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-
-    static AP_Notify *_instance;
 
     // parameters
     AP_Int8 _rgb_led_brightness;

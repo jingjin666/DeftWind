@@ -4,8 +4,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <DataFlash/DataFlash.h>
-#include <GCS_MAVLink/GCS_Dummy.h>
-#include <stdio.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
@@ -71,8 +69,7 @@ public:
 
 private:
 
-    AP_Int32 log_bitmask;
-    DataFlash_Class dataflash{"DF AllTypes 0.1", log_bitmask};
+    DataFlash_Class dataflash{"DF AllTypes 0.1"};
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
 
     void Log_Write_TypeMessages();
@@ -83,7 +80,7 @@ private:
 
 void DataFlashTest_AllTypes::flush_dataflash(DataFlash_Class &_dataflash)
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     _dataflash.flush();
 #else
     // flush is not available on e.g. px4 as it would be a somewhat
@@ -97,6 +94,7 @@ void DataFlashTest_AllTypes::flush_dataflash(DataFlash_Class &_dataflash)
 
 void DataFlashTest_AllTypes::Log_Write_TypeMessages()
 {
+    dataflash.StartUnstartedLogging();
     log_num = dataflash.find_last_log();
     hal.console->printf("Using log number %u\n", log_num);
 
@@ -143,6 +141,7 @@ void DataFlashTest_AllTypes::Log_Write_TypeMessages()
 
 void DataFlashTest_AllTypes::Log_Write_TypeMessages_Log_Write()
 {
+    dataflash.StartUnstartedLogging();
     log_num = dataflash.find_last_log();
     hal.console->printf("Using log number for Log_Write %u\n", log_num);
 
@@ -184,14 +183,17 @@ void DataFlashTest_AllTypes::setup(void)
 {
     hal.console->printf("Dataflash All Types 1.0\n");
 
-    log_bitmask = (uint32_t)-1;
     dataflash.Init(log_structure, ARRAY_SIZE(log_structure));
     dataflash.set_vehicle_armed(true);
-    dataflash.Log_Write_Message("DataFlash Test");
 
     // Test
     hal.scheduler->delay(20);
     dataflash.ShowDeviceInfo(hal.console);
+
+    if (dataflash.NeedPrep()) {
+        hal.console->printf("Preparing dataflash...\n");
+        dataflash.Prep();
+    }
 
     Log_Write_TypeMessages();
     Log_Write_TypeMessages_Log_Write();
@@ -204,12 +206,6 @@ void DataFlashTest_AllTypes::loop(void)
     hal.console->printf("all done\n");
     hal.scheduler->delay(1000);
 }
-
-const struct AP_Param::GroupInfo        GCS_MAVLINK::var_info[] = {
-    AP_GROUPEND
-};
-GCS_Dummy _gcs;
-
 
 static DataFlashTest_AllTypes dataflashtest;
 

@@ -22,93 +22,32 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_SerialManager.h"
-#include <stdio.h>
+
 extern const AP_HAL::HAL& hal;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#define SERIAL0_PROTOCOL SerialProtocol_MAVLink2
-#define SERIAL0_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
-
-#define SERIAL1_PROTOCOL SerialProtocol_MAVLink2
-#define SERIAL1_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
-
-#define SERIAL2_PROTOCOL SerialProtocol_GPS
-#define SERIAL2_BAUD AP_SERIALMANAGER_GPS_BAUD/1000
-
-#define SERIAL3_PROTOCOL SerialProtocol_GPS
-#define SERIAL3_BAUD AP_SERIALMANAGER_GPS_BAUD/1000
-
-#define SERIAL4_PROTOCOL SerialProtocol_GPS
-#define SERIAL4_BAUD AP_SERIALMANAGER_GPS_BAUD/1000
-
-#define SERIAL5_PROTOCOL SerialProtocol_None
-#define SERIAL5_BAUD AP_SERIALMANAGER_BACKUP_BAUD/1000
-
-#define SERIAL6_PROTOCOL SerialProtocol_None
-#define SERIAL6_BAUD AP_SERIALMANAGER_BACKUP_BAUD/1000
-#elif CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
-#if defined(CONFIG_ARCH_BOARD_UAVRS_V1)
-#define SERIAL0_PROTOCOL SerialProtocol_MAVLink2
-#define SERIAL0_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
-
-#define SERIAL1_PROTOCOL SerialProtocol_MAVLink2
-#define SERIAL1_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
-
-#define SERIAL2_PROTOCOL SerialProtocol_GPS
-#define SERIAL2_BAUD AP_SERIALMANAGER_GPS_BAUD/1000
-
-#define SERIAL3_PROTOCOL SerialProtocol_Nova_Rtcm
-#define SERIAL3_BAUD AP_SERIALMANAGER_RTCM_BAUD/1000
-
-#define SERIAL4_PROTOCOL SerialProtocol_GPS
-#define SERIAL4_BAUD AP_SERIALMANAGER_GPS_BAUD/1000
-
-#define SERIAL5_PROTOCOL SerialProtocol_None
-#define SERIAL5_BAUD AP_SERIALMANAGER_BACKUP_BAUD/1000
-
-#define SERIAL6_PROTOCOL SerialProtocol_None
-#define SERIAL6_BAUD AP_SERIALMANAGER_BACKUP_BAUD/1000
-#elif defined(CONFIG_ARCH_BOARD_UAVRS_V2)
-#define SERIAL0_PROTOCOL SerialProtocol_MAVLink2
-#define SERIAL0_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
-
-#define SERIAL1_PROTOCOL SerialProtocol_Nova_Rtcm
-#define SERIAL1_BAUD AP_SERIALMANAGER_RTCM_BAUD/1000
-
-#define SERIAL2_PROTOCOL SerialProtocol_GPS
-#define SERIAL2_BAUD AP_SERIALMANAGER_GPS_BAUD/1000
-
-#define SERIAL3_PROTOCOL SerialProtocol_None
-#define SERIAL3_BAUD AP_SERIALMANAGER_BACKUP_BAUD/1000
-
-#define SERIAL4_PROTOCOL SerialProtocol_None
-#define SERIAL4_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
-
-#define SERIAL5_PROTOCOL SerialProtocol_MAVLink2
-#define SERIAL5_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
-
-#define SERIAL6_PROTOCOL SerialProtocol_GPS
-#define SERIAL6_BAUD AP_SERIALMANAGER_GPS_BAUD/1000
+#ifdef CONFIG_ARCH_BOARD_PX4FMU_V4
+#define SERIAL5_PROTOCOL SerialProtocol_MAVLink
+#define SERIAL5_BAUD 921600
 #else
-#error "Unknown board type"
-#endif
+#define SERIAL5_PROTOCOL SerialProtocol_None
+#define SERIAL5_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
 #endif
 
 const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
+    // @Param: 0_BAUD
+    // @DisplayName: Serial0 baud rate
+    // @Description: The baud rate used on the USB console. The APM2 can support all baudrates up to 115, and also can support 500. The PX4 can support rates of up to 1500. If you setup a rate you cannot support on APM2 and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
+    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,460:460800,500:500000,921:921600,1500:1500000
+    // @User: Standard
+    AP_GROUPINFO("0_BAUD",  0, AP_SerialManager, state[0].baud, AP_SERIALMANAGER_CONSOLE_BAUD/1000),
+
     // @Param: 0_PROTOCOL
     // @DisplayName: Console protocol selection
     // @Description: Control what protocol to use on the console. 
     // @Values: 1:MAVlink1, 2:MAVLink2
     // @User: Standard
     // @RebootRequired: True
-    AP_GROUPINFO("0_PROTOCOL",  0, AP_SerialManager, state[0].protocol, SERIAL0_PROTOCOL),
-
-    // @Param: 0_BAUD
-    // @DisplayName: Serial0 baud rate
-    // @Description: The baud rate used on the USB console. The APM2 can support all baudrates up to 115, and also can support 500. The PX4 can support rates of up to 1500. If you setup a rate you cannot support on APM2 and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
-    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,460:460800,500:500000,921:921600,1500:1500000
-    // @User: Standard
-    AP_GROUPINFO("0_BAUD",  1, AP_SerialManager, state[0].baud, SERIAL0_BAUD),
+    AP_GROUPINFO("0_PROTOCOL",  11, AP_SerialManager, state[0].protocol, SerialProtocol_MAVLink2),
     
     // @Param: 1_PROTOCOL
     // @DisplayName: Telem1 protocol selection
@@ -116,14 +55,14 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @Values: -1:None, 1:MAVLink1, 2:MAVLink2, 3:Frsky D, 4:Frsky SPort, 5:GPS, 7:Alexmos Gimbal Serial, 8:SToRM32 Gimbal Serial, 9:Lidar, 10:FrSky SPort Passthrough (OpenTX), 11:Lidar360, 12:Aerotenna uLanding, 13:Beacon
     // @User: Standard
     // @RebootRequired: True
-    AP_GROUPINFO("1_PROTOCOL",  2, AP_SerialManager, state[1].protocol, SERIAL1_PROTOCOL),
+    AP_GROUPINFO("1_PROTOCOL",  1, AP_SerialManager, state[1].protocol, SerialProtocol_MAVLink2),
 
     // @Param: 1_BAUD
     // @DisplayName: Telem1 Baud Rate
     // @Description: The baud rate used on the Telem1 port. The APM2 can support all baudrates up to 115, and also can support 500. The PX4 can support rates of up to 1500. If you setup a rate you cannot support on APM2 and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
     // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,500:500000,921:921600,1500:1500000
     // @User: Standard
-    AP_GROUPINFO("1_BAUD", 3, AP_SerialManager, state[1].baud, SERIAL1_BAUD),
+    AP_GROUPINFO("1_BAUD", 2, AP_SerialManager, state[1].baud, AP_SERIALMANAGER_MAVLINK_BAUD/1000),
 
     // @Param: 2_PROTOCOL
     // @DisplayName: Telemetry 2 protocol selection
@@ -131,14 +70,14 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @Values: -1:None, 1:MAVLink1, 2:MAVLink2, 3:Frsky D, 4:Frsky SPort, 5:GPS, 7:Alexmos Gimbal Serial, 8:SToRM32 Gimbal Serial, 9:Lidar, 10:FrSky SPort Passthrough (OpenTX), 11:Lidar360, 12:Aerotenna uLanding, 13:Beacon
     // @User: Standard
     // @RebootRequired: True
-    AP_GROUPINFO("2_PROTOCOL",  4, AP_SerialManager, state[2].protocol, SERIAL2_PROTOCOL),
+    AP_GROUPINFO("2_PROTOCOL",  3, AP_SerialManager, state[2].protocol, SerialProtocol_GPS),
 
     // @Param: 2_BAUD
     // @DisplayName: Telemetry 2 Baud Rate
     // @Description: The baud rate of the Telem2 port. The APM2 can support all baudrates up to 115, and also can support 500. The PX4 can support rates of up to 1500. If you setup a rate you cannot support on APM2 and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
     // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,500:500000,921:921600,1500:1500000
     // @User: Standard
-    AP_GROUPINFO("2_BAUD", 5, AP_SerialManager, state[2].baud, SERIAL2_BAUD),
+    AP_GROUPINFO("2_BAUD", 4, AP_SerialManager, state[2].baud, AP_SERIALMANAGER_GPS_BAUD/1000),
 
     // @Param: 3_PROTOCOL
     // @DisplayName: Serial 3 (GPS) protocol selection
@@ -146,14 +85,14 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @Values: -1:None, 1:MAVLink1, 2:MAVLink2, 3:Frsky D, 4:Frsky SPort, 5:GPS, 7:Alexmos Gimbal Serial, 8:SToRM32 Gimbal Serial, 9:Lidar, 10:FrSky SPort Passthrough (OpenTX), 11:Lidar360, 12:Aerotenna uLanding, 13:Beacon
     // @User: Standard
     // @RebootRequired: True
-    AP_GROUPINFO("3_PROTOCOL",  6, AP_SerialManager, state[3].protocol, SERIAL3_PROTOCOL),
+    AP_GROUPINFO("3_PROTOCOL",  5, AP_SerialManager, state[3].protocol, SerialProtocol_Nova_Rtcm),
 
     // @Param: 3_BAUD
     // @DisplayName: Serial 3 (GPS) Baud Rate
     // @Description: The baud rate used for the Serial 3 (GPS). The APM2 can support all baudrates up to 115, and also can support 500. The PX4 can support rates of up to 1500. If you setup a rate you cannot support on APM2 and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
     // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,500:500000,921:921600,1500:1500000
     // @User: Standard
-    AP_GROUPINFO("3_BAUD", 7, AP_SerialManager, state[3].baud, SERIAL3_BAUD),
+    AP_GROUPINFO("3_BAUD", 6, AP_SerialManager, state[3].baud, AP_SERIALMANAGER_RTCM_BAUD/1000),
 
     // @Param: 4_PROTOCOL
     // @DisplayName: Serial4 protocol selection
@@ -161,14 +100,14 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @Values: -1:None, 1:MAVLink1, 2:MAVLink2, 3:Frsky D, 4:Frsky SPort, 5:GPS, 7:Alexmos Gimbal Serial, 8:SToRM32 Gimbal Serial, 9:Lidar, 10:FrSky SPort Passthrough (OpenTX), 11:Lidar360, 12:Aerotenna uLanding, 13:Beacon
     // @User: Standard
     // @RebootRequired: True
-    AP_GROUPINFO("4_PROTOCOL",  8, AP_SerialManager, state[4].protocol, SERIAL4_PROTOCOL),
+    AP_GROUPINFO("4_PROTOCOL",  7, AP_SerialManager, state[4].protocol, SerialProtocol_GPS),
 
     // @Param: 4_BAUD
     // @DisplayName: Serial 4 Baud Rate
     // @Description: The baud rate used for Serial4. The APM2 can support all baudrates up to 115, and also can support 500. The PX4 can support rates of up to 1500. If you setup a rate you cannot support on APM2 and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
     // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,500:500000,921:921600,1500:1500000
     // @User: Standard
-    AP_GROUPINFO("4_BAUD", 9, AP_SerialManager, state[4].baud, SERIAL4_BAUD),
+    AP_GROUPINFO("4_BAUD", 8, AP_SerialManager, state[4].baud, AP_SERIALMANAGER_GPS_BAUD/1000),
 
     // @Param: 5_PROTOCOL
     // @DisplayName: Serial5 protocol selection
@@ -176,30 +115,17 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @Values: -1:None, 1:MAVLink1, 2:MAVLink2, 3:Frsky D, 4:Frsky SPort, 5:GPS, 7:Alexmos Gimbal Serial, 8:SToRM32 Gimbal Serial, 9:Lidar, 10:FrSky SPort Passthrough (OpenTX), 11:Lidar360, 12:Aerotenna uLanding, 13:Beacon
     // @User: Standard
     // @RebootRequired: True
-    AP_GROUPINFO("5_PROTOCOL",  10, AP_SerialManager, state[5].protocol, SERIAL5_PROTOCOL),
+    AP_GROUPINFO("5_PROTOCOL",  9, AP_SerialManager, state[5].protocol, SerialProtocol_Save_Log),
 
     // @Param: 5_BAUD
     // @DisplayName: Serial 5 Baud Rate
     // @Description: The baud rate used for Serial5. The APM2 can support all baudrates up to 115, and also can support 500. The PX4 can support rates of up to 1500. If you setup a rate you cannot support on APM2 and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
     // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,500:500000,921:921600,1500:1500000
     // @User: Standard
-    AP_GROUPINFO("5_BAUD", 11, AP_SerialManager, state[5].baud, SERIAL5_BAUD),
+    AP_GROUPINFO("5_BAUD", 10, AP_SerialManager, state[5].baud, AP_SERIALMANAGER_SAVELOG_BAUD/1000),
 
-    // @Param: 6_PROTOCOL
-    // @DisplayName: Serial6 protocol selection
-    // @Description: Control what protocol Serial5 port should be used for. Note that the Frsky options require external converter hardware. See the wiki for details.
-    // @Values: -1:None, 1:MAVLink1, 2:MAVLink2, 3:Frsky D, 4:Frsky SPort, 5:GPS, 7:Alexmos Gimbal Serial, 8:SToRM32 Gimbal Serial, 9:Lidar, 10:FrSky SPort Passthrough (OpenTX), 11:Lidar360, 12:Aerotenna uLanding, 13:Beacon
-    // @User: Standard
-    // @RebootRequired: True
-    AP_GROUPINFO("6_PROTOCOL",  12, AP_SerialManager, state[6].protocol, SERIAL6_PROTOCOL),
-
-    // @Param: 6_BAUD
-    // @DisplayName: Serial 6 Baud Rate
-    // @Description: The baud rate used for Serial5. The APM2 can support all baudrates up to 115, and also can support 500. The PX4 can support rates of up to 1500. If you setup a rate you cannot support on APM2 and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
-    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,500:500000,921:921600,1500:1500000
-    // @User: Standard
-    AP_GROUPINFO("6_BAUD", 13, AP_SerialManager, state[6].baud, SERIAL6_BAUD),
-
+    // index 11 used by 0_PROTOCOL
+    
     AP_GROUPEND
 };
 
@@ -226,19 +152,26 @@ extern bool g_nsh_should_exit;
 void AP_SerialManager::init()
 {
     // initialise pointers to serial ports
-    state[1].uart = hal.uartB;
-    state[2].uart = hal.uartC;
-    state[3].uart = hal.uartD;
-    state[4].uart = hal.uartE;
-    state[5].uart = hal.uartF;
-    state[6].uart = hal.uartG;
+    state[1].uart = hal.uartC;  // serial1, uartC, normally telem1
+    state[2].uart = hal.uartD;  // serial2, uartD, normally telem2
+    state[3].uart = hal.uartB;  // serial3, uartB, normally 1st GPS
+    state[4].uart = hal.uartE;  // serial4, uartE, normally 2nd GPS
+    state[5].uart = hal.uartF;  // serial5
 
     if (state[0].uart == nullptr) {
         init_console();
     }
     
     // initialise serial ports
-    for (uint8_t i=1; i<SERIALMANAGER_NUM_PORTS; i++) {        
+    for (uint8_t i=1; i<SERIALMANAGER_NUM_PORTS; i++) {
+
+#ifdef CONFIG_ARCH_BOARD_PX4FMU_V2
+        if (i == 5 && state[i].protocol != SerialProtocol_None) {
+            // tell nsh to exit to free up this uart
+            g_nsh_should_exit = true;
+        }
+#endif
+        
         if (state[i].uart != nullptr) {
             switch (state[i].protocol) {
                 case SerialProtocol_None:
@@ -250,16 +183,61 @@ void AP_SerialManager::init()
                                          AP_SERIALMANAGER_MAVLINK_BUFSIZE_RX,
                                          AP_SERIALMANAGER_MAVLINK_BUFSIZE_TX);
                     break;
+                case SerialProtocol_FrSky_D:
+                    // Note baudrate is hardcoded to 9600
+                    state[i].baud = AP_SERIALMANAGER_FRSKY_D_BAUD/1000; // update baud param in case user looks at it
+                    // begin is handled by AP_Frsky_telem library
+                    break;
+                case SerialProtocol_FrSky_SPort:
+                case SerialProtocol_FrSky_SPort_Passthrough:
+                    // Note baudrate is hardcoded to 57600
+                    state[i].baud = AP_SERIALMANAGER_FRSKY_SPORT_BAUD/1000; // update baud param in case user looks at it
+                    // begin is handled by AP_Frsky_telem library
+                    break;
                 case SerialProtocol_GPS:
                 case SerialProtocol_GPS2:
                     state[i].uart->begin(map_baudrate(state[i].baud), 
                                          AP_SERIALMANAGER_GPS_BUFSIZE_RX,
                                          AP_SERIALMANAGER_GPS_BUFSIZE_TX);
                     break;
+                case SerialProtocol_AlexMos:
+                    // Note baudrate is hardcoded to 115200
+                    state[i].baud = AP_SERIALMANAGER_ALEXMOS_BAUD / 1000;   // update baud param in case user looks at it
+                    state[i].uart->begin(AP_SERIALMANAGER_ALEXMOS_BAUD,
+                                         AP_SERIALMANAGER_ALEXMOS_BUFSIZE_RX,
+                                         AP_SERIALMANAGER_ALEXMOS_BUFSIZE_TX);
+                    break;
+                case SerialProtocol_SToRM32:
+                    // Note baudrate is hardcoded to 115200
+                    state[i].baud = AP_SERIALMANAGER_SToRM32_BAUD / 1000;   // update baud param in case user looks at it
+                    state[i].uart->begin(map_baudrate(state[i].baud),
+                                         AP_SERIALMANAGER_SToRM32_BUFSIZE_RX,
+                                         AP_SERIALMANAGER_SToRM32_BUFSIZE_TX);
+                    break;
+                case SerialProtocol_Aerotenna_uLanding:
+                    // Note baudrate is hardcoded to 115200
+                    state[i].baud = AP_SERIALMANAGER_ULANDING_BAUD / 1000;   // update baud param in case user looks at it
+                    state[i].uart->begin(map_baudrate(state[i].baud),
+                                         AP_SERIALMANAGER_ULANDING_BUFSIZE_RX,
+                                         AP_SERIALMANAGER_ULANDING_BUFSIZE_TX);
+                    break;
 				case SerialProtocol_Nova_Rtcm:
+                    // Note baudrate is hardcoded to 115200
                     state[i].uart->begin(map_baudrate(state[i].baud),
                                          AP_SERIALMANAGER_RTCM_BUFSIZE_RX,
                                          AP_SERIALMANAGER_RTCM_BUFSIZE_TX);
+                    break;
+               case SerialProtocol_Save_Log:
+                    state[i].uart->begin(map_baudrate(state[i].baud),
+                                         AP_SERIALMANAGER_SAVELOG_BUFSIZE_RX,
+                                         AP_SERIALMANAGER_SAVELOG_BUFSIZE_TX);
+                    break;
+               case SerialProtocol_Z6ka7:
+                    // Note baudrate is hardcoded to 115200
+                    state[i].baud = AP_SERIALMANAGER_Z6KA7_BAUD / 1000;   // update baud param in case user looks at it
+                    state[i].uart->begin(map_baudrate(state[i].baud),
+                                         AP_SERIALMANAGER_Z6KA7_BUFSIZE_RX,
+                                         AP_SERIALMANAGER_Z6KA7_BUFSIZE_TX);
                     break;
             }
         }

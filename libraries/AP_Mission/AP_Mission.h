@@ -319,7 +319,7 @@ public:
     /// check mission starts with a takeoff command
     bool starts_with_takeoff_cmd();
 
-    bool starts_check_misson_cmd();
+    bool end_with_rtl_cmd();
 
     /// reset - reset mission to the first command
     void reset();

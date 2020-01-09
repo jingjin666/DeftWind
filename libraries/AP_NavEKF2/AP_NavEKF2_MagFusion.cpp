@@ -111,14 +111,14 @@ void NavEKF2_core::controlMagYawReset()
 
             // send initial alignment status to console
             if (!yawAlignComplete) {
-                gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u initial yaw alignment complete",(unsigned)imu_index);
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u initial yaw alignment complete",(unsigned)imu_index);
             }
 
             // send in-flight yaw alignment status to console
             if (finalResetRequest) {
-                gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u in-flight yaw alignment complete",(unsigned)imu_index);
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u in-flight yaw alignment complete",(unsigned)imu_index);
             } else if (interimResetRequest) {
-                gcs().send_text(MAV_SEVERITY_WARNING, "EKF2 IMU%u ground mag anomaly, yaw re-aligned",(unsigned)imu_index);
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "EKF2 IMU%u ground mag anomaly, yaw re-aligned",(unsigned)imu_index);
             }
 
             // update the yaw reset completed status
@@ -168,7 +168,7 @@ void NavEKF2_core::realignYawGPS()
             ResetPosition();
 
             // send yaw alignment information to console
-            gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u yaw aligned to GPS velocity",(unsigned)imu_index);
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u yaw aligned to GPS velocity",(unsigned)imu_index);
 
             // zero the attitude covariances becasue the corelations will now be invalid
             zeroAttCovOnly();
@@ -218,7 +218,7 @@ void NavEKF2_core::SelectMagFusion()
     // check for availability of magnetometer data to fuse
     magDataToFuse = storedMag.recall(magDataDelayed,imuDataDelayed.time_ms);
 
-    if(_ahrs->get_gps().heading_status() == AP_GPS::GPS_OK_FIX_3D_RTK_FIXED){ 
+    if(gpsDataDelayed.hstat == AP_GPS::GPS_OK_FIX_3D_RTK_FIXED){ 
         //yaw use gps heading
         return ;
     }
@@ -226,8 +226,9 @@ void NavEKF2_core::SelectMagFusion()
     if(yaw_switch != YAW_USE_COPASS){
         //Switch the yaw source and reset the variance matrix.
         CovarianceInit();
+        offsetSwitchMageFlag = true;
         yaw_switch = YAW_USE_COPASS;
-        gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u yaw switch to compass heading",(unsigned)imu_index);
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u yaw switch to compass heading",(unsigned)imu_index);
     }
 
     // Control reset of yaw and magnetic field states if we are using compass data
@@ -845,6 +846,13 @@ void NavEKF2_core::fuseEulerYaw()
     // Calculate the innovation
     float innovation = wrap_PI(predicted_yaw - measured_yaw);
 
+    if(offsetSwitchMageFlag){
+        offsetSwitchMageFlag = false;
+        offsetSwitchMage = innovation;
+    }
+
+    innovation = wrap_PI(innovation - offsetSwitchMage);
+
     // Copy raw value to output variable used for data logging
     innovYaw = innovation;
 
@@ -1140,12 +1148,12 @@ void NavEKF2_core::recordMagReset()
 
 void NavEKF2_core::FuseGpsHeading()
 {
-    if(!_ahrs->get_gps().have_heading()){
+    if(!gpsDataDelayed.have_hdg){
         inflightYawResetRequest = true;
         return;
     }
 
-     if(_ahrs->get_gps().heading_status() == AP_GPS::GPS_OK_FIX_3D_RTK_FIXED){
+     if(gpsDataDelayed.hstat== AP_GPS::GPS_OK_FIX_3D_RTK_FIXED){
         if(!yawAlignComplete || !finalInflightYawInit || inflightYawResetRequest){
 
             if(!yawAlignComplete){
@@ -1153,7 +1161,7 @@ void NavEKF2_core::FuseGpsHeading()
                 UseGpsHeadingResetYaw();
                 inflightYawResetRequest = false;
                 // send yaw alignment information to logfile
-                gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u yaw aligned to GPS heading",(unsigned)imu_index);
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u yaw aligned to GPS heading",(unsigned)imu_index);
             }
 
              bool finalResetRequest = false;
@@ -1165,7 +1173,7 @@ void NavEKF2_core::FuseGpsHeading()
                 UseGpsHeadingResetYaw();
                 inflightYawResetRequest = false;
                 // send yaw alignment information to logfile
-                gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u yaw aligned to GPS heading infight",(unsigned)imu_index);
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u yaw aligned to GPS heading infight",(unsigned)imu_index);
              }
 
              if(inflightYawResetRequest && onGround){
@@ -1173,7 +1181,7 @@ void NavEKF2_core::FuseGpsHeading()
                 UseGpsHeadingResetYaw();
                 inflightYawResetRequest = false;
                 // send yaw alignment information to logfile
-                gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u yaw aligned to GPS heading request reset",(unsigned)imu_index);
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u yaw aligned to GPS heading request reset",(unsigned)imu_index);
              }
         }
 
@@ -1185,7 +1193,7 @@ void NavEKF2_core::FuseGpsHeading()
             //Switch the yaw source and reset the variance matrix.
             CovarianceInit();
             yaw_switch = YAW_USE_GPS;
-            gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u yaw switch to GPS heading",(unsigned)imu_index);
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u yaw switch to GPS heading",(unsigned)imu_index);
         }
 
         fuseEulerYawUseGpsHead();
@@ -1234,7 +1242,6 @@ void NavEKF2_core::fuseEulerYawUseGpsHead()
     predicted_yaw = eulerAngles.z;
 
     float measured_yaw;
-    //measured_yaw = ToRad(_ahrs->get_gps().get_heading());
     measured_yaw = gpsDataDelayed.hdg;
 
     // Calculate the innovation

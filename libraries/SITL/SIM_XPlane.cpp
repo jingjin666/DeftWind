@@ -297,7 +297,6 @@ bool XPlane::receive_data(void)
     }
     position = pos + position_zero;
     update_position();
-    time_advance();
 
     accel_earth = dcm * accel_body;
     accel_earth.z += GRAVITY_MSS;
@@ -315,7 +314,6 @@ bool XPlane::receive_data(void)
         position.y = 0;
         position.z = 0;
         update_position();
-        time_advance();
     }
 
     update_mag_field_bf();
@@ -336,15 +334,27 @@ failed:
     }
 
     // advance time by 1ms
+    Vector3f rot_accel;
     frame_time_us = 1000;
     float delta_time = frame_time_us * 1e-6f;
 
     time_now_us += frame_time_us;
 
-    extrapolate_sensors(delta_time);
-    
+    // extrapolate sensors
+    dcm.rotate(gyro * delta_time);
+    dcm.normalize();
+
+    // work out acceleration as seen by the accelerometers. It sees the kinematic
+    // acceleration (ie. real movement), plus gravity
+    accel_body = dcm.transposed() * (accel_earth + Vector3f(0,0,-GRAVITY_MSS));
+
+    // new velocity and position vectors
+    velocity_ef += accel_earth * delta_time;
+    position += velocity_ef * delta_time;
+    velocity_air_ef = velocity_ef + wind_ef;
+    velocity_air_bf = dcm.transposed() * velocity_air_ef;
+
     update_position();
-    time_advance();
     update_mag_field_bf();
     report.frame_count++;
     return false;

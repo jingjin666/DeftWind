@@ -21,11 +21,6 @@ public:
 private:
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev;
 
-    enum {
-        PIXART_3900=0,
-        PIXART_3901=1
-    } model;
-    
     struct RegData {
         uint8_t reg;
         uint8_t value;
@@ -53,9 +48,7 @@ private:
     
     static const uint8_t srom_data[];
     static const uint8_t srom_id;
-    static const RegData init_data_3900[];
-    static const RegData init_data_3901_1[];
-    static const RegData init_data_3901_2[];
+    static const RegData init_data[];
     const float flow_pixel_scaling = 1.26e-3;
 
     // setup sensor
@@ -67,7 +60,7 @@ private:
     uint16_t reg_read16u(uint8_t reg);
 
     void srom_download(void);
-    void load_configuration(const RegData *init_data, uint16_t n);
+    void load_configuration(void);
 
     void timer(void);
     void motion_burst(void);

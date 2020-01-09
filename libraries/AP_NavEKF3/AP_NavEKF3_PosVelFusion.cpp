@@ -1,3 +1,5 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
 #include <AP_HAL/AP_HAL.h>
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
@@ -212,7 +214,7 @@ bool NavEKF3_core::resetHeightDatum(void)
     stateStruct.position.z = 0.0f;
     // adjust the height of the EKF origin so that the origin plus baro height before and after the reset is the same
     if (validOrigin) {
-        ekfGpsRefHgt += (double)oldHgt;
+        EKF_origin.alt += oldHgt*100;
     }
     // adjust the terrain state
     terrainState += oldHgt;
@@ -623,28 +625,8 @@ void NavEKF3_core::FuseVelPosNED()
                 // calculate the Kalman gain and calculate innovation variances
                 varInnovVelPos[obsIndex] = P[stateIndex][stateIndex] + R_OBS[obsIndex];
                 SK = 1.0f/varInnovVelPos[obsIndex];
-                for (uint8_t i= 0; i<=9; i++) {
+                for (uint8_t i= 0; i<=15; i++) {
                     Kfusion[i] = P[i][stateIndex]*SK;
-                }
-
-                // inhibit delta angle bias state estmation by setting Kalman gains to zero
-                if (!inhibitDelAngBiasStates) {
-                    for (uint8_t i = 10; i<=12; i++) {
-                        Kfusion[i] = P[i][stateIndex]*SK;
-                    }
-                } else {
-                    // zero indexes 10 to 12 = 3*4 bytes
-                    memset(&Kfusion[10], 0, 12);
-                }
-
-                // inhibit delta velocity bias state estmation by setting Kalman gains to zero
-                if (!inhibitDelVelBiasStates) {
-                    for (uint8_t i = 13; i<=15; i++) {
-                        Kfusion[i] = P[i][stateIndex]*SK;
-                    }
-                } else {
-                    // zero indexes 13 to 15 = 3*4 bytes
-                    memset(&Kfusion[13], 0, 12);
                 }
 
                 // inhibit magnetic field state estimation by setting Kalman gains to zero
@@ -653,8 +635,9 @@ void NavEKF3_core::FuseVelPosNED()
                         Kfusion[i] = P[i][stateIndex]*SK;
                     }
                 } else {
-                    // zero indexes 16 to 21 = 6*4 bytes
-                    memset(&Kfusion[16], 0, 24);
+                    for (uint8_t i = 16; i<=21; i++) {
+                        Kfusion[i] = 0.0f;
+                    }
                 }
 
                 // inhibit wind state estimation by setting Kalman gains to zero
@@ -662,8 +645,8 @@ void NavEKF3_core::FuseVelPosNED()
                     Kfusion[22] = P[22][stateIndex]*SK;
                     Kfusion[23] = P[23][stateIndex]*SK;
                 } else {
-                    // zero indexes 22 to 23 = 2*4 bytes
-                    memset(&Kfusion[22], 0, 8);
+                    Kfusion[22] = 0.0f;
+                    Kfusion[23] = 0.0f;
                 }
 
                 // update the covariance - take advantage of direct observation of a single state at index = stateIndex to reduce computations
@@ -839,14 +822,9 @@ void NavEKF3_core::selectHeightForFusion()
         }
     }
 
-    // If we are not using GPS as the primary height sensor, correct EKF origin height so that
-    // combined local NED position height and origin height remains consistent with the GPS altitude
-    // This also enables the GPS height to be used as a backup height source
-    if (gpsDataToFuse &&
-            (((frontend->_originHgtMode & (1 << 0)) && (activeHgtSource == HGT_SOURCE_BARO)) ||
-            ((frontend->_originHgtMode & (1 << 1)) && (activeHgtSource == HGT_SOURCE_RNG)))
-            ) {
-            correctEkfOriginHeight();
+    // calculate offset to GPS height data that enables us to switch to GPS height during operation
+    if (gpsDataToFuse && (activeHgtSource != HGT_SOURCE_GPS)) {
+            calcFiltGpsHgtOffset();
     }
 
     // Select the height measurement source
@@ -958,7 +936,7 @@ void NavEKF3_core::FuseBodyVel()
             }
 
             // calculate intermediate expressions for X axis Kalman gains
-            float R_VEL = sq(bodyOdmDataDelayed.velErr);
+            float R_VEL = bodyOdmDataDelayed.velErr;
             float t2 = q0*q3*2.0f;
             float t3 = q1*q2*2.0f;
             float t4 = t2+t3;
@@ -1078,25 +1056,12 @@ void NavEKF3_core::FuseBodyVel()
             Kfusion[7] = t77*(P[7][5]*t4+P[7][4]*t9+P[7][0]*t14-P[7][6]*t11+P[7][1]*t18-P[7][2]*t21+P[7][3]*t24);
             Kfusion[8] = t77*(P[8][5]*t4+P[8][4]*t9+P[8][0]*t14-P[8][6]*t11+P[8][1]*t18-P[8][2]*t21+P[8][3]*t24);
             Kfusion[9] = t77*(P[9][5]*t4+P[9][4]*t9+P[9][0]*t14-P[9][6]*t11+P[9][1]*t18-P[9][2]*t21+P[9][3]*t24);
-
-            if (!inhibitDelAngBiasStates) {
-                Kfusion[10] = t77*(P[10][5]*t4+P[10][4]*t9+P[10][0]*t14-P[10][6]*t11+P[10][1]*t18-P[10][2]*t21+P[10][3]*t24);
-                Kfusion[11] = t77*(P[11][5]*t4+P[11][4]*t9+P[11][0]*t14-P[11][6]*t11+P[11][1]*t18-P[11][2]*t21+P[11][3]*t24);
-                Kfusion[12] = t77*(P[12][5]*t4+P[12][4]*t9+P[12][0]*t14-P[12][6]*t11+P[12][1]*t18-P[12][2]*t21+P[12][3]*t24);
-            } else {
-                // zero indexes 10 to 12 = 3*4 bytes
-                memset(&Kfusion[10], 0, 12);
-            }
-
-            if (!inhibitDelVelBiasStates) {
-                Kfusion[13] = t77*(P[13][5]*t4+P[13][4]*t9+P[13][0]*t14-P[13][6]*t11+P[13][1]*t18-P[13][2]*t21+P[13][3]*t24);
-                Kfusion[14] = t77*(P[14][5]*t4+P[14][4]*t9+P[14][0]*t14-P[14][6]*t11+P[14][1]*t18-P[14][2]*t21+P[14][3]*t24);
-                Kfusion[15] = t77*(P[15][5]*t4+P[15][4]*t9+P[15][0]*t14-P[15][6]*t11+P[15][1]*t18-P[15][2]*t21+P[15][3]*t24);
-            } else {
-                // zero indexes 13 to 15 = 3*4 bytes
-                memset(&Kfusion[13], 0, 12);
-            }
-
+            Kfusion[10] = t77*(P[10][5]*t4+P[10][4]*t9+P[10][0]*t14-P[10][6]*t11+P[10][1]*t18-P[10][2]*t21+P[10][3]*t24);
+            Kfusion[11] = t77*(P[11][5]*t4+P[11][4]*t9+P[11][0]*t14-P[11][6]*t11+P[11][1]*t18-P[11][2]*t21+P[11][3]*t24);
+            Kfusion[12] = t77*(P[12][5]*t4+P[12][4]*t9+P[12][0]*t14-P[12][6]*t11+P[12][1]*t18-P[12][2]*t21+P[12][3]*t24);
+            Kfusion[13] = t77*(P[13][5]*t4+P[13][4]*t9+P[13][0]*t14-P[13][6]*t11+P[13][1]*t18-P[13][2]*t21+P[13][3]*t24);
+            Kfusion[14] = t77*(P[14][5]*t4+P[14][4]*t9+P[14][0]*t14-P[14][6]*t11+P[14][1]*t18-P[14][2]*t21+P[14][3]*t24);
+            Kfusion[15] = t77*(P[15][5]*t4+P[15][4]*t9+P[15][0]*t14-P[15][6]*t11+P[15][1]*t18-P[15][2]*t21+P[15][3]*t24);
             if (!inhibitMagStates) {
                 Kfusion[16] = t77*(P[16][5]*t4+P[16][4]*t9+P[16][0]*t14-P[16][6]*t11+P[16][1]*t18-P[16][2]*t21+P[16][3]*t24);
                 Kfusion[17] = t77*(P[17][5]*t4+P[17][4]*t9+P[17][0]*t14-P[17][6]*t11+P[17][1]*t18-P[17][2]*t21+P[17][3]*t24);
@@ -1105,16 +1070,16 @@ void NavEKF3_core::FuseBodyVel()
                 Kfusion[20] = t77*(P[20][5]*t4+P[20][4]*t9+P[20][0]*t14-P[20][6]*t11+P[20][1]*t18-P[20][2]*t21+P[20][3]*t24);
                 Kfusion[21] = t77*(P[21][5]*t4+P[21][4]*t9+P[21][0]*t14-P[21][6]*t11+P[21][1]*t18-P[21][2]*t21+P[21][3]*t24);
             } else {
-                // zero indexes 16 to 21 = 6*4 bytes
-                memset(&Kfusion[16], 0, 24);
+                for (uint8_t i = 16; i <= 21; i++) {
+                    Kfusion[i] = 0.0f;
+                }
             }
-
             if (!inhibitWindStates) {
                 Kfusion[22] = t77*(P[22][5]*t4+P[22][4]*t9+P[22][0]*t14-P[22][6]*t11+P[22][1]*t18-P[22][2]*t21+P[22][3]*t24);
                 Kfusion[23] = t77*(P[23][5]*t4+P[23][4]*t9+P[23][0]*t14-P[23][6]*t11+P[23][1]*t18-P[23][2]*t21+P[23][3]*t24);
             } else {
-                // zero indexes 22 to 23 = 2*4 bytes
-                memset(&Kfusion[22], 0, 8);
+                Kfusion[22] = 0.0f;
+                Kfusion[23] = 0.0f;
             }
         } else if (obsIndex == 1) {
             // calculate Y axis observation Jacobian
@@ -1130,7 +1095,7 @@ void NavEKF3_core::FuseBodyVel()
             }
 
             // calculate intermediate expressions for Y axis Kalman gains
-            float R_VEL = sq(bodyOdmDataDelayed.velErr);
+            float R_VEL = bodyOdmDataDelayed.velErr;
             float t2 = q0*q3*2.0f;
             float t9 = q1*q2*2.0f;
             float t3 = t2-t9;
@@ -1250,25 +1215,12 @@ void NavEKF3_core::FuseBodyVel()
             Kfusion[7] = t77*(-P[7][4]*t3+P[7][5]*t8+P[7][0]*t15+P[7][6]*t12+P[7][1]*t18+P[7][2]*t22-P[7][3]*t25);
             Kfusion[8] = t77*(-P[8][4]*t3+P[8][5]*t8+P[8][0]*t15+P[8][6]*t12+P[8][1]*t18+P[8][2]*t22-P[8][3]*t25);
             Kfusion[9] = t77*(-P[9][4]*t3+P[9][5]*t8+P[9][0]*t15+P[9][6]*t12+P[9][1]*t18+P[9][2]*t22-P[9][3]*t25);
-
-            if (!inhibitDelAngBiasStates) {
-                Kfusion[10] = t77*(-P[10][4]*t3+P[10][5]*t8+P[10][0]*t15+P[10][6]*t12+P[10][1]*t18+P[10][2]*t22-P[10][3]*t25);
-                Kfusion[11] = t77*(-P[11][4]*t3+P[11][5]*t8+P[11][0]*t15+P[11][6]*t12+P[11][1]*t18+P[11][2]*t22-P[11][3]*t25);
-                Kfusion[12] = t77*(-P[12][4]*t3+P[12][5]*t8+P[12][0]*t15+P[12][6]*t12+P[12][1]*t18+P[12][2]*t22-P[12][3]*t25);
-            } else {
-                // zero indexes 10 to 12 = 3*4 bytes
-                memset(&Kfusion[10], 0, 12);
-            }
-
-            if (!inhibitDelVelBiasStates) {
-                Kfusion[13] = t77*(-P[13][4]*t3+P[13][5]*t8+P[13][0]*t15+P[13][6]*t12+P[13][1]*t18+P[13][2]*t22-P[13][3]*t25);
-                Kfusion[14] = t77*(-P[14][4]*t3+P[14][5]*t8+P[14][0]*t15+P[14][6]*t12+P[14][1]*t18+P[14][2]*t22-P[14][3]*t25);
-                Kfusion[15] = t77*(-P[15][4]*t3+P[15][5]*t8+P[15][0]*t15+P[15][6]*t12+P[15][1]*t18+P[15][2]*t22-P[15][3]*t25);
-            } else {
-                // zero indexes 13 to 15 = 3*4 bytes
-                memset(&Kfusion[13], 0, 12);
-            }
-
+            Kfusion[10] = t77*(-P[10][4]*t3+P[10][5]*t8+P[10][0]*t15+P[10][6]*t12+P[10][1]*t18+P[10][2]*t22-P[10][3]*t25);
+            Kfusion[11] = t77*(-P[11][4]*t3+P[11][5]*t8+P[11][0]*t15+P[11][6]*t12+P[11][1]*t18+P[11][2]*t22-P[11][3]*t25);
+            Kfusion[12] = t77*(-P[12][4]*t3+P[12][5]*t8+P[12][0]*t15+P[12][6]*t12+P[12][1]*t18+P[12][2]*t22-P[12][3]*t25);
+            Kfusion[13] = t77*(-P[13][4]*t3+P[13][5]*t8+P[13][0]*t15+P[13][6]*t12+P[13][1]*t18+P[13][2]*t22-P[13][3]*t25);
+            Kfusion[14] = t77*(-P[14][4]*t3+P[14][5]*t8+P[14][0]*t15+P[14][6]*t12+P[14][1]*t18+P[14][2]*t22-P[14][3]*t25);
+            Kfusion[15] = t77*(-P[15][4]*t3+P[15][5]*t8+P[15][0]*t15+P[15][6]*t12+P[15][1]*t18+P[15][2]*t22-P[15][3]*t25);
             if (!inhibitMagStates) {
                 Kfusion[16] = t77*(-P[16][4]*t3+P[16][5]*t8+P[16][0]*t15+P[16][6]*t12+P[16][1]*t18+P[16][2]*t22-P[16][3]*t25);
                 Kfusion[17] = t77*(-P[17][4]*t3+P[17][5]*t8+P[17][0]*t15+P[17][6]*t12+P[17][1]*t18+P[17][2]*t22-P[17][3]*t25);
@@ -1277,16 +1229,16 @@ void NavEKF3_core::FuseBodyVel()
                 Kfusion[20] = t77*(-P[20][4]*t3+P[20][5]*t8+P[20][0]*t15+P[20][6]*t12+P[20][1]*t18+P[20][2]*t22-P[20][3]*t25);
                 Kfusion[21] = t77*(-P[21][4]*t3+P[21][5]*t8+P[21][0]*t15+P[21][6]*t12+P[21][1]*t18+P[21][2]*t22-P[21][3]*t25);
             } else {
-                // zero indexes 16 to 21 = 6*4 bytes
-                memset(&Kfusion[16], 0, 24);
+                for (uint8_t i = 16; i <= 21; i++) {
+                    Kfusion[i] = 0.0f;
+                }
             }
-
             if (!inhibitWindStates) {
                 Kfusion[22] = t77*(-P[22][4]*t3+P[22][5]*t8+P[22][0]*t15+P[22][6]*t12+P[22][1]*t18+P[22][2]*t22-P[22][3]*t25);
                 Kfusion[23] = t77*(-P[23][4]*t3+P[23][5]*t8+P[23][0]*t15+P[23][6]*t12+P[23][1]*t18+P[23][2]*t22-P[23][3]*t25);
             } else {
-                // zero indexes 22 to 23 = 2*4 bytes
-                memset(&Kfusion[22], 0, 8);
+                Kfusion[22] = 0.0f;
+                Kfusion[23] = 0.0f;
             }
         } else if (obsIndex == 2) {
             // calculate Z axis observation Jacobian
@@ -1302,7 +1254,7 @@ void NavEKF3_core::FuseBodyVel()
             }
 
             // calculate intermediate expressions for Z axis Kalman gains
-            float R_VEL = sq(bodyOdmDataDelayed.velErr);
+            float R_VEL = bodyOdmDataDelayed.velErr;
             float t2 = q0*q2*2.0f;
             float t3 = q1*q3*2.0f;
             float t4 = t2+t3;
@@ -1422,26 +1374,12 @@ void NavEKF3_core::FuseBodyVel()
             Kfusion[7] = t77*(P[7][4]*t4+P[7][0]*t14+P[7][6]*t9-P[7][5]*t11-P[7][1]*t17+P[7][2]*t20+P[7][3]*t24);
             Kfusion[8] = t77*(P[8][4]*t4+P[8][0]*t14+P[8][6]*t9-P[8][5]*t11-P[8][1]*t17+P[8][2]*t20+P[8][3]*t24);
             Kfusion[9] = t77*(P[9][4]*t4+P[9][0]*t14+P[9][6]*t9-P[9][5]*t11-P[9][1]*t17+P[9][2]*t20+P[9][3]*t24);
-
-            if (!inhibitDelAngBiasStates) {
-                Kfusion[10] = t77*(P[10][4]*t4+P[10][0]*t14+P[10][6]*t9-P[10][5]*t11-P[10][1]*t17+P[10][2]*t20+P[10][3]*t24);
-                Kfusion[11] = t77*(P[11][4]*t4+P[11][0]*t14+P[11][6]*t9-P[11][5]*t11-P[11][1]*t17+P[11][2]*t20+P[11][3]*t24);
-                Kfusion[12] = t77*(P[12][4]*t4+P[12][0]*t14+P[12][6]*t9-P[12][5]*t11-P[12][1]*t17+P[12][2]*t20+P[12][3]*t24);
-            } else {
-                // zero indexes 10 to 12 = 3*4 bytes
-                memset(&Kfusion[10], 0, 12);
-
-            }
-
-            if (!inhibitDelVelBiasStates) {
-                Kfusion[13] = t77*(P[13][4]*t4+P[13][0]*t14+P[13][6]*t9-P[13][5]*t11-P[13][1]*t17+P[13][2]*t20+P[13][3]*t24);
-                Kfusion[14] = t77*(P[14][4]*t4+P[14][0]*t14+P[14][6]*t9-P[14][5]*t11-P[14][1]*t17+P[14][2]*t20+P[14][3]*t24);
-                Kfusion[15] = t77*(P[15][4]*t4+P[15][0]*t14+P[15][6]*t9-P[15][5]*t11-P[15][1]*t17+P[15][2]*t20+P[15][3]*t24);
-            } else {
-                // zero indexes 13 to 15 = 3*4 bytes
-                memset(&Kfusion[13], 0, 12);
-            }
-
+            Kfusion[10] = t77*(P[10][4]*t4+P[10][0]*t14+P[10][6]*t9-P[10][5]*t11-P[10][1]*t17+P[10][2]*t20+P[10][3]*t24);
+            Kfusion[11] = t77*(P[11][4]*t4+P[11][0]*t14+P[11][6]*t9-P[11][5]*t11-P[11][1]*t17+P[11][2]*t20+P[11][3]*t24);
+            Kfusion[12] = t77*(P[12][4]*t4+P[12][0]*t14+P[12][6]*t9-P[12][5]*t11-P[12][1]*t17+P[12][2]*t20+P[12][3]*t24);
+            Kfusion[13] = t77*(P[13][4]*t4+P[13][0]*t14+P[13][6]*t9-P[13][5]*t11-P[13][1]*t17+P[13][2]*t20+P[13][3]*t24);
+            Kfusion[14] = t77*(P[14][4]*t4+P[14][0]*t14+P[14][6]*t9-P[14][5]*t11-P[14][1]*t17+P[14][2]*t20+P[14][3]*t24);
+            Kfusion[15] = t77*(P[15][4]*t4+P[15][0]*t14+P[15][6]*t9-P[15][5]*t11-P[15][1]*t17+P[15][2]*t20+P[15][3]*t24);
             if (!inhibitMagStates) {
                 Kfusion[16] = t77*(P[16][4]*t4+P[16][0]*t14+P[16][6]*t9-P[16][5]*t11-P[16][1]*t17+P[16][2]*t20+P[16][3]*t24);
                 Kfusion[17] = t77*(P[17][4]*t4+P[17][0]*t14+P[17][6]*t9-P[17][5]*t11-P[17][1]*t17+P[17][2]*t20+P[17][3]*t24);
@@ -1450,16 +1388,16 @@ void NavEKF3_core::FuseBodyVel()
                 Kfusion[20] = t77*(P[20][4]*t4+P[20][0]*t14+P[20][6]*t9-P[20][5]*t11-P[20][1]*t17+P[20][2]*t20+P[20][3]*t24);
                 Kfusion[21] = t77*(P[21][4]*t4+P[21][0]*t14+P[21][6]*t9-P[21][5]*t11-P[21][1]*t17+P[21][2]*t20+P[21][3]*t24);
             } else {
-                // zero indexes 16 to 21 = 6*4 bytes
-                memset(&Kfusion[16], 0, 24);
+                for (uint8_t i = 16; i <= 21; i++) {
+                    Kfusion[i] = 0.0f;
+                }
             }
-
             if (!inhibitWindStates) {
                 Kfusion[22] = t77*(P[22][4]*t4+P[22][0]*t14+P[22][6]*t9-P[22][5]*t11-P[22][1]*t17+P[22][2]*t20+P[22][3]*t24);
                 Kfusion[23] = t77*(P[23][4]*t4+P[23][0]*t14+P[23][6]*t9-P[23][5]*t11-P[23][1]*t17+P[23][2]*t20+P[23][3]*t24);
             } else {
-                // zero indexes 22 to 23 = 2*4 bytes
-                memset(&Kfusion[22], 0, 8);
+                Kfusion[22] = 0.0f;
+                Kfusion[23] = 0.0f;
             }
         } else {
             return;
@@ -1477,7 +1415,7 @@ void NavEKF3_core::FuseBodyVel()
             // notify first time only
             if (!bodyVelFusionActive) {
                 bodyVelFusionActive = true;
-                gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u fusing odometry",(unsigned)imu_index);
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u fusing odometry",(unsigned)imu_index);
             }
             // correct the covariance P = (I - K*H)*P
             // take advantage of the empty columns in KH to reduce the
@@ -1564,44 +1502,11 @@ void NavEKF3_core::SelectBodyOdomFusion()
         // start performance timer
         hal.util->perf_begin(_perf_FuseBodyOdom);
 
-        usingWheelSensors = false;
-
         // Fuse data into the main filter
         FuseBodyVel();
 
         // stop the performance timer
         hal.util->perf_end(_perf_FuseBodyOdom);
-
-    } else if (storedWheelOdm.recall(wheelOdmDataDelayed, imuDataDelayed.time_ms)) {
-
-        // check if the delta time is too small to calculate a velocity
-        if (wheelOdmDataNew.delTime > EKF_TARGET_DT) {
-
-            // get the forward velocity
-            float fwdSpd = wheelOdmDataNew.delAng * wheelOdmDataNew.radius * (1.0f / wheelOdmDataNew.delTime);
-
-            // get the unit vector from the projection of the X axis onto the horizontal
-            Vector3f unitVec;
-            unitVec.x = prevTnb.a.x;
-            unitVec.y = prevTnb.a.y;
-            unitVec.z = 0.0f;
-            unitVec.normalized();
-
-            // multiply by forward speed to get velocity vector measured by wheel encoders
-            Vector3f velNED = unitVec * fwdSpd;
-
-            // This is a hack to enable use of the existing body frame velocity fusion method
-            // TODO write a dedicated observation model for wheel encoders
-            usingWheelSensors = true;
-            bodyOdmDataDelayed.vel = prevTnb * velNED;
-            bodyOdmDataDelayed.body_offset = wheelOdmDataNew.hub_offset;
-            bodyOdmDataDelayed.velErr = frontend->_wencOdmVelErr;
-
-            // Fuse data into the main filter
-            FuseBodyVel();
-
-        }
-
     }
 }
 

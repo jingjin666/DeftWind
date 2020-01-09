@@ -86,12 +86,6 @@ bool DataFlash_Backend::WriteBlockCheckStartupMessages()
         return true;
     }
 
-    if (!_startup_messagewriter->finished() &&
-        !hal.scheduler->in_main_thread()) {
-        // only the main thread may write startup messages out
-        return false;
-    }
-
     // we're not writing startup messages, so this must be some random
     // caller hoping to write blocks out.  Push out log blocks - we
     // might end up clearing the buffer.....
@@ -266,55 +260,27 @@ bool DataFlash_Backend::Log_Write(const uint8_t msg_type, va_list arg_list, bool
     return WritePrioritisedBlock(buffer, msg_len, is_critical);
 }
 
-bool DataFlash_Backend::StartNewLogOK() const
+bool DataFlash_Backend::WritesOK() const
 {
-    if (logging_started()) {
+    if (!_writes_enabled) {
         return false;
     }
-    if (_front._log_bitmask == 0) {
+    if (!_front.vehicle_is_armed() && !_front.log_while_disarmed()) {
         return false;
     }
-    if (_front.in_log_download()) {
-        return false;
-    }
-    if (!hal.scheduler->in_main_thread()) {
-        return false;
-    }
+
     return true;
 }
-
-bool DataFlash_Backend::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
-{
-    if (!ShouldLog(is_critical)) {
-        return false;
-    }
-    if (StartNewLogOK()) {
-        start_new_log();
-    }
-    if (!WritesOK()) {
-        return false;
-    }
-    return _WritePrioritisedBlock(pBuffer, size, is_critical);
-}
-
 bool DataFlash_Backend::StartNewRawDataOK() const
 {
     if (raw_data_started()) {
         return false;
     }
 
-    if (_front._rawdata_bitmask == 0) {
-        return false;
-    }
-
     if (_front.in_raw_data_download()) {
         return false;
     }
-	
-    if (!hal.scheduler->in_main_thread()) {
-        return false;
-    }
-	
+
     return true;
 }
 
@@ -341,10 +307,6 @@ bool DataFlash_Backend::StartNewPosDataOK() const
     if (_front.in_pos_data_download()) {
         return false;
     }
-
-    if (!hal.scheduler->in_main_thread()) {
-        return false;
-    }
 	
     return true;
 }
@@ -365,40 +327,6 @@ bool DataFlash_Backend::WritePosData(const void *pBuffer, uint16_t size, bool is
 
     return _WritePosData(pBuffer, size, is_critical);
 }
-
-bool DataFlash_Backend::ShouldLog(bool is_critical)
-{
-    if (!_front.WritesEnabled()) {
-        return false;
-    }
-    if (!_initialised) {
-        return false;
-    }
-
-    if (!_startup_messagewriter->finished() &&
-        !hal.scheduler->in_main_thread()) {
-        // only the main thread may write startup messages out
-        return false;
-    }
-
-    if (is_critical && have_logged_armed && !_front._params.file_disarm_rot) {
-        // if we have previously logged while armed then we log all
-        // critical messages from then on. That fixes a problem where
-        // logs show the wrong flight mode if you disarm then arm again
-        return true;
-    }
-    
-    if (!_front.vehicle_is_armed() && !_front.log_while_disarmed()) {
-        return false;
-    }
-
-    if (_front.vehicle_is_armed()) {
-        have_logged_armed = true;
-    }
-    
-    return true;
-}
-
 bool DataFlash_Backend::ShouldPosData()
 {
 	if (!_front.vehicle_is_armed()) {

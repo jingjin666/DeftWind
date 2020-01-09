@@ -401,8 +401,11 @@ private:
         float       hgt;         // 2
         Vector3f    vel;         // 3..5
         float       hdg;         //6
-        uint32_t    time_ms;     // 7
-        uint8_t     sensor_idx;  // 8..9
+        uint8_t     stat;        //7
+        uint8_t     hstat;       //8
+        uint8_t     have_hdg;    //9
+        uint32_t    time_ms;     // 10
+        uint8_t     sensor_idx;  // 11
     };
 
     struct mag_elements {
@@ -695,8 +698,8 @@ private:
     // calculate a filtered offset between baro height measurement and EKF height estimate
     void calcFiltBaroOffset();
 
-    // correct the height of the EKF origin to be consistent with GPS Data using a Bayes filter.
-    void correctEkfOriginHeight();
+    // calculate a filtered offset between GPS height measurement and EKF height estimate
+    void calcFiltGpsHgtOffset();
 
     // Select height data to be fused from the available baro, range finder and GPS sources
     void selectHeightForFusion();
@@ -815,7 +818,7 @@ private:
     bool inhibitMagStates;          // true when magnetic field states and covariances are to remain constant
     bool gpsNotAvailable;           // bool true when valid GPS data is not available
     uint8_t last_gps_idx;           // sensor ID of the GPS receiver used for the last fusion or reset
-    struct Location EKF_origin;     // LLH origin of the NED axis system
+    struct Location EKF_origin;     // LLH origin of the NED axis system - do not change unless filter is reset
     bool validOrigin;               // true when the EKF origin is valid
     float gpsSpdAccuracy;           // estimated speed accuracy in m/s returned by the GPS receiver
     float gpsPosAccuracy;           // estimated position accuracy in m returned by the GPS receiver
@@ -895,7 +898,6 @@ private:
     bool delAngBiasLearned;         // true when the gyro bias has been learned
     nav_filter_status filterStatus; // contains the status of various filter outputs
     float ekfOriginHgtVar;          // Variance of the the EKF WGS-84 origin height estimate (m^2)
-    double ekfGpsRefHgt;            // floating point representation of the WGS-84 reference height used to convert GPS height to local height (m)
     uint32_t lastOriginHgtTime_ms;  // last time the ekf's WGS-84 origin height was corrected
     Vector3f outputTrackError;      // attitude (rad), velocity (m/s) and position (m) tracking error magnitudes from the output observer
     Vector3f velOffsetNED;          // This adds to the earth frame velocity estimate at the IMU to give the velocity at the body origin (m/s)
@@ -1023,6 +1025,8 @@ private:
     float bcnPosOffsetMin;              // Vertical position offset of the beacon constellation origin relative to the EKF origin (m)
     float bcnPosOffsetMinVar;           // Variance of the bcnPosoffset state (m)
     float OffsetMinInnovFilt;           // Filtered magnitude of the range innovations using bcnPosOffsetLow
+    float offsetSwitchMage;
+    bool offsetSwitchMageFlag;
 
     // Range Beacon Fusion Debug Reporting
     uint8_t rngBcnFuseDataReportIndex;// index of range beacon fusion data last reported

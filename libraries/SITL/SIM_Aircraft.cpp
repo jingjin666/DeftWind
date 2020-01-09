@@ -32,7 +32,7 @@
 #include <DataFlash/DataFlash.h>
 #include <AP_Param/AP_Param.h>
 
-using namespace SITL;
+namespace SITL {
 
 /*
   parent class for all simulator types
@@ -72,10 +72,6 @@ Aircraft::Aircraft(const char *home_str, const char *frame_str) :
 
     last_wall_time_us = get_wall_time_us();
     frame_counter = 0;
-
-    // allow for orientation settings, such as with tailsitters
-    enum ap_var_type ptype;
-    ahrs_orientation = (AP_Int8 *)AP_Param::find("AHRS_ORIENTATION", &ptype);
 
     terrain = (AP_Terrain *)AP_Param::find_object("TERRAIN_");
 }
@@ -117,14 +113,6 @@ bool Aircraft::parse_home(const char *home_str, Location &loc, float &yaw_degree
     loc.lat = static_cast<int32_t>(strtof(lat_s, nullptr) * 1.0e7f);
     loc.lng = static_cast<int32_t>(strtof(lon_s, nullptr) * 1.0e7f);
     loc.alt = static_cast<int32_t>(strtof(alt_s, nullptr) * 1.0e2f);
-
-    if (loc.lat == 0 && loc.lng == 0) {
-        // default to CMAC instead of middle of the ocean. This makes
-        // SITL in MissionPlanner a bit more useful
-        loc.lat = -35.363261*1e7;
-        loc.lng = 149.165230*1e7;
-        loc.alt = 584*100;
-    }
 
     yaw_degrees = strtof(yaw_s, nullptr);
     free(s);
@@ -170,6 +158,16 @@ void Aircraft::update_position(void)
     location_offset(location, position.x, position.y);
 
     location.alt  = static_cast<int32_t>(home.alt - position.z * 100.0f);
+
+    // we only advance time if it hasn't been advanced already by the
+    // backend
+    if (last_time_us == time_now_us) {
+        time_now_us += frame_time_us;
+    }
+    last_time_us = time_now_us;
+    if (use_time_sync) {
+        sync_frame_time();
+    }
 
 #if 0
     // logging of raw sitl data
@@ -218,17 +216,9 @@ void Aircraft::update_mag_field_bf()
 }
 
 /* advance time by deltat in seconds */
-void Aircraft::time_advance()
+void Aircraft::time_advance(float deltat)
 {
-    // we only advance time if it hasn't been advanced already by the
-    // backend
-    if (last_time_us == time_now_us) {
-        time_now_us += frame_time_us;
-    }
-    last_time_us = time_now_us;
-    if (use_time_sync) {
-        sync_frame_time();
-    }
+    time_now_us += deltat * 1.0e6f;
 }
 
 /* setup the frame step time */
@@ -340,10 +330,6 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
         smooth_sensors();
     }
     fdm.timestamp_us = time_now_us;
-    if (fdm.home.lat == 0 && fdm.home.lng == 0) {
-        // initialise home
-        fdm.home = home;
-    }
     fdm.latitude  = location.lat * 1.0e-7;
     fdm.longitude = location.lng * 1.0e-7;
     fdm.altitude  = location.alt * 1.0e-2;
@@ -372,7 +358,6 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     fdm.rpm1 = rpm1;
     fdm.rpm2 = rpm2;
     fdm.rcin_chan_count = rcin_chan_count;
-    fdm.range = range;
     memcpy(fdm.rcin, rcin, rcin_chan_count * sizeof(float));
     fdm.bodyMagField = mag_bf;
 
@@ -391,23 +376,6 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
         fdm.altitude  = smoothing.location.alt * 1.0e-2;
     }
 
-    if (ahrs_orientation != nullptr) {
-        enum Rotation imu_rotation = (enum Rotation)ahrs_orientation->get();
-
-        if (imu_rotation != ROTATION_NONE) {
-            Matrix3f m = dcm;
-            Matrix3f rot;
-            rot.from_rotation(imu_rotation);
-            m = m * rot.transposed();
-
-            m.to_euler(&r, &p, &y);
-            fdm.rollDeg  = degrees(r);
-            fdm.pitchDeg = degrees(p);
-            fdm.yawDeg   = degrees(y);
-            fdm.quaternion.from_rotation_matrix(m);
-        }
-    }
-    
     if (last_speedup != sitl->speedup && sitl->speedup > 0) {
         set_speedup(sitl->speedup);
         last_speedup = sitl->speedup;
@@ -470,9 +438,7 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
 
     // if we're on the ground, then our vertical acceleration is limited
     // to zero. This effectively adds the force of the ground on the aircraft
-    if (on_ground() && !sitl->is_arming) {
-        accel_earth.x = 0;
-        accel_earth.y = 0;
+    if (on_ground() && accel_earth.z > 0) {
         accel_earth.z = 0;
     }
 
@@ -692,9 +658,6 @@ void Aircraft::smooth_sensors(void)
         return;
     }
     const float delta_time = (now - smoothing.last_update_us) * 1.0e-6f;
-    if (delta_time < 0 || delta_time > 0.1) {
-        return;
-    }
 
     // calculate required accel to get us to desired position and velocity in the time_constant
     const float time_constant = 0.1f;
@@ -788,25 +751,4 @@ float Aircraft::filtered_servo_range(const struct sitl_input &input, uint8_t idx
     return filtered_idx(v, idx);
 }
 
-// extrapolate sensors by a given delta time in seconds
-void Aircraft::extrapolate_sensors(float delta_time)
-{
-    Vector3f accel_earth = dcm * accel_body;
-    accel_earth.z += GRAVITY_MSS;
-
-    dcm.rotate(gyro * delta_time);
-    dcm.normalize();
-
-    // work out acceleration as seen by the accelerometers. It sees the kinematic
-    // acceleration (ie. real movement), plus gravity
-    accel_body = dcm.transposed() * (accel_earth + Vector3f(0,0,-GRAVITY_MSS));
-
-    // new velocity and position vectors
-    velocity_ef += accel_earth * delta_time;
-    position += velocity_ef * delta_time;
-    velocity_air_ef = velocity_ef + wind_ef;
-    velocity_air_bf = dcm.transposed() * velocity_air_ef;
-}
-
-
-
+}  // namespace SITL

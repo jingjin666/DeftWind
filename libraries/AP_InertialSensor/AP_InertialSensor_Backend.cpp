@@ -163,6 +163,10 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
     // call gyro_sample hook if any
     AP_Module::call_hook_gyro_sample(instance, dt, gyro);
 
+    // push gyros if optical flow present
+    if (hal.opticalflow)
+        hal.opticalflow->push_gyro(gyro.x, gyro.y, dt);
+    
     // compute delta angle
     Vector3f delta_angle = (gyro + _imu._last_raw_gyro[instance]) * 0.5f * dt;
 
@@ -404,20 +408,4 @@ void AP_InertialSensor_Backend::update_accel(uint8_t instance)
     }
 
     _sem->give();
-}
-
-DataFlash_Class *AP_InertialSensor_Backend::get_dataflash() const
-{
-    DataFlash_Class *instance = DataFlash_Class::instance();
-    if (instance == nullptr) {
-        return nullptr;
-    }
-    if (_imu._log_raw_bit == (uint32_t)-1) {
-        // tracker does not set a bit
-        return nullptr;
-    }
-    if (!instance->should_log(_imu._log_raw_bit)) {
-        return nullptr;
-    }
-    return instance;
 }

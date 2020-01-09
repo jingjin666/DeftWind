@@ -23,7 +23,7 @@ extern const AP_HAL::HAL& hal;
 
 
 // initialisation
-void DataFlash_MAVLink::Init()
+void DataFlash_MAVLink::Init(const AP_SerialManager& serial_manager)
 {
     semaphore = hal.util->new_semaphore();
     if (semaphore == nullptr) {
@@ -31,7 +31,7 @@ void DataFlash_MAVLink::Init()
         return;
     }
 
-    DataFlash_Backend::Init();
+    DataFlash_Backend::Init(serial_manager);
 
     _blocks = nullptr;
     while (_blockcount >= 8) { // 8 is a *magic* number
@@ -121,6 +121,12 @@ bool DataFlash_MAVLink::free_seqno_from_queue(uint32_t seqno, dm_block_queue_t &
 
 bool DataFlash_MAVLink::WritesOK() const
 {
+    if (!DataFlash_Backend::WritesOK()) {
+        return false;
+    }
+    if (!_initialised) {
+        return false;
+    }
     if (!_sending_to_client) {
         return false;
     }
@@ -130,8 +136,12 @@ bool DataFlash_MAVLink::WritesOK() const
 /* Write a block of data at current offset */
 
 // DM_write: 70734 events, 0 overruns, 167806us elapsed, 2us avg, min 1us max 34us 0.620us rms
-bool DataFlash_MAVLink::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
+bool DataFlash_MAVLink::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
 {
+    if (!WritesOK()) {
+        return false;
+    }
+
     if (!semaphore->take_nonblocking()) {
         dropped++;
         return false;

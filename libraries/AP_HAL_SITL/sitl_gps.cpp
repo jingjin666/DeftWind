@@ -1122,10 +1122,6 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
     struct gps_data d;
     char c;
 
-    // simulate delayed lock times
-    if (AP_HAL::millis() < _sitl->gps_lock_time*1000UL) {
-        have_lock = false;
-    }
     
     //Capture current position as basestation location for
     if (!_gps_has_basestation_position) {

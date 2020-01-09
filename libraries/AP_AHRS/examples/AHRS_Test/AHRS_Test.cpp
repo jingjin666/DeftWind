@@ -6,7 +6,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
-#include <GCS_MAVLink/GCS_Dummy.h>
+#include <GCS_MAVLink/GCS.h>
 
 void setup();
 void loop();
@@ -51,7 +51,7 @@ void setup(void)
     } else {
         hal.console->printf("No compass detected\n");
     }
-    gps.init(serial_manager);
+    gps.init(nullptr, serial_manager);
 }
 
 void loop(void)
@@ -95,9 +95,6 @@ void loop(void)
     }
 }
 
-const struct AP_Param::GroupInfo        GCS_MAVLINK::var_info[] = {
-    AP_GROUPEND
-};
-GCS_Dummy _gcs;
+GCS _gcs;
 
 AP_HAL_MAIN();

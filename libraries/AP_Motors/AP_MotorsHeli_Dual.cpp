@@ -1,3 +1,4 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -27,7 +28,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @DisplayName: Servo 1 Position
     // @Description: Angular location of swash servo #1
     // @Range: -180 180
-    // @Units: deg
+    // @Units: Degrees
     // @User: Standard
     // @Increment: 1
     AP_GROUPINFO("SV1_POS", 1, AP_MotorsHeli_Dual, _servo1_pos, AP_MOTORS_HELI_DUAL_SERVO1_POS),
@@ -36,7 +37,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @DisplayName: Servo 2 Position
     // @Description: Angular location of swash servo #2
     // @Range: -180 180
-    // @Units: deg
+    // @Units: Degrees
     // @User: Standard
     // @Increment: 1
     AP_GROUPINFO("SV2_POS", 2, AP_MotorsHeli_Dual, _servo2_pos,  AP_MOTORS_HELI_DUAL_SERVO2_POS),
@@ -45,7 +46,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @DisplayName: Servo 3 Position
     // @Description: Angular location of swash servo #3
     // @Range: -180 180
-    // @Units: deg
+    // @Units: Degrees
     // @User: Standard
     // @Increment: 1
     AP_GROUPINFO("SV3_POS", 3, AP_MotorsHeli_Dual, _servo3_pos,  AP_MOTORS_HELI_DUAL_SERVO3_POS),
@@ -54,7 +55,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @DisplayName: Servo 4 Position
     // @Description: Angular location of swash servo #4
     // @Range: -180 180
-    // @Units: deg
+    // @Units: Degrees
     // @User: Standard
     // @Increment: 1
     AP_GROUPINFO("SV4_POS", 4, AP_MotorsHeli_Dual, _servo4_pos, AP_MOTORS_HELI_DUAL_SERVO4_POS),
@@ -63,7 +64,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @DisplayName: Servo 5 Position
     // @Description: Angular location of swash servo #5
     // @Range: -180 180
-    // @Units: deg
+    // @Units: Degrees
     // @User: Standard
     // @Increment: 1
     AP_GROUPINFO("SV5_POS", 5, AP_MotorsHeli_Dual, _servo5_pos, AP_MOTORS_HELI_DUAL_SERVO5_POS),
@@ -72,7 +73,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @DisplayName: Servo 6 Position
     // @Description: Angular location of swash servo #6
     // @Range: -180 180
-    // @Units: deg
+    // @Units: Degrees
     // @User: Standard
     // @Increment: 1
     AP_GROUPINFO("SV6_POS", 6, AP_MotorsHeli_Dual, _servo6_pos, AP_MOTORS_HELI_DUAL_SERVO6_POS),
@@ -81,7 +82,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @DisplayName: Swashplate 1 Phase Angle Compensation
     // @Description: Phase angle correction for rotor head.  If pitching the swash forward induces a roll, this can be correct the problem
     // @Range: -90 90
-    // @Units: deg
+    // @Units: Degrees
     // @User: Advanced
     // @Increment: 1
     AP_GROUPINFO("PHANG1", 7, AP_MotorsHeli_Dual, _swash1_phase_angle, 0),
@@ -90,7 +91,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @DisplayName: Swashplate 2 Phase Angle Compensation
     // @Description: Phase angle correction for rotor head.  If pitching the swash forward induces a roll, this can be correct the problem
     // @Range: -90 90
-    // @Units: deg
+    // @Units: Degrees
     // @User: Advanced
     // @Increment: 1
     AP_GROUPINFO("PHANG2", 8, AP_MotorsHeli_Dual, _swash2_phase_angle, 0),
@@ -123,31 +124,11 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Increment: 0.1
     AP_GROUPINFO("YAW_SCALER", 12, AP_MotorsHeli_Dual, _yaw_scaler, 1.0f),
 
-    // @Param: RSC_PWM_MIN
-    // @DisplayName: RSC PWM output miniumum
-    // @Description: This sets the PWM output on RSC channel for maximum rotor speed
-    // @Range: 0 2000
-    // @User: Standard
-    AP_GROUPINFO("RSC_PWM_MIN", 13, AP_MotorsHeli_Dual, _rotor._pwm_min, 1000),
-
-    // @Param: RSC_PWM_MAX
-    // @DisplayName: RSC PWM output maxiumum
-    // @Description: This sets the PWM output on RSC channel for miniumum rotor speed
-    // @Range: 0 2000
-    // @User: Standard
-    AP_GROUPINFO("RSC_PWM_MAX", 14, AP_MotorsHeli_Dual, _rotor._pwm_max, 2000),
-
-    // @Param: RSC_PWM_REV
-    // @DisplayName: RSC PWM reversal
-    // @Description: This controls reversal of the RSC channel output
-    // @Values: -1:Reversed,1:Normal
-    // @User: Standard
-    AP_GROUPINFO("RSC_PWM_REV", 15, AP_MotorsHeli_Dual, _rotor._pwm_rev, 1),
-
+    // Indices 13-15 were used by RSC_PWM_MIN, RSC_PWM_MAX and RSC_PWM_REV and should not be used
 
     // @Param: COL2_MIN
     // @DisplayName: Collective Pitch Minimum for rear swashplate
-    // @Description: Lowest possible servo position in PWM microseconds for the rear swashplate
+    // @Description: Lowest possible servo position for the rear swashplate
     // @Range: 1000 2000
     // @Units: PWM
     // @Increment: 1
@@ -156,7 +137,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
 
     // @Param: COL2_MAX
     // @DisplayName: Collective Pitch Maximum for rear swashplate
-    // @Description: Highest possible servo position in PWM microseconds for the rear swashplate
+    // @Description: Highest possible servo position for the rear swashplate
     // @Range: 1000 2000
     // @Units: PWM
     // @Increment: 1
@@ -165,7 +146,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
 
     // @Param: COL2_MID
     // @DisplayName: Collective Pitch Mid-Point for rear swashplate
-    // @Description: Swash servo position in PWM microseconds corresponding to zero collective pitch for the rear swashplate (or zero lift for Asymmetrical blades)
+    // @Description: Swash servo position corresponding to zero collective pitch for the rear swashplate (or zero lift for Asymmetrical blades)
     // @Range: 1000 2000
     // @Units: PWM
     // @Increment: 1
@@ -430,10 +411,10 @@ void AP_MotorsHeli_Dual::update_motor_control(RotorControlState state)
 //
 // move_actuators - moves swash plate to attitude of parameters passed in
 //                - expected ranges:
-//                       roll : -1 ~ +1
-//                       pitch: -1 ~ +1
-//                       collective: 0 ~ 1
-//                       yaw:   -1 ~ +1
+//                       roll : -4500 ~ 4500
+//                       pitch: -4500 ~ 4500
+//                       collective: 0 ~ 1000
+//                       yaw:   -4500 ~ 4500
 //
 void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float collective_in, float yaw_out)
 {
@@ -444,25 +425,25 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
     limit.throttle_upper = false;
 
     if (_dual_mode == AP_MOTORS_HELI_DUAL_MODE_TRANSVERSE) {
-        if (pitch_out < -_cyclic_max/4500.0f) {
-            pitch_out = -_cyclic_max/4500.0f;
-            limit.roll_pitch = true;
-        }
+      if (pitch_out < -_cyclic_max/4500.0f) {
+          pitch_out = -_cyclic_max/4500.0f;
+          limit.roll_pitch = true;
+      }
 
-        if (pitch_out > _cyclic_max/4500.0f) {
-            pitch_out = _cyclic_max/4500.0f;
-            limit.roll_pitch = true;
-        }
+      if (pitch_out > _cyclic_max/4500.0f) {
+          pitch_out = _cyclic_max/4500.0f;
+          limit.roll_pitch = true;
+      }
     } else {
-        if (roll_out < -_cyclic_max/4500.0f) {
-            roll_out = -_cyclic_max/4500.0f;
-            limit.roll_pitch = true;
-        }
+      if (roll_out < -_cyclic_max/4500.0f) {
+        roll_out = -_cyclic_max/4500.0f;
+        limit.roll_pitch = true;
+      }
 
-        if (roll_out > _cyclic_max/4500.0f) {
-            roll_out = _cyclic_max/4500.0f;
-            limit.roll_pitch = true;
-        }
+      if (roll_out > _cyclic_max/4500.0f) {
+        roll_out = _cyclic_max/4500.0f;
+        limit.roll_pitch = true;
+      }
     }
 
 
@@ -526,12 +507,12 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
     _rotor.set_motor_load(fabsf(collective_out - _collective_mid_pct));
 
     // swashplate servos
-    float servo1_out = (_rollFactor[CH_1] * roll_out + _pitchFactor[CH_1] * pitch_out + _yawFactor[CH_1] * yaw_out)/0.45f + _collectiveFactor[CH_1] * collective_out_scaled;
-    float servo2_out = (_rollFactor[CH_2] * roll_out + _pitchFactor[CH_2] * pitch_out + _yawFactor[CH_2] * yaw_out)/0.45f + _collectiveFactor[CH_2] * collective_out_scaled;
-    float servo3_out = (_rollFactor[CH_3] * roll_out + _pitchFactor[CH_3] * pitch_out + _yawFactor[CH_3] * yaw_out)/0.45f + _collectiveFactor[CH_3] * collective_out_scaled;
-    float servo4_out = (_rollFactor[CH_4] * roll_out + _pitchFactor[CH_4] * pitch_out + _yawFactor[CH_4] * yaw_out)/0.45f + _collectiveFactor[CH_4] * collective2_out_scaled;
-    float servo5_out = (_rollFactor[CH_5] * roll_out + _pitchFactor[CH_5] * pitch_out + _yawFactor[CH_5] * yaw_out)/0.45f + _collectiveFactor[CH_5] * collective2_out_scaled;
-    float servo6_out = (_rollFactor[CH_6] * roll_out + _pitchFactor[CH_6] * pitch_out + _yawFactor[CH_6] * yaw_out)/0.45f + _collectiveFactor[CH_6] * collective2_out_scaled;
+    float servo1_out = (_rollFactor[CH_1] * roll_out + _pitchFactor[CH_1] * pitch_out + _yawFactor[CH_1] * yaw_out)*0.45f + _collectiveFactor[CH_1] * collective_out_scaled;
+    float servo2_out = (_rollFactor[CH_2] * roll_out + _pitchFactor[CH_2] * pitch_out + _yawFactor[CH_2] * yaw_out)*0.45f + _collectiveFactor[CH_2] * collective_out_scaled;
+    float servo3_out = (_rollFactor[CH_3] * roll_out + _pitchFactor[CH_3] * pitch_out + _yawFactor[CH_3] * yaw_out)*0.45f + _collectiveFactor[CH_3] * collective_out_scaled;
+    float servo4_out = (_rollFactor[CH_4] * roll_out + _pitchFactor[CH_4] * pitch_out + _yawFactor[CH_4] * yaw_out)*0.45f + _collectiveFactor[CH_4] * collective2_out_scaled;
+    float servo5_out = (_rollFactor[CH_5] * roll_out + _pitchFactor[CH_5] * pitch_out + _yawFactor[CH_5] * yaw_out)*0.45f + _collectiveFactor[CH_5] * collective2_out_scaled;
+    float servo6_out = (_rollFactor[CH_6] * roll_out + _pitchFactor[CH_6] * pitch_out + _yawFactor[CH_6] * yaw_out)*0.45f + _collectiveFactor[CH_6] * collective2_out_scaled;
 
     // rescale from -1..1, so we can use the pwm calc that includes trim
     servo1_out = 2*servo1_out - 1;
@@ -573,10 +554,10 @@ void AP_MotorsHeli_Dual::servo_test()
         _pitch_test -= (1.0f / (_loop_rate/2));
         _oscillate_angle += 8 * M_PI / _loop_rate;
     } else if (_servo_test_cycle_time >= 5.0f && _servo_test_cycle_time < 6.0f){                              // Raise swash to top
-        _collective_test += (1.0f / _loop_rate);
+        _collective_test = 1.0f;
         _oscillate_angle += 2 * M_PI / _loop_rate;
     } else if (_servo_test_cycle_time >= 11.0f && _servo_test_cycle_time < 12.0f){                            // Lower swash to bottom
-        _collective_test -= (1.0f / _loop_rate);
+        _collective_test = 0.0f;
         _oscillate_angle += 2 * M_PI / _loop_rate;
     } else {                                                                                                  // reset cycle
         _servo_test_cycle_time = 0.0f;
@@ -592,7 +573,7 @@ void AP_MotorsHeli_Dual::servo_test()
 
     // over-ride servo commands to move servos through defined ranges
 
-    _throttle_in = _collective_test;
+    _throttle_filter.reset(_collective_test);
     _roll_in = _roll_test;
     _pitch_in = _pitch_test;
 }

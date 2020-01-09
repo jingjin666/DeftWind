@@ -194,6 +194,8 @@ public:
     uint8_t get_primary_accel(void) const { return _primary_accel; }
     uint8_t get_primary_gyro(void) const { return _primary_gyro; }
 
+    // enable HIL mode
+    void set_hil_mode(void) { _hil_mode = true; }
 
     // get the gyro filter rate in Hz
     uint8_t get_gyro_filter_hz(void) const { return _gyro_filter_cutoff; }
@@ -201,8 +203,11 @@ public:
     // get the accel filter rate in Hz
     uint8_t get_accel_filter_hz(void) const { return _accel_filter_cutoff; }
 
-    // indicate which bit in LOG_BITMASK indicates raw logging enabled
-    void set_log_raw_bit(uint32_t log_raw_bit) { _log_raw_bit = log_raw_bit; }
+    // pass in a pointer to DataFlash for raw data logging
+    void set_dataflash(DataFlash_Class *dataflash) { _dataflash = dataflash; }
+
+    // enable/disable raw gyro/accel logging
+    void set_raw_logging(bool enable) { _log_raw_data = enable; }
 
     // calculate vibration levels and check for accelerometer clipping (called by a backends)
     void calc_vibration_and_clipping(uint8_t instance, const Vector3f &accel, float dt);
@@ -395,14 +400,17 @@ private:
     uint8_t _primary_gyro;
     uint8_t _primary_accel;
 
-    // bitmask bit which indicates if we should log raw accel and gyro data
-    uint32_t _log_raw_bit;
-
     // has wait_for_sample() found a sample?
     bool _have_sample:1;
 
+    // are we in HIL mode?
+    bool _hil_mode:1;
+
     // are gyros or accels currently being calibrated
     bool _calibrating:1;
+
+    // should we log raw accel/gyro data?
+    bool _log_raw_data:1;
 
     bool _backends_detected:1;
 

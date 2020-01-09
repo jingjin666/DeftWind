@@ -141,147 +141,19 @@ bool AP_Mission::starts_with_takeoff_cmd()
     return true;
 }
 
-bool AP_Mission::starts_check_misson_cmd()
+bool AP_Mission::end_with_rtl_cmd()
 {
     Mission_Command cmd = {};
-    uint16_t cmd_index;
-
-    cmd_index = AP_MISSION_FIRST_REAL_COMMAND;
-    //check  MAV_POINT_VTOL_TAKEOFF point
-    if(!read_cmd_from_storage(cmd_index, cmd)){
+    if (!get_next_nav_cmd(_cmd_total - 1, cmd)) {
         return false;
     }
 
-    if (cmd.id != MAV_CMD_NAV_VTOL_TAKEOFF || cmd.type != MAV_POINT_VTOL_TAKEOFF) {
+    if (cmd.id != MAV_CMD_NAV_RETURN_TO_LAUNCH) {
         return false;
     }
-
-    //check MAV_POINT_TAKEOFF_LOITER_TO_ALT point
-    cmd_index++;
-
-    if(!read_cmd_from_storage(cmd_index, cmd)){
-        return false;
-    }
-
-    if (cmd.type != MAV_POINT_TAKEOFF_LOITER_TO_ALT) {
-        return false;
-    }
-
-    //check MAV_POINT_TAKEOFF_FIRST_WAYPOINT point
-    cmd_index++;
-   if(!read_cmd_from_storage(cmd_index, cmd)){
-        return false;
-    }
-
-    if (cmd.type != MAV_POINT_TAKEOFF_FIRST_WAYPOINT) {
-        cmd_index--;
-        //return false;
-    }
-
-    //check MAV_POINT_TAKEOFF_SECOND_WAYPOINT point
-    cmd_index++;
-    if(!read_cmd_from_storage(cmd_index, cmd)){
-        return false;
-    }
-
-    if (cmd.type != MAV_POINT_TAKEOFF_SECOND_WAYPOINT) {
-        return false;
-    }
-
-    //check MAV_POINT_LAND_EMERGENCY_WAYPOINT point
-    cmd_index = _cmd_total - 9;
-    if(!read_cmd_from_storage(cmd_index, cmd)){
-        return false;
-    }
-
-    if (cmd.type != MAV_POINT_LAND_EMERGENCY_WAYPOINT) {
-        return false;
-    }
-
-    //check MAV_POINT_LAND_LOITER_TO_ALT point
-    cmd_index++;
-    if(!read_cmd_from_storage(cmd_index, cmd)){
-        return false;
-    }
-
-    if (cmd.type != MAV_POINT_LAND_LOITER_TO_ALT) {
-        return false;
-    }
-
-    //check MAV_POINT_ZERO_EMERGENCY_WAYPOINT point
-    cmd_index++;
-    if(!read_cmd_from_storage(cmd_index, cmd)){
-        return false;
-    }
-
-    if (cmd.type != MAV_POINT_ZERO_EMERGENCY_WAYPOINT) {
-        return false;
-    }
-
-    //check MAV_POINT_RTL_FISRT point
-    cmd_index++;
-    if(!read_cmd_from_storage(cmd_index, cmd)){
-        return false;
-    }
-
-    if (cmd.type != MAV_POINT_RTL_FISRT) {
-        return false;
-    }
-
-    //check MAV_POINT_RTL_SECOND point
-    cmd_index++;
-    if(!read_cmd_from_storage(cmd_index, cmd)){
-        return false;
-    }
-
-    if (cmd.type != MAV_POINT_RTL_SECOND) {
-        return false;
-    }
-
-    //check MAV_POINT_RTL_THRID point
-    cmd_index++;
-    if(!read_cmd_from_storage(cmd_index, cmd)){
-        return false;
-    }
-
-    if (cmd.type != MAV_POINT_RTL_THRID) {
-        return false;
-    }
-
-    //check MAV_POINT_RTL_FOURTH point
-    cmd_index++;
-    if(!read_cmd_from_storage(cmd_index, cmd)){
-        return false;
-    }
-
-    if (cmd.type != MAV_POINT_RTL_FOURTH) {
-        return false;
-    }
-
-    //check MAV_POINT_RTL_FIFTH point
-    cmd_index++;
-    if(!read_cmd_from_storage(cmd_index, cmd)){
-        return false;
-    }
-
-    if (cmd.type != MAV_POINT_RTL_FIFTH) {
-        return false;
-    }
-    
-
-    //check MAV_POINT_LAND_RTL point
-
-    cmd_index++;
-    if(!read_cmd_from_storage(cmd_index, cmd)){
-        return false;
-    }
-
-    if (cmd.type != MAV_POINT_LAND_RTL) {
-        return false;
-    }
-
     return true;
 }
+
 
 /// start_or_resume - if MIS_AUTORESTART=0 this will call resume(), otherwise it will call start()
 void AP_Mission::start_or_resume()
@@ -677,7 +549,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
     cmd.index = packet.seq;
     cmd.id = packet.command;
     cmd.type = packet.pointtype;
-    cmd.complete = packet.complete;
+    cmd.complete = 0;
     cmd.content.location.options = 0;
 
     // command specific conversions from mavlink packet to mission command
@@ -1021,7 +893,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item
     mav_cmd.current = packet.current;
     mav_cmd.autocontinue = packet.autocontinue;
     mav_cmd.pointtype = packet.pointtype;
-    mav_cmd.complete = packet.complete;
+    mav_cmd.complete = 0;
     
     /*
       the strategy for handling both MISSION_ITEM and MISSION_ITEM_INT
@@ -1073,7 +945,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_sing
     mav_cmd.current = packet.current;
     mav_cmd.autocontinue = packet.autocontinue;
     mav_cmd.pointtype = packet.pointtype;
-    mav_cmd.complete = packet.complete;
+    mav_cmd.complete = 0;
     
     /*
       the strategy for handling both MISSION_ITEM and MISSION_ITEM_INT
@@ -1636,40 +1508,11 @@ bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool i
     // search until the end of the mission command list
     uint8_t max_loops = 64;
     bool imcomplete_point = false;
-    bool have_photo_flag = false;
     while(cmd_index < (unsigned)_cmd_total) {
         // load the next command
         if (!read_cmd_from_storage(cmd_index, temp_cmd)) {
             // this should never happen because of check above but just in case
             return false;
-        }
-
-        if(temp_cmd.type == MAV_POINT_TAKEOFF_SECOND_WAYPOINT && _skipcomplete == true){
-            Mission_Command temp_cmd2;
-
-            if(!read_cmd_from_storage(cmd_index+4, temp_cmd2)){
-                // this should never happen because of check above but just in case
-                return false;
-            }
-
-            uint8_t index = 0;
-
-            if(temp_cmd2.type == MAV_POINT_NORMAL_TAKEPHOTO_START){
-                index = 7;
-                have_photo_flag = true;
-            }else{
-                index = 3;
-            }
-
-            if (!read_cmd_from_storage(cmd_index+index, temp_cmd2)) {
-                // this should never happen because of check above but just in case
-                return false;
-            }
-            if(temp_cmd2.complete == true){
-                cmd_index += 2;
-                continue;
-            }
-
         }
 
         if(_skipcomplete == true && temp_cmd.complete == true &&
@@ -1686,43 +1529,36 @@ bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool i
 
         if(imcomplete_point == true && temp_cmd.complete == false &&
             (temp_cmd.type == MAV_POINT_NORMAL_BEFOREHAND_WAYPOINT || temp_cmd.type == MAV_POINT_NORMAL_TAKEPHOTO_WAYPOINT)){
-            //set stop flag
-            bool is_stop = false;
             if(temp_cmd.type == MAV_POINT_NORMAL_BEFOREHAND_WAYPOINT){
-                is_stop = true;
-            }
-
-            uint8_t n = 4;
-
-            if(have_photo_flag){
-                n = 7;
-            }
-            bool is_ok = false;
-
-            while(n--){
-                //read the previous waypoint
-                if(!read_cmd_from_storage(cmd_index - 1, temp_cmd)){
+                Mission_Command temp_cmd2;
+                if(!read_cmd_from_storage(cmd_index + 1, temp_cmd2)){
                     return false;
                 }
 
-                if(temp_cmd.type == MAV_POINT_NORMAL_BEFOREHAND_WAYPOINT){
-                    is_stop = true;
-                }else{
-                    if(is_stop == true){
-                        is_ok = true;
+                if(temp_cmd2.type == MAV_POINT_NORMAL_BEFOREHAND_WAYPOINT){
+                    temp_cmd.complete = true;
+                    if(!replace_cmd(cmd_index, temp_cmd)){
+                        return false;
+                    }
+                    cmd_index++;
+                }
+            }else if(temp_cmd.type == MAV_POINT_NORMAL_TAKEPHOTO_WAYPOINT){
+                uint8_t n = 4;
+                while(n--){
+                    if(!read_cmd_from_storage(cmd_index - 1, temp_cmd)){
+                        return false;
+                    }
+
+                    cmd_index--;
+                    temp_cmd.complete = false;
+                    if(!replace_cmd(cmd_index, temp_cmd)){
+                        return false;
+                    }
+
+                    if(temp_cmd.type == MAV_POINT_NORMAL_BEFOREHAND_WAYPOINT){
                         break;
                     }
                 }
-
-                cmd_index--;
-                temp_cmd.complete = false;
-                if(!replace_cmd(cmd_index, temp_cmd)){
-                    return false;
-                }
-            }
-
-            if(!is_ok){
-                return false;
             }
 
             //temp_cmd need read ago
@@ -1952,10 +1788,10 @@ bool AP_Mission::jump_to_landing_sequence(void)
             resume();
         }
 
-        gcs().send_text(MAV_SEVERITY_INFO, "Landing sequence start");
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Landing sequence start");
         return true;
     }
 
-    gcs().send_text(MAV_SEVERITY_WARNING, "Unable to start landing sequence");
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "Unable to start landing sequence");
     return false;
 }

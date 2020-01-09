@@ -589,15 +589,6 @@ void AP_TECS::_update_throttle_with_airspeed(void)
     float SPE_err_max = 0.5f * _TASmax * _TASmax - _SKE_dem;
     float SPE_err_min = 0.5f * _TASmin * _TASmin - _SKE_dem;
 
-    if (_flight_stage == AP_Vehicle::FixedWing::FLIGHT_VTOL) {
-        /*
-          when we are in a VTOL state then we ignore potential energy
-          errors as we have vertical motors that interfere with the
-          total energy calculation.
-         */
-        SPE_err_max = SPE_err_min = 0;
-    }
-    
     // Calculate total energy error
     _STE_error = constrain_float((_SPE_dem - _SPE_est), SPE_err_min, SPE_err_max) + _SKE_dem - _SKE_est;
     float STEdot_dem = constrain_float((_SPEdot_dem + _SKEdot_dem), _STEdot_min, _STEdot_max);
@@ -778,12 +769,6 @@ void AP_TECS::_update_pitch(void)
     float SKE_weighting = constrain_float(_spdWeight, 0.0f, 2.0f);
     if (!_ahrs.airspeed_sensor_enabled()) {
         SKE_weighting = 0.0f;
-    } else if (_flight_stage == AP_Vehicle::FixedWing::FLIGHT_VTOL) {
-        // if we are in VTOL mode then control pitch without regard to
-        // speed. Speed is also taken care of independently of
-        // height. This is needed as the usual relationship of speed
-        // and height is broken by the VTOL motors
-        SKE_weighting = 0.0f;        
     } else if ( _flags.underspeed || _flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF || _flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
         SKE_weighting = 2.0f;
     } else if (_flags.is_doing_auto_land) {
@@ -964,9 +949,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     _update_speed(load_factor);
 
     if (aparm.takeoff_throttle_max != 0 &&
-            (_flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF ||
-                _flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND ||
-                _flight_stage == AP_Vehicle::FixedWing::FLIGHT_VTOL)) {
+            (_flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF || _flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND)) {
         _THRmaxf  = aparm.takeoff_throttle_max * 0.01f;
     } else {
         _THRmaxf  = aparm.throttle_max * 0.01f;
