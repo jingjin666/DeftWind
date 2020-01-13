@@ -386,11 +386,6 @@ void AP_Baro::init(void)
         return;
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    ADD_BACKEND(new AP_Baro_SITL(*this));
-    return;
-#endif
-
 #if HAL_BARO_DEFAULT == HAL_BARO_UAVRS
     switch (AP_BoardConfig::get_board_type()) {
 
@@ -401,6 +396,9 @@ void AP_Baro::init(void)
     default:
         break;
     }
+#elif HAL_BARO_DEFAULT == HAL_BARO_HIL
+    drivers[0] = new AP_Baro_HIL(*this);
+    _num_drivers = 1;    
 #endif
 
     if (_num_drivers == 0 || _num_sensors == 0 || drivers[0] == nullptr) {
