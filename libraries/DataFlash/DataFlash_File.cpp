@@ -40,8 +40,8 @@ extern const AP_HAL::HAL& hal;
 
 #define MAX_LOG_FILES 30U
 #define DATAFLASH_PAGE_SIZE 1024UL
-#define MAX_RAW_DATA_FILES 100U
-#define MAX_POS_DATA_FILES 100U
+#define MAX_RAW_DATA_FILES 30U
+#define MAX_POS_DATA_FILES 30U
 #define MAX_ERASE_OVERRIDE 500U
 
 /*
@@ -81,26 +81,9 @@ DataFlash_File::DataFlash_File(DataFlash_Class &front,
     _writebuf(0),
     _writebuf_raw_data(0),
     _writebuf_pos_data(0),
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
-    // V1 gets IO errors with larger than 512 byte writes
-    _writebuf_chunk(512),
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V45)
-    _writebuf_chunk(512),
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V51)
-    _writebuf_chunk(512),
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V52)
-    _writebuf_chunk(512),
-#elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
-    _writebuf_chunk(512),
-#elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
-    _writebuf_chunk(512),
-#elif defined(CONFIG_ARCH_BOARD_VRHERO_V10)
-    _writebuf_chunk(512),
-#else
-    _writebuf_chunk(512),
+    _writebuf_chunk(4096),
     _writebuf_chunk_raw_data(4096),
 	_writebuf_chunk_pos_data(512),//single camera information size
-#endif
     _last_write_time(0),
     _perf_write(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "DF_write")),
     _perf_fsync(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "DF_fsync")),
@@ -111,8 +94,6 @@ DataFlash_File::DataFlash_File(DataFlash_Class &front,
 
 void DataFlash_File::Init(const AP_SerialManager& serial_manager)
 {
-    uart_save_log  = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Save_Log, 0);
-
     DataFlash_Backend::Init(serial_manager);
     // create the log directory if need be
     int ret;
@@ -136,7 +117,7 @@ void DataFlash_File::Init(const AP_SerialManager& serial_manager)
         return;
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
     // try to cope with an existing lowercase log directory
     // name. NuttX does not handle case insensitive VFAT well
     DIR *d = opendir("/fs/microsd/UAVRS");
@@ -160,9 +141,12 @@ void DataFlash_File::Init(const AP_SerialManager& serial_manager)
     ret = stat(_log_directory, &st);
     if (ret == -1) {
         ret = mkdir(_log_directory, 0777);
+    } else {
+        printf("Log data directory is existed\n");
     }
+
     if (ret == -1) {
-        hal.console->printf("Failed to create log directory %s\n", _log_directory);
+        printf("Failed to create log directory %s\n", _log_directory);
         return;
     }
 #endif
@@ -172,21 +156,20 @@ void DataFlash_File::Init(const AP_SerialManager& serial_manager)
     if (bufsize > 64) {
         bufsize = 64; // PixHawk has DMA limitations.
     }
-	bufsize = 5;
-    bufsize *= 1024;
+    bufsize = log_buffer_size;
 
     // If we can't allocate the full size, try to reduce it until we can allocate it
     while (!_writebuf.set_size(bufsize) && bufsize >= _writebuf_chunk) {
-        hal.console->printf("DataFlash_File: Couldn't set buffer size to=%u\n", (unsigned)bufsize);
+        printf("DataFlash_File: Couldn't set buffer size to=%u\n", (unsigned)bufsize);
         bufsize >>= 1;
     }
 
     if (!_writebuf.get_size()) {
-        hal.console->printf("Out of memory for logging\n");
+        printf("Out of memory for logging\n");
         return;
+    } else {
+        printf("Log data ringbuffer ok %d\n", _writebuf.get_size());
     }
-
-    hal.console->printf("DataFlash_File: buffer size=%u\n", (unsigned)bufsize);
 
     _initialised = true;
     hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&DataFlash_File::_io_timer, void));
@@ -204,7 +187,7 @@ void DataFlash_File::Init(const AP_SerialManager& serial_manager)
 		printf("Raw data directory is existed\n");
 	}
 	
-	uint32_t bufsizeRawData = 12*1024;
+	uint32_t bufsizeRawData = rawdata_buffer_size;
     while (!_writebuf_raw_data.set_size(bufsizeRawData) && bufsizeRawData >= _writebuf_chunk_raw_data) {
         printf("DataFlash_File: Couldn't set buffer size to=%u\n", (unsigned)bufsizeRawData);
         bufsizeRawData >>= 1;
@@ -216,7 +199,12 @@ void DataFlash_File::Init(const AP_SerialManager& serial_manager)
     } else {
 		printf("Raw data ringbuffer ok %d\n", _writebuf_raw_data.get_size());
 	}
+    _initialised_advance = true;
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
+    hal.scheduler->register_io_advance_process(FUNCTOR_BIND_MEMBER(&DataFlash_File::_io_timer_raw_data, void));
+#else
     hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&DataFlash_File::_io_timer_raw_data, void));
+#endif
 	
 	/*     Pos data io thread::1KHZ 	*/
 	ret = stat(_pos_data_directory, &st);
@@ -243,7 +231,11 @@ void DataFlash_File::Init(const AP_SerialManager& serial_manager)
     } else {
 		printf("Pos data ringbuffer ok %d\n", _writebuf_pos_data.get_size());
 	}
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
+    hal.scheduler->register_io_advance_process(FUNCTOR_BIND_MEMBER(&DataFlash_File::_io_timer_pos_data, void));
+#else
     hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&DataFlash_File::_io_timer_pos_data, void));
+#endif
 }
 
 bool DataFlash_File::file_exists(const char *filename) const
@@ -305,6 +297,7 @@ void DataFlash_File::periodic_1Hz(const uint32_t now)
 {
     if (!io_thread_alive()) {
         if (io_thread_warning_decimation_counter == 0) {
+            printf("No IO Thread Heartbeat\n");
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "No IO Thread Heartbeat");
         }
         if (io_thread_warning_decimation_counter++ > 57) {
@@ -318,18 +311,21 @@ void DataFlash_File::periodic_1Hz(const uint32_t now)
         // dead it may not release lock...
         _write_fd = -1;
         _initialised = false;
+        printf("periodic_1Hz: io_thread_alive is dead\n");
 		GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "periodic_1Hz: io_thread_alive is dead");
     }
 
 	if(!io_thread_raw_data_alive()) {
 		_write_raw_data_fd = -1;
-		_initialised = false;
+		_initialised_advance = false;
+        printf("periodic_1Hz: io_thread_raw_data_alive is dead\n");
 		GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "periodic_1Hz: io_thread_raw_data_alive is dead");
 	}
 
 	if(!io_thread_pos_data_alive()) {
 		_write_pos_data_fd = -1;
-		_initialised = false;
+		_initialised_advance = false;
+        printf("periodic_1Hz: io_thread_pos_data_alive is dead\n");
 		GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "periodic_1Hz: io_thread_pos_data_alive is dead");
 	}
 }
@@ -350,7 +346,7 @@ uint32_t DataFlash_File::bufferspace_available()
 // return true for CardInserted() if we successfully initialized
 bool DataFlash_File::CardInserted(void)
 {
-    return _initialised && !_open_error;
+    return _initialised && _initialised_advance && !_open_error && !_open_raw_data_error && !_open_pos_data_error;
 }
 
 // returns the amount of disk space available in _log_directory (in bytes)
@@ -645,10 +641,10 @@ void DataFlash_File::Prep_MinSpace()
             break;
         }
         if (file_exists(filename_to_remove)) {
-            hal.console->printf("Removing (%s) for minimum-space requirements (%.2f%% < %.0f%%)\n",
+            printf("Removing (%s) for minimum-space requirements (%.2f%% < %.0f%%)\n",
                                 filename_to_remove, (double)avail, (double)min_avail_space_percent);
             if (unlink(filename_to_remove) == -1) {
-                hal.console->printf("Failed to remove %s: %s\n", filename_to_remove, strerror(errno));
+                printf("Failed to remove %s: %s\n", filename_to_remove, strerror(errno));
                 free(filename_to_remove);
                 if (errno == ENOENT) {
                     // corruption - should always have a continuous
@@ -686,6 +682,21 @@ bool DataFlash_File::NeedPrep()
         // should not have been called?!
         return false;
     }
+
+    int64_t avail = disk_space_avail();
+    int64_t total = disk_space();
+    float percent = (avail/(float)total)*100;
+    char *buf = nullptr;
+    asprintf(&buf, "Flash space [available / total] = %.1f%%\n          [%.3f / %.3f] GB, \n          [%.3f / %.3f] MB, \n          [%lld / %lld] Bytes\n", 
+        percent, 
+        ((float)avail)/1024/1024/1024, ((float)total)/1024/1024/1024, 
+        ((float)avail)/1024/1024, ((float)total)/1024/1024, 
+        avail, total);
+    if(buf != nullptr) {
+        printf("%s", buf);
+        free(buf);
+    }
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Flash free space %.1f%%", percent);
 
     if (avail_space_percent() < min_avail_space_percent) {
         return true;
@@ -1440,9 +1451,7 @@ int16_t DataFlash_File::get_log_data(const uint16_t list_entry, const uint16_t p
         if (_read_fd == -1) {
             _open_error = true;
             int saved_errno = errno;
-            ::printf("Log read open fail for %s - %s\n",
-                     fname, strerror(saved_errno));
-            hal.console->printf("Log read open fail for %s - %s\n",
+            printf("Log read open fail for %s - %s\n",
                                 fname, strerror(saved_errno));
             free(fname);
             return -1;            
@@ -1510,8 +1519,6 @@ void DataFlash_File::get_log_info(const uint16_t list_entry, uint32_t &size, uin
     time_utc = _get_log_time(log_num);
 }
 
-
-
 /*
   get the number of logs - note that the log numbers must be consecutive
  */
@@ -1537,12 +1544,13 @@ uint16_t DataFlash_File::get_num_logs()
     return ret;
 }
 
+
 /*
   retrieve data from a raw data file
  */
 int16_t DataFlash_File::get_raw_data(const uint16_t list_entry, const uint16_t page, const uint32_t offset, const uint16_t len, uint8_t *data)
 {
-    if (!_initialised || _open_raw_data_error) {
+    if (!_initialised_advance || _open_raw_data_error) {
         return -1;
     }
 	
@@ -1566,9 +1574,7 @@ int16_t DataFlash_File::get_raw_data(const uint16_t list_entry, const uint16_t p
         if (_read_raw_data_fd == -1) {
             _open_raw_data_error = true;
             int saved_errno = errno;
-            ::printf("Raw data read open fail for %s - %s\n",
-                     fname, strerror(saved_errno));
-            hal.console->printf("Raw data read open fail for %s - %s\n",
+            printf("Raw data read open fail for %s - %s\n",
                                 fname, strerror(saved_errno));
             free(fname);
             return -1;            
@@ -1668,7 +1674,7 @@ void DataFlash_File::get_raw_data_info(const uint16_t list_entry, uint32_t &size
  */
 int16_t DataFlash_File::get_pos_data(const uint16_t list_entry, const uint16_t page, const uint32_t offset, const uint16_t len, uint8_t *data)
 {
-    if (!_initialised || _open_pos_data_error) {
+    if (!_initialised_advance || _open_pos_data_error) {
         return -1;
     }
 	
@@ -1692,9 +1698,7 @@ int16_t DataFlash_File::get_pos_data(const uint16_t list_entry, const uint16_t p
         if (_read_pos_data_fd == -1) {
             _open_pos_data_error = true;
             int saved_errno = errno;
-            ::printf("Pos data read open fail for %s - %s\n",
-                     fname, strerror(saved_errno));
-            hal.console->printf("Pos data read open fail for %s - %s\n",
+            printf("Pos data read open fail for %s - %s\n",
                                 fname, strerror(saved_errno));
             free(fname);
             return -1;            
@@ -1839,8 +1843,8 @@ void DataFlash_File::write_last_pos_data(void)
 void DataFlash_File::stop_pos_data(void)
 {
     if (_write_pos_data_fd != -1) {
-		printf("pos data stop--------\n");
-		GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "pos data stop--------");
+		printf("Pos data stop--------\n");
+		GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Pos data stop--------");
 		write_last_pos_data();
         int fd = _write_pos_data_fd;
         _write_pos_data_fd = -1;
@@ -1868,7 +1872,7 @@ uint16_t DataFlash_File::start_new_pos_data(void)
     }
 
     if (disk_space_avail() < _free_space_min_avail) {
-        hal.console->printf("Out of space for pos data store\n");
+        printf("Out of space for pos data store\n");
         _open_pos_data_error = true;
 		GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Out of space for pos data");
         return 0xffff;
@@ -1888,26 +1892,39 @@ uint16_t DataFlash_File::start_new_pos_data(void)
     if (pos_data_num > MAX_POS_DATA_FILES) {
         pos_data_num = 1;
     }
-	printf("pos data file[%d] start loging++++++++\n", pos_data_num);
-	GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "pos data file[%d] start loging++++++++", pos_data_num);
+
     char *fname = _pos_data_file_name(pos_data_num);
     if (fname == nullptr) {
         _open_pos_data_error = true;
         return 0xFFFF;
     }
-	
-    _write_pos_data_fd = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0666);
+#if 0
+    if (file_exists(fname)) {
+        printf("%s exists, delete it\n", fname);
+        unlink(fname);
+    }
+#endif
+    uint8_t open_index = 0;
+    for(open_index = 0; open_index < 2; open_index++) {
+        _write_pos_data_fd = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0644);
+        if(_write_pos_data_fd > 0)
+            break;
+        else
+            printf("Open %s Failed %dst, Try to open again!\n", fname, open_index+1);
+    }
     _cached_oldest_pos_data = 0;
 
     if (_write_pos_data_fd == -1) {
+        _initialised_advance = false;
         _open_pos_data_error = true;
         int saved_errno = errno;
-        ::printf("Pos data open fail for %s - %s\n",
-                 fname, strerror(saved_errno));
-        hal.console->printf("Pos data open fail for %s - %s\n",
+        printf("Pos data open fail for %s - %s\n",
                             fname, strerror(saved_errno));
         free(fname);
         return 0xFFFF;
+    } else {
+        printf("Pos data [%d] start++++++++\n", pos_data_num);
+	    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Pos data [%d] start++++++++", pos_data_num);
     }
     free(fname);
     _write_pos_data_offset = 0;
@@ -1918,7 +1935,14 @@ uint16_t DataFlash_File::start_new_pos_data(void)
 
     // we avoid fopen()/fprintf() here as it is not available on as many
     // systems as open/write (specifically the QURT RTOS)
-    int fd = open(fname, O_WRONLY|O_CREAT|O_CLOEXEC, 0644);
+    int fd;
+    for(open_index = 0; open_index < 2; open_index++) {
+        fd = open(fname, O_WRONLY|O_CREAT|O_CLOEXEC, 0644);
+        if(fd > 0)
+            break;
+        else
+            printf("Open %s Failed %dst, Try to open again!\n", fname, open_index+1);
+    }
     free(fname);
     if (fd == -1) {
         _open_pos_data_error = true;
@@ -1970,8 +1994,8 @@ void DataFlash_File::write_last_raw_data(void)
 void DataFlash_File::stop_raw_data(void)
 {
     if (_write_raw_data_fd != -1) {
-		printf("raw data stop--------\n");
-		GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "raw data stop--------");
+		printf("Raw data stop--------\n");
+		GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Raw data stop--------");
 
 		write_last_raw_data();
 
@@ -2001,7 +2025,7 @@ uint16_t DataFlash_File::start_new_raw_data(void)
     }
 
     if (disk_space_avail() < _free_space_min_avail) {
-        hal.console->printf("Out of space for raw data store\n");
+        printf("Out of space for raw data store\n");
         _open_raw_data_error = true;
 		GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Out of space for raw data");
         return 0xffff;
@@ -2021,26 +2045,39 @@ uint16_t DataFlash_File::start_new_raw_data(void)
     if (raw_data_num > MAX_RAW_DATA_FILES) {
         raw_data_num = 1;
     }
-	printf("raw data file[%d] start loging++++++++\n", raw_data_num);
-	GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "raw data file[%d] start loging++++++++", raw_data_num);
+
     char *fname = _raw_data_file_name(raw_data_num);
     if (fname == nullptr) {
         _open_raw_data_error = true;
         return 0xFFFF;
     }
-	
-    _write_raw_data_fd = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0666);
+#if 0
+    if (file_exists(fname)) {
+        printf("%s exists, delete it\n", fname);
+        unlink(fname);
+    }
+#endif
+    uint8_t open_index = 0;
+    for(open_index = 0; open_index < 2; open_index++) {
+        _write_raw_data_fd = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0644);
+        if(_write_raw_data_fd > 0)
+            break;
+        else
+            printf("Open %s Failed %dst, Try to open again!\n", fname, open_index+1);
+    }
     _cached_oldest_raw_data = 0;
 
     if (_write_raw_data_fd == -1) {
+        _initialised_advance = false;
         _open_raw_data_error = true;
         int saved_errno = errno;
-        ::printf("Raw data open fail for %s - %s\n",
-                 fname, strerror(saved_errno));
-        hal.console->printf("Raw data open fail for %s - %s\n",
+        printf("Raw data open fail for %s - %s\n",
                             fname, strerror(saved_errno));
         free(fname);
         return 0xFFFF;
+    } else {
+        printf("Raw data [%d] start++++++++\n", raw_data_num);
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Raw data [%d] start++++++++", raw_data_num);
     }
     free(fname);
     _write_raw_data_offset = 0;
@@ -2051,7 +2088,14 @@ uint16_t DataFlash_File::start_new_raw_data(void)
 
     // we avoid fopen()/fprintf() here as it is not available on as many
     // systems as open/write (specifically the QURT RTOS)
-    int fd = open(fname, O_WRONLY|O_CREAT|O_CLOEXEC, 0644);
+    int fd;
+    for(open_index = 0; open_index < 2; open_index++) {
+        fd = open(fname, O_WRONLY|O_CREAT|O_CLOEXEC, 0644);
+        if(fd > 0)
+            break;
+        else
+            printf("Open %s Failed %dst, Try to open again!\n", fname, open_index+1);
+    }
     free(fname);
     if (fd == -1) {
         _open_raw_data_error = true;
@@ -2092,7 +2136,7 @@ uint16_t DataFlash_File::start_new_log(void)
     }
 
     if (disk_space_avail() < _free_space_min_avail) {
-        hal.console->printf("Out of space for logging\n");
+        printf("Out of space for logging\n");
         _open_error = true;
 		GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Out of space for logging");
         return 0xffff;
@@ -2108,27 +2152,39 @@ uint16_t DataFlash_File::start_new_log(void)
     }
     char *fname = _log_file_name(log_num);
     if (fname == nullptr) {
-        return 0xFFFF;
-    }
-    if (!write_fd_semaphore->take(1)) {
         _open_error = true;
 		GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "failed to _log_file_name");
         return 0xFFFF;
     }
-    _write_fd = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0666);
+#if 0
+    if (file_exists(fname)) {
+        printf("%s exists, delete it\n", fname);
+        unlink(fname);
+    }
+#endif
+    uint8_t open_index = 0;
+    for(open_index = 0; open_index < 2; open_index++) {
+        _write_fd = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0644);
+        if(_write_fd > 0)
+            break;
+        else
+            printf("Open %s Failed %dst, Try to open again!\n", fname, open_index+1);
+    }
     _cached_oldest_log = 0;
 
     if (_write_fd == -1) {
         _initialised = false;
         _open_error = true;
         write_fd_semaphore->give();
+		GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "::open failed");
         int saved_errno = errno;
-        ::printf("Log open fail for %s - %s\n",
-                 fname, strerror(saved_errno));
-        hal.console->printf("Log open fail for %s - %s\n",
+        printf("Log open fail for %s - %s\n",
                             fname, strerror(saved_errno));
         free(fname);
         return 0xFFFF;
+    } else {
+        printf("Log open succuess ----%s\n", fname);
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Log open succuess");
     }
     free(fname);
     _write_offset = 0;
@@ -2141,9 +2197,18 @@ uint16_t DataFlash_File::start_new_log(void)
 
     // we avoid fopen()/fprintf() here as it is not available on as many
     // systems as open/write (specifically the QURT RTOS)
-    int fd = open(fname, O_WRONLY|O_CREAT|O_CLOEXEC, 0644);
+    int fd;
+    for(open_index = 0; open_index < 2; open_index++) {
+        fd = open(fname, O_WRONLY|O_CREAT|O_CLOEXEC, 0644);
+        if(fd > 0)
+            break;
+        else
+            printf("Open %s Failed %dst, Try to open again!\n", fname, open_index+1);
+    }
     free(fname);
     if (fd == -1) {
+        _open_error = true;
+		GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "LASTLOG.TXT open failed");
         return 0xFFFF;
     }
 
@@ -2154,6 +2219,8 @@ uint16_t DataFlash_File::start_new_log(void)
     close(fd);
 
     if (written < to_write) {
+        _open_error = true;
+		GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "written < to_write");
         return 0xFFFF;
     }
 
@@ -2308,7 +2375,7 @@ void DataFlash_File::ListAvailableLogs(AP_HAL::BetterStream *port)
     port->printf("\n");
 }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 void DataFlash_File::flush(void)
 {
     uint32_t tnow = AP_HAL::millis();
@@ -2337,7 +2404,7 @@ void DataFlash_File::_io_timer_pos_data(void)
     uint32_t tnow = AP_HAL::millis();
     _io_timer_pos_data_heartbeat = tnow;
 
-    if (_write_pos_data_fd == -1 || !_initialised || _open_pos_data_error) {
+    if (_write_pos_data_fd == -1 || !_initialised_advance || _open_pos_data_error) {
         return;
     }
 
@@ -2374,6 +2441,7 @@ void DataFlash_File::_io_timer_pos_data(void)
 		hal.util->perf_count(_perf_errors);
 		close(_write_pos_data_fd);
 		_write_pos_data_fd = -1;
+        _initialised_advance = false;
 	} else {
 		_write_pos_data_offset += nwritten;
 		_writebuf_pos_data.advance(nwritten);
@@ -2390,7 +2458,7 @@ void DataFlash_File::_io_timer_raw_data(void)
     uint32_t tnow = AP_HAL::millis();
     _io_timer_raw_data_heartbeat = tnow;
 
-    if (_write_raw_data_fd == -1 || !_initialised || _open_raw_data_error) {
+    if (_write_raw_data_fd == -1 || !_initialised_advance || _open_raw_data_error) {
         return;
     }
 
@@ -2405,8 +2473,8 @@ void DataFlash_File::_io_timer_raw_data(void)
 
     if (nbytes > _writebuf_chunk_raw_data) {
         // be kind to the FAT PX4 filesystem
-        if(nbytes > 10*1024) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "io_raw_data ringbuffer ------------------nbytes [%d]\n", nbytes);
+		if(nbytes > (rawdata_buffer_size - _writebuf_chunk_raw_data)) {
+			printf("io_raw_data ringbuffer ------------------nbytes [%d]\n", nbytes);
 		}
         nbytes = _writebuf_chunk_raw_data;
     }
@@ -2423,13 +2491,32 @@ void DataFlash_File::_io_timer_raw_data(void)
         }
     }
 
+#ifdef RAW_DATA_WRITE_TIME_MONITOR
+    uint32_t start_time = 0;
+    start_time = AP_HAL::millis();
+#endif
+
     ssize_t nwritten = ::write(_write_raw_data_fd, head, nbytes);
+
+#ifdef LOG_RAW_DATA_STREAM_RATE_MONITOR
+        // Print raw data stream rates.
+        static int cnts = 0;
+        cnts += nwritten;
+        static uint32_t last_time = 0;
+        if(AP_HAL::millis() - last_time > 1000) {
+            last_time = AP_HAL::millis();
+            printf("Raw data rate is %d bytes/second\n", cnts);
+            cnts = 0;
+        }
+#endif
+
 	//printf("Raw data nwritten  %d\n", nwritten);
 	if (nwritten <= 0) {
 		GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Raw data write error");
 		hal.util->perf_count(_perf_errors);
 		close(_write_raw_data_fd);
 		_write_raw_data_fd = -1;
+        _initialised_advance = false;
 	} else {
 		_write_raw_data_offset += nwritten;
 		_writebuf_raw_data.advance(nwritten);
@@ -2438,6 +2525,13 @@ void DataFlash_File::_io_timer_raw_data(void)
         ::fsync(_write_raw_data_fd);
 		//printf("Raw data fsync %d\n", nwritten);
 		#endif
+
+#ifdef RAW_DATA_WRITE_TIME_MONITOR
+        uint32_t time_use = AP_HAL::millis() - start_time;
+        if(time_use > 100) {
+            printf("raw data write 4k use %dms\n", time_use);
+        }
+#endif
 	}
 }
 
@@ -2462,9 +2556,10 @@ void DataFlash_File::_io_timer(void)
     if (tnow - _free_space_last_check_time > _free_space_check_interval) {
         _free_space_last_check_time = tnow;
         if (disk_space_avail() < _free_space_min_avail) {
-            hal.console->printf("Out of space for logging\n");
+            printf("Out of space for logging\n");
             stop_logging();
             _open_error = true; // prevent logging starting again
+			GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Out of space for logging");
             return;
         }
     }
@@ -2488,18 +2583,25 @@ void DataFlash_File::_io_timer(void)
             nbytes -= ofs;
         }
     }
-
-	if(_front._params.save_type != 1){
-
-    if (!write_fd_semaphore->take(1)) {
-        return;
-    }
-    if (_write_fd == -1) {
-        write_fd_semaphore->give();
-        return;
-    }
+	//printf("Log Pre  %d\n", nbytes);
     ssize_t nwritten = ::write(_write_fd, head, nbytes);
+
+#ifdef LOG_DATA_STREAM_RATE_MONITOR
+    // Print log data stream rates.
+    static int cnts = 0;
+    cnts += nwritten;
+    static uint32_t last_time = 0;
+    if(AP_HAL::millis() - last_time > 1000) {
+        last_time = AP_HAL::millis();
+        printf("Log rate is %d bytes/second\n", cnts);
+        cnts = 0;
+    }
+#endif
+
+	//printf("Log nwritten  %d\n", nwritten);
     if (nwritten <= 0) {
+        printf("Log write error %d\n", nwritten);
+		GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Log write error");
         hal.util->perf_count(_perf_errors);
         close(_write_fd);
         _write_fd = -1;
@@ -2513,21 +2615,10 @@ void DataFlash_File::_io_timer(void)
           chunk, ensuring the directory entry is updated after each
           write.
          */
-#if CONFIG_HAL_BOARD != HAL_BOARD_SITL && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE && CONFIG_HAL_BOARD != HAL_BOARD_QURT
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
         ::fsync(_write_fd);
+		//printf("Log fsync %d\n", nwritten);
 #endif
-    }
-    write_fd_semaphore->give();
-	}else{
-        //send to serial
-	    if(uart_save_log != nullptr) {
-            if(uart_save_log->txspace() >= nbytes){
-	            uart_save_log->write(head, nbytes);
-                _write_offset += nbytes;
-                _writebuf.advance(nbytes);
-            }
-	    }
-
     }
     hal.util->perf_end(_perf_write);
 }
@@ -2574,17 +2665,22 @@ bool DataFlash_File::logging_failed() const
         return true;
     }
     if (_open_error) {
+        printf("_open_error\n");
+		GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "_open_error");
         return true;
     }
     if (!io_thread_alive()) {
         // No heartbeat in a second.  IO thread is dead?! Very Not
         // Good.
+        printf("Log::No heartbeat in a second\n");
+		GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Log::No heartbeat in a second");
         return true;
     }
 
 	if (!io_thread_raw_data_alive()) {
         // No heartbeat in a second.  IO thread is dead?! Very Not
         // Good.
+        printf("RawData::No heartbeat in a second\n");
 		GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "RawData::No heartbeat in a second");
         return true;
     }
@@ -2592,6 +2688,7 @@ bool DataFlash_File::logging_failed() const
 	if (!io_thread_pos_data_alive()) {
         // No heartbeat in a second.  IO thread is dead?! Very Not
         // Good.
+        printf("PosData::No heartbeat in a second\n");
 		GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "PosData::No heartbeat in a second");
         return true;
     }

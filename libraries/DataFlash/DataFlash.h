@@ -23,7 +23,7 @@
 #include <AP_Beacon/AP_Beacon.h>
 #include <stdint.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
 #include <uORB/topics/esc_status.h>
 #endif
 
@@ -224,7 +224,6 @@ public:
         AP_Int8 file_disarm_rot;
         AP_Int8 log_disarmed;
         AP_Int8 log_replay;
-        AP_Int8 save_type;  //0:sdcard 1: serial
     } _params;
 
     const struct LogStructure *structure(uint16_t num) const;

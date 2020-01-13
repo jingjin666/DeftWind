@@ -44,8 +44,6 @@ const AP_Param::GroupInfo DataFlash_Class::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_FILE_DSRMROT",  4, DataFlash_Class, _params.file_disarm_rot,       0),
 
-    AP_GROUPINFO("_SAVE_TYPE", 5, DataFlash_Class, _params.save_type, 1),
-
     AP_GROUPEND
 };
 

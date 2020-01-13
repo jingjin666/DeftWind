@@ -23,7 +23,7 @@
 #include "ap_version.h"
 #include "GCS.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
 #include <drivers/drv_pwm_output.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -1656,21 +1656,6 @@ uint8_t GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &packe
 {
     if (is_equal(packet.param1,1.0f) || is_equal(packet.param1,3.0f)) {
         if (disable_overrides) {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-            // disable overrides while rebooting
-            int px4io_fd = open("/dev/px4io", 0);
-            if (px4io_fd >= 0) {
-                // disable OVERRIDES so we don't run the mixer while
-                // rebooting
-                if (ioctl(px4io_fd, PWM_SERVO_SET_OVERRIDE_OK, 0) != 0) {
-                    hal.console->printf("SET_OVERRIDE_OK failed\n");
-                }
-                if (ioctl(px4io_fd, PWM_SERVO_SET_OVERRIDE_IMMEDIATE, 0) != 0) {
-                    hal.console->printf("SET_OVERRIDE_IMMEDIATE failed\n");
-                }
-                close(px4io_fd);
-            }
-#endif
         }
 
         // force safety on 

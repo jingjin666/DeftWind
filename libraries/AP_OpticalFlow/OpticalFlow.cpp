@@ -89,7 +89,7 @@ void OpticalFlow::init(void)
     }
 
     if (!backend) {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
         if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK) {
             // possibly have pixhart on external SPI
             backend = AP_OpticalFlow_Pixart::detect(*this);

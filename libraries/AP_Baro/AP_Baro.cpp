@@ -386,43 +386,8 @@ void AP_Baro::init(void)
         return;
     }
 
-#if HAL_BARO_DEFAULT == HAL_BARO_PX4 || HAL_BARO_DEFAULT == HAL_BARO_VRBRAIN
+#if HAL_BARO_DEFAULT == HAL_BARO_UAVRS
     switch (AP_BoardConfig::get_board_type()) {
-    case AP_BoardConfig::PX4_BOARD_PX4V1:
-#ifdef HAL_BARO_MS5611_I2C_BUS
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(hal.i2c_mgr->get_device(HAL_BARO_MS5611_I2C_BUS, HAL_BARO_MS5611_I2C_ADDR))));
-#endif
-        break;
-
-    case AP_BoardConfig::PX4_BOARD_PIXHAWK:
-    case AP_BoardConfig::PX4_BOARD_PHMINI:
-    case AP_BoardConfig::PX4_BOARD_AUAV21:
-    case AP_BoardConfig::PX4_BOARD_PH2SLIM:
-    case AP_BoardConfig::PX4_BOARD_PIXHAWK_PRO:
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
-        break;
-
-    case AP_BoardConfig::PX4_BOARD_PIXHAWK2:
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_SPI_EXT_NAME))));
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
-        break;
-
-    case AP_BoardConfig::PX4_BOARD_PIXRACER:
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_SPI_INT_NAME))));
-        break;
-
-    case AP_BoardConfig::PX4_BOARD_AEROFC:
-#ifdef HAL_BARO_MS5607_I2C_BUS
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(hal.i2c_mgr->get_device(HAL_BARO_MS5607_I2C_BUS, HAL_BARO_MS5607_I2C_ADDR)),
-                                          AP_Baro_MS56XX::BARO_MS5607));
-#endif
-        break;
 
     case AP_BoardConfig::PX4_BOARD_UAVRS:
         ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
@@ -430,54 +395,6 @@ void AP_Baro::init(void)
         break;
     default:
         break;
-    }
-#elif HAL_BARO_DEFAULT == HAL_BARO_HIL
-    drivers[0] = new AP_Baro_HIL(*this);
-    _num_drivers = 1;
-#elif HAL_BARO_DEFAULT == HAL_BARO_BMP085
-    drivers[0] = new AP_Baro_BMP085(*this,
-        std::move(hal.i2c_mgr->get_device(HAL_BARO_BMP085_BUS, HAL_BARO_BMP085_I2C_ADDR)));
-    _num_drivers = 1;
-#elif HAL_BARO_DEFAULT == HAL_BARO_BMP280_I2C
-    ADD_BACKEND(AP_Baro_BMP280::probe(*this,
-                                      std::move(hal.i2c_mgr->get_device(HAL_BARO_BMP280_BUS, HAL_BARO_BMP280_I2C_ADDR))));
-#elif HAL_BARO_DEFAULT == HAL_BARO_BMP280_SPI
-    ADD_BACKEND(AP_Baro_BMP280::probe(*this,
-                                      std::move(hal.spi->get_device(HAL_BARO_BMP280_NAME))));
-#elif HAL_BARO_DEFAULT == HAL_BARO_MS5611_I2C
-    ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                      std::move(hal.i2c_mgr->get_device(HAL_BARO_MS5611_I2C_BUS, HAL_BARO_MS5611_I2C_ADDR))));
-#elif HAL_BARO_DEFAULT == HAL_BARO_MS5611_SPI
-    ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                      std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
-#elif HAL_BARO_DEFAULT == HAL_BARO_MS5607_I2C
-    ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                      std::move(hal.i2c_mgr->get_device(HAL_BARO_MS5607_I2C_BUS, HAL_BARO_MS5607_I2C_ADDR)),
-                                      AP_Baro_MS56XX::BARO_MS5607));
-#elif HAL_BARO_DEFAULT == HAL_BARO_MS5637_I2C
-    ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                      std::move(hal.i2c_mgr->get_device(HAL_BARO_MS5637_I2C_BUS, HAL_BARO_MS5637_I2C_ADDR)),
-                                      AP_Baro_MS56XX::BARO_MS5637));
-#elif HAL_BARO_DEFAULT == HAL_BARO_QFLIGHT
-    drivers[0] = new AP_Baro_QFLIGHT(*this);
-    _num_drivers = 1;
-#elif HAL_BARO_DEFAULT == HAL_BARO_QURT
-    drivers[0] = new AP_Baro_QURT(*this);
-    _num_drivers = 1;
-#endif
-
-
-    
-#if 0//HAL_WITH_UAVCAN
-    // If there is place left - allocate one UAVCAN based baro
-    if ((AP_BoardConfig::get_can_enable() != 0) && (hal.can_mgr != nullptr))
-    {
-        if(_num_drivers < BARO_MAX_DRIVERS && _num_sensors < BARO_MAX_INSTANCES)
-        {
-            printf("Creating AP_Baro_UAVCAN\n\r");
-            drivers[_num_drivers] = new AP_Baro_UAVCAN(*this);
-            _num_drivers++;
-        }
     }
 #endif
 

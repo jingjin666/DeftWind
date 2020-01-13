@@ -334,6 +334,8 @@ void Copter::init_ardupilot()
 
     // flag that initialisation has completed
     ap.initialised = true;
+    
+    printf("\nInit %s Free RAM: %u, Total RAM: %u\n", FIRMWARE_STRING, (unsigned)hal.util->available_memory(), (unsigned)hal.util->total_memory());
 }
 
 

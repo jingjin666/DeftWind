@@ -150,7 +150,7 @@ void AP_InertialSensor_ADIS16XXX::_read_fifo()
 
 	if(!hal.gpio->imu_data_ready()) {
 		//printf("%s:: imu data is not ready.\n", TAG_NAME);
-		goto check_registers;
+		return;
 	}
 
 	// 切换到第0页
@@ -165,17 +165,10 @@ void AP_InertialSensor_ADIS16XXX::_read_fifo()
 	}
 
 	_read_data_gyro();
-	_read_data_accel();
-	//_read_data_temperature();
 
-check_registers:
-	// check next register value for correctness
-	_dev->set_speed(AP_HAL::Device::DEV_SPEED_LOW);
-    if (!_dev->check_next_register()) {
-	    _inc_gyro_error_count(_gyro_instance);
-	    _inc_accel_error_count(_accel_instance);
-	}
-	_dev->set_speed(AP_HAL::Device::DEV_SPEED_HIGH);
+    _read_data_accel();
+
+	//_read_data_temperature();
 }
 
 /*
@@ -211,9 +204,9 @@ void AP_InertialSensor_ADIS16XXX::_read_data_gyro()
 	gyro[0] = _register_read_16(ADIS16XXX_REG_X_GYRO_OUT);
 	gyro[1] = _register_read_16(ADIS16XXX_REG_Y_GYRO_OUT);
 	gyro[2] = _register_read_16(ADIS16XXX_REG_Z_GYRO_OUT);
-	//printf("gyro x[0x%04x] y[0x%04x] z[0x%04x].\n", gyro[0], gyro[1], gyro[2]);
 	#endif
-	
+    //printf("gyro x[0x%04x] y[0x%04x] z[0x%04x].\n", gyro[0], gyro[1], gyro[2]);
+
 	//陀螺仪数据转换
 	for(i = 0; i < 3; i++) {
 		sign = gyro[i]&0x8000;
@@ -288,16 +281,26 @@ void AP_InertialSensor_ADIS16XXX::_read_data_temperature()
 	uint8_t sign;
 	uint16_t temp = 0;
 	float temperature = 0;
-	
+
+    #if 1
+    uint8_t reg[2] = {0};
+	uint8_t res[2] = {0};
+    reg[0] = ADIS16XXX_REG_TEMP_OUT;
+	_dev->transfer_fullduplex(reg, res, 2);
+    temp = res[0]<<8|res[1];
+    #else
 	temp = _register_read_16(ADIS16XXX_REG_TEMP_OUT);
+    #endif
 
 	sign = temp&0x8000;
 	if(sign)
 		temperature = (-(~(short )temp+1))*0.00565+25;
 	else
 		temperature = ((short )temp)*0.00565+25;
+
+    _temp_filtered = _temp_filter.apply(temperature);
 	
-	printf("temperature[%d] [%2.1f].\n", temp, temperature);
+	//printf("temperature[%d] [%2.1f].\n", temp, temperature);
 }
 
 bool AP_InertialSensor_ADIS16XXX::_init()

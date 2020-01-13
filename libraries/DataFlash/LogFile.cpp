@@ -1014,7 +1014,7 @@ bool DataFlash_Backend::Log_Write_Message(const char *message)
 
 void DataFlash_Class::Log_Write_Power(void)
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
     uint8_t safety_and_armed = uint8_t(hal.util->safety_switch_state());
     if (hal.util->get_soft_armed()) {
         // encode armed state in bit 3
@@ -2105,7 +2105,7 @@ bool DataFlash_Backend::Log_Write_Mode(uint8_t mode, uint8_t reason)
 // Write ESC status messages
 void DataFlash_Class::Log_Write_ESC(void)
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
     static int _esc_status_sub = -1;
     struct esc_status_s esc_status;
 

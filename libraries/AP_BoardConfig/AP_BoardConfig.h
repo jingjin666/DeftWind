@@ -27,7 +27,7 @@ public:
     // that we're never going to boot properly:
     static bool in_sensor_config_error(void) { return _in_sensor_config_error; }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
     // public method to start a driver
     static bool px4_start_driver(main_fn_t main_function, const char *name, const char *arguments);
 
@@ -48,21 +48,13 @@ public:
         PX4_BOARD_AUAV21   = 20,
         PX4_BOARD_OLDDRIVERS = 100,
 #endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-        VRX_BOARD_BRAIN51  = 7,
-        VRX_BOARD_BRAIN52  = 8,
-        VRX_BOARD_UBRAIN51 = 9,
-        VRX_BOARD_UBRAIN52 = 10,
-        VRX_BOARD_CORE10   = 11,
-        VRX_BOARD_BRAIN54  = 12,
-#endif
     };
 #endif
 
     // set default value for BRD_SAFETY_MASK
     void set_default_safety_ignore_mask(uint16_t mask);
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
     static enum px4_board_type get_board_type(void) {
         return px4_configured_board;
     }
@@ -71,7 +63,7 @@ public:
 private:
     AP_Int16 vehicleSerialNumber;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
     struct {
         AP_Int8 pwm_count;
         AP_Int8 safety_enable;
@@ -105,7 +97,7 @@ private:
     void px4_autodetect(void);
 #endif
 
-#endif // HAL_BOARD_UAVRS || HAL_BOARD_VRBRAIN
+#endif // HAL_BOARD_UAVRS
 
     static bool _in_sensor_config_error;
 

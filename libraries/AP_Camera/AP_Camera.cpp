@@ -3,7 +3,7 @@
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
 #include <drivers/drv_input_capture.h>
 #include <drivers/drv_pwm_output.h>
 #include <sys/types.h>
@@ -98,7 +98,7 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
 extern const AP_HAL::HAL& hal;
 
 /*
-  static trigger var for PX4 callback
+  static trigger var for UAVRS callback
  */
 volatile bool   AP_Camera::_camera_triggered;
 
@@ -342,9 +342,9 @@ bool AP_Camera::check_trigger_pin(void)
     return false;
 }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
 /*
-  callback for timer capture on PX4
+  callback for timer capture on UAVRS
  */
 void AP_Camera::capture_callback(void *context, uint32_t chan_index,
                                  hrt_abstime edge_time, uint32_t edge_state, uint32_t overflow)
@@ -354,7 +354,7 @@ void AP_Camera::capture_callback(void *context, uint32_t chan_index,
 #endif
 
 /*
-  setup a callback for a feedback pin. When on PX4 with the right FMU
+  setup a callback for a feedback pin. When on UAVRS with the right FMU
   mode we can use the microsecond timer.
  */
 void AP_Camera::setup_feedback_callback(void)
@@ -363,32 +363,7 @@ void AP_Camera::setup_feedback_callback(void)
         // invalid or already installed
         return;
     }
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    /*
-      special case for pin 53 on PX4. We can use the fast timer support
-     */
-    if (_feedback_pin == 53) {
-        int fd = open("/dev/px4fmu", 0);
-        if (fd != -1) {
-            if (ioctl(fd, PWM_SERVO_SET_MODE, PWM_SERVO_MODE_3PWM1CAP) != 0) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "Camera: unable to setup 3PWM1CAP\n");
-                close(fd);
-                goto failed;
-            }   
-            if (up_input_capture_set(3, _feedback_polarity==1?Rising:Falling, 0, capture_callback, this) != 0) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "Camera: unable to setup timer capture\n");
-                close(fd);
-                goto failed;
-            }
-            close(fd);
-            _timer_installed = true;
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "Camera: setup fast trigger capture\n");
-        }
-    }
-failed:
-#endif // CONFIG_HAL_BOARD
-
+    
     if (!_timer_installed) {
         // install a 1kHz timer to check feedback pin
         hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Camera::feedback_pin_timer, void));

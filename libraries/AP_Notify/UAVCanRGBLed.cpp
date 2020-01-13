@@ -7,7 +7,7 @@
 #include <AP_HAL/AP_HAL.h>
 
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
 
 
 #include "UAVCanRGBLed.h"
@@ -43,7 +43,7 @@ bool UAVCANRGBLed::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 {
     rgb = {red, green, blue};
     _need_update = true;
-
+#if HAL_WITH_UAVCAN
     if(hal.can_mgr != nullptr) {
         if((hal.can_mgr)->is_initialized()) {
             if ((hal.can_mgr)->get_UAVCAN() != nullptr) {
@@ -51,7 +51,7 @@ bool UAVCANRGBLed::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
             }
         }
     }
-    
+#endif    
     return true;
 }
 void UAVCANRGBLed::_timer(void)

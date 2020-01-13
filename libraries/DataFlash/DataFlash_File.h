@@ -11,17 +11,8 @@
 #include <AP_HAL/utility/RingBuffer.h>
 #include "DataFlash_Backend.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_QURT
-/*
-  the QURT port has a limited range of system calls available. It
-  cannot provide all the facilities that DataFlash_File wants. It can
-  provide enough to be useful though, which is what
-  DATAFLASH_FILE_MINIMAL is for
- */
-#define DATAFLASH_FILE_MINIMAL 1
-#else
 #define DATAFLASH_FILE_MINIMAL 0
-#endif
+
 
 class DataFlash_File : public DataFlash_Backend
 {
@@ -77,7 +68,7 @@ public:
     void ShowDeviceInfo(AP_HAL::BetterStream *port) override;
     void ListAvailableLogs(AP_HAL::BetterStream *port) override;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     void flush(void) override;
 #endif
     void periodic_1Hz(const uint32_t now) override;
@@ -116,7 +107,8 @@ private:
     uint16_t _read_fd_log_num;
     uint32_t _read_offset;
     uint32_t _write_offset;
-    volatile bool _initialised;
+    bool _initialised;
+	bool _initialised_advance;
     volatile bool _open_error;
     const char *_log_directory;
 
@@ -177,7 +169,7 @@ private:
     bool raw_data_exists(const uint16_t rawnum) const;
     bool pos_data_exists(const uint16_t posnum) const;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     // I always seem to have less than 10% free space on my laptop:
     const float min_avail_space_percent = 0.1f;
 #else
@@ -259,8 +251,9 @@ private:
     uint32_t _free_space_last_check_time; // milliseconds
     const uint32_t _free_space_check_interval = 1000UL; // milliseconds
     const uint32_t _free_space_min_avail = 8388608; // bytes
+    const uint32_t log_buffer_size = 12*1024;
+    const uint32_t rawdata_buffer_size = 24*1024;
 
-    // semaphore mediates access to the ringbuffer
     AP_HAL::Semaphore *semaphore;
 	
     AP_HAL::Semaphore *semaphore_raw_data;
@@ -274,7 +267,6 @@ private:
     AP_HAL::Util::perf_counter_t  _perf_fsync;
     AP_HAL::Util::perf_counter_t  _perf_errors;
     AP_HAL::Util::perf_counter_t  _perf_overruns;
-    AP_HAL::UARTDriver *uart_save_log;
 };
 
 #endif // HAL_OS_POSIX_IO

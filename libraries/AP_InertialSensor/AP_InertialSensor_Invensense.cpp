@@ -499,9 +499,8 @@ void AP_InertialSensor_Invensense::start()
     }
 
     // start the timer process to read samples
-    _dev->register_periodic_callback(1000, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_Invensense::_poll_data, void));
+    _dev->register_periodic_callback(1000ULL, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_Invensense::_poll_data, void));
 }
-
 
 /*
   publish any pending data
@@ -632,8 +631,9 @@ bool AP_InertialSensor_Invensense::_accumulate_fast_sampling(uint8_t *samples, u
             ret = false;
             break;
         }
+        
         tsum += t2;
-
+      
         if ((_accum.count & 1) == 0) {
             // accel data is at 4kHz
             Vector3f a(int16_val(data, 1),
@@ -666,11 +666,11 @@ bool AP_InertialSensor_Invensense::_accumulate_fast_sampling(uint8_t *samples, u
             
             _notify_new_accel_raw_sample(_accel_instance, _accum.accel, 0, false);
             _notify_new_gyro_raw_sample(_gyro_instance, _accum.gyro);
-            
             _accum.accel.zero();
             _accum.gyro.zero();
             _accum.count = 0;
         }
+       
     }
 
     if (clipped) {
@@ -685,85 +685,63 @@ bool AP_InertialSensor_Invensense::_accumulate_fast_sampling(uint8_t *samples, u
     return ret;
 }
 
+static void fifo_dump(uint8_t *fifo, int size, int per)
+{
+    for(int k = 0; k < size; k++) {
+        if((k!=0) && (k%per == 0))
+            printf("\n");
+
+        printf("0x%02x, ", fifo[k]);
+    }
+    printf("\n");
+}
+
 void AP_InertialSensor_Invensense::_read_fifo()
 {
-    uint8_t n_samples;
-    uint16_t bytes_read;
-    uint8_t *rx = _fifo_buffer;
-    bool need_reset = false;
-
-    if (!_block_read(MPUREG_FIFO_COUNTH, rx, 2)) {
-        goto check_registers;
-    }
-
-    bytes_read = uint16_val(rx, 0);
-    n_samples = bytes_read / MPU_SAMPLE_SIZE;
-
-    if (n_samples == 0) {
-        /* Not enough data in FIFO */
-        goto check_registers;
-    }
-
     /*
-      testing has shown that if we have more than 32 samples in the
-      FIFO then some of those samples will be corrupt. It always is
-      the ones at the end of the FIFO, so clear those with a reset
-      once we've read the first 24. Reading 24 gives us the normal
-      number of samples for fast sampling at 400Hz
+     * 读取FIFOCNT寄存器[12:0]查询FIFO里面有多少字节数据，当读取FIFO_CNTH时将暂时锁存数据，9250最多512字节FIFO
+     * 设置FIFO_EN为X_ACCLE|Y_ACCLE|Z|ACCLE|TEMP|X_GYRO|Y_GYRO|Z_GYRO，则FIFO里只有温度、三轴磁力计、三轴加速度计的数据
+     * 寄存器地址从59到73，所以一次采样的数据大小为MPU_SAMPLE_SIZE=14
+     * 一次采样最多可填充512/14=36次循环的传感器数据到FIFO中去
+     * 如果FIFO快满，n_samples将超过32次，我们只取前24次数据，并复位FIFO
+     * 我们分配的buffer大小最多可存储16次采样数据
+     * 循环读取FIFO数据到buffer，每次以16个采样周期为单位，最少循环1次(n_samples<=16)，最多2次(n>16&&n<=24)
+     * 在每一次循环的过程中，如果accumulate失败，则直接放弃本次数据的解析
      */
-    if (n_samples > 32) {
-        need_reset = true;
-        n_samples = 24;
-    }
-    
-    while (n_samples > 0) {
-        uint8_t n = MIN(n_samples, MPU_FIFO_BUFFER_LEN);
-        if (!_dev->set_chip_select(true)) {
-            if (!_block_read(MPUREG_FIFO_R_W, rx, n * MPU_SAMPLE_SIZE)) {
-                goto check_registers;
-            }
-        } else {
-            // this ensures we keep things nicely setup for DMA
-            uint8_t reg = MPUREG_FIFO_R_W | 0x80;
-            if (!_dev->transfer(&reg, 1, nullptr, 0)) {
-                _dev->set_chip_select(false);
-                goto check_registers;
-            }
-            memset(rx, 0, n * MPU_SAMPLE_SIZE);
-            if (!_dev->transfer(rx, n * MPU_SAMPLE_SIZE, rx, n * MPU_SAMPLE_SIZE)) {
-                hal.console->printf("MPU60x0: error in fifo read %u bytes\n", n * MPU_SAMPLE_SIZE);
-                _dev->set_chip_select(false);
-                goto check_registers;
-            }
-            _dev->set_chip_select(false);
-        }
+    uint8_t n_samples;
+    uint8_t *rx = _fifo_buffer;
 
-        if (_fast_sampling) {
-            if (!_accumulate_fast_sampling(rx, n)) {
-                debug("stop at %u of %u", n_samples, bytes_read/MPU_SAMPLE_SIZE);
-                break;
-            }
-        } else {
-            if (!_accumulate(rx, n)) {
-                break;
-            }
-        }
-        n_samples -= n;
+#if defined(CONFIG_ARCH_BOARD_UAVRS_V2)
+    /* 当前的读取逻辑更适合用于DMA读取，先发送FIFO首地址，再直接读取采样数据
+     * 使用DMA读取FIFO的方式还有问题，第一次读取正常，后面的读取，返回的数据只有前32个字节，后面全为0
+     * 暂改为直接用DMA读取一次ACC,GYRO,TEMP数据
+     * block_read比全速读取要占用较少的CPU资源
+     */
+    n_samples = 1;
+    #if 1
+    if (!_block_read(MPUREG_ACCEL_XOUT_H, rx, n_samples * MPU_SAMPLE_SIZE)) {
+        return;
     }
+    #else
+    _dev->set_chip_select(true)
+    uint8_t reg = MPUREG_ACCEL_XOUT_H | 0x80;
+    if (!_dev->transfer(&reg, 1, nullptr, 0)) {
+        _dev->set_chip_select(false);
+        return;
+    }
+    memset(rx, 0, n_samples * MPU_SAMPLE_SIZE);
+    if (!_dev->transfer(rx, n_samples * MPU_SAMPLE_SIZE, rx, n_samples * MPU_SAMPLE_SIZE)) {
+        _dev->set_chip_select(false);
+        return;
+    }
+    _dev->set_chip_select(false);
+    #endif
+    //fifo_dump(rx, n_samples * MPU_SAMPLE_SIZE, MPU_SAMPLE_SIZE);
 
-    if (need_reset) {
-        //debug("fifo reset n_samples %u", bytes_read/MPU_SAMPLE_SIZE);
-        _fifo_reset();
+    if (!_accumulate(rx, n_samples)) {
+        return;
     }
-    
-check_registers:
-    // check next register value for correctness
-    _dev->set_speed(AP_HAL::Device::DEV_SPEED_LOW);
-    if (!_dev->check_next_register()) {
-        _inc_gyro_error_count(_gyro_instance);
-        _inc_accel_error_count(_accel_instance);
-    }
-    _dev->set_speed(AP_HAL::Device::DEV_SPEED_HIGH);
+#endif
 }
 
 /*
@@ -775,6 +753,7 @@ bool AP_InertialSensor_Invensense::_check_raw_temp(int16_t t2)
         // cached copy OK
         return true;
     }
+
     uint8_t trx[2];
     if (_block_read(MPUREG_TEMP_OUT_H, trx, 2)) {
         _raw_temp = int16_val(trx, 0);
@@ -860,7 +839,8 @@ void AP_InertialSensor_Invensense::_set_filter_register(void)
  */
 bool AP_InertialSensor_Invensense::_check_whoami(void)
 {
-    uint8_t whoami = _register_read(MPUREG_WHOAMI);
+    uint8_t whoami;
+    whoami = _register_read(MPUREG_WHOAMI);
     switch (whoami) {
     case MPU_WHOAMI_6000:
         _mpu_type = Invensense_MPU6000;
@@ -889,18 +869,17 @@ bool AP_InertialSensor_Invensense::_hardware_init(void)
     if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return false;
     }
-
+    
     // setup for register checking
     _dev->setup_checked_registers(7, 20);
     
     // initially run the bus at low speed
     _dev->set_speed(AP_HAL::Device::DEV_SPEED_LOW);
-
     if (!_check_whoami()) {
         _dev->get_semaphore()->give();
         return false;
     }
-
+    
     // Chip reset
     uint8_t tries;
     for (tries = 0; tries < 5; tries++) {
