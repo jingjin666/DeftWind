@@ -120,7 +120,7 @@ static int main_loop(int argc, char **argv)
     hal.uartB->begin(460800);   //RTK COM2
     hal.uartC->begin(115200);   //RTK COM1
     //hal.uartD->begin(115200);   //BACKUP UART
-    //hal.uartE->begin(115200);   //BACKUP UART
+    hal.uartE->begin(115200);   //BACKUP UART
     hal.uartF->begin(115200);   //TELECOM
     hal.uartG->begin(115200);   //BACKUP GPS
 #endif

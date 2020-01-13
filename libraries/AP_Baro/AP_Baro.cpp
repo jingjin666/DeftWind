@@ -386,6 +386,11 @@ void AP_Baro::init(void)
         return;
     }
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    ADD_BACKEND(new AP_Baro_SITL(*this));
+    return;
+#endif
+
 #if HAL_BARO_DEFAULT == HAL_BARO_UAVRS
     switch (AP_BoardConfig::get_board_type()) {
 
