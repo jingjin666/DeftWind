@@ -66,11 +66,11 @@ public:
     // paths for UART devices
     const char *_uart_path[6] {
         "tcp:0:wait",
+        "tcp:1",    
         "GPS1",
-        "tcp:2",
-        "tcp:3",
         "GPS2",
         "tcp:4",
+        "tcp:5",
     };
     
 private:
