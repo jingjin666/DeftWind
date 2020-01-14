@@ -81,7 +81,7 @@ extern const AP_HAL::HAL& hal;
 #define SERIAL3_PROTOCOL SerialProtocol_None
 #define SERIAL3_BAUD AP_SERIALMANAGER_BACKUP_BAUD/1000
 
-#define SERIAL4_PROTOCOL SerialProtocol_MAVLink2
+#define SERIAL4_PROTOCOL SerialProtocol_None
 #define SERIAL4_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
 
 #define SERIAL5_PROTOCOL SerialProtocol_MAVLink2
