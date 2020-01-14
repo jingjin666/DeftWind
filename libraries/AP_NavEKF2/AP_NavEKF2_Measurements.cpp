@@ -434,6 +434,9 @@ void NavEKF2_core::readGpsData()
             gpsDataNew.vel = _ahrs->get_gps().velocity();
 
             gpsDataNew.hdg = ToRad(_ahrs->get_gps().get_heading());
+            gpsDataNew.stat = _ahrs->get_gps().status();
+            gpsDataNew.hstat = _ahrs->get_gps().heading_status();
+            gpsDataNew.have_hdg = _ahrs->get_gps().have_heading();
 
             // Use the speed and position accuracy from the GPS if available, otherwise set it to zero.
             // Apply a decaying envelope filter with a 5 second time constant to the raw accuracy data

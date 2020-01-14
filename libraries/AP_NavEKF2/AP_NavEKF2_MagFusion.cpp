@@ -226,6 +226,7 @@ void NavEKF2_core::SelectMagFusion()
     if(yaw_switch != YAW_USE_COPASS){
         //Switch the yaw source and reset the variance matrix.
         CovarianceInit();
+        offsetSwitchMageFlag = true;
         yaw_switch = YAW_USE_COPASS;
         gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u yaw switch to compass heading",(unsigned)imu_index);
     }
@@ -845,6 +846,13 @@ void NavEKF2_core::fuseEulerYaw()
     // Calculate the innovation
     float innovation = wrap_PI(predicted_yaw - measured_yaw);
 
+    if(offsetSwitchMageFlag){
+        offsetSwitchMageFlag = false;
+        offsetSwitchMage = innovation;
+    }
+
+    innovation = wrap_PI(innovation - offsetSwitchMage);
+
     // Copy raw value to output variable used for data logging
     innovYaw = innovation;
 
@@ -1140,12 +1148,12 @@ void NavEKF2_core::recordMagReset()
 
 void NavEKF2_core::FuseGpsHeading()
 {
-    if(!_ahrs->get_gps().have_heading()){
+    if(!gpsDataDelayed.have_hdg){
         inflightYawResetRequest = true;
         return;
     }
 
-     if(_ahrs->get_gps().heading_status() == AP_GPS::GPS_OK_FIX_3D_RTK_FIXED){
+     if(gpsDataDelayed.hstat== AP_GPS::GPS_OK_FIX_3D_RTK_FIXED){
         if(!yawAlignComplete || !finalInflightYawInit || inflightYawResetRequest){
 
             if(!yawAlignComplete){

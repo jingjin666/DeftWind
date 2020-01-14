@@ -770,7 +770,7 @@ void AP_GPS::update(void)
 
      uint32_t now = AP_HAL::millis();
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
-        if(gps_type[i] == AP_GPS_Backend::DEVTYPE_OEM719 && state[i].status >= GPS_OK_FIX_3D && primary_instance != i){
+        if(gps_type[i] == AP_GPS_Backend::DEVTYPE_OEM719 && state[i].status >= GPS_OK_FIX_3D_RTK_FIXED && primary_instance != i){
             // we have a higher status lock, or primary is set to the blended GPS, change GPS
             primary_instance = i;
             _last_instance_swap_ms = now;

@@ -154,21 +154,29 @@ public:
     void loop() override;
 
 private:
+    enum P900_MODE_TYPE{
+        P900_P2P = 0,
+        P900_MESH = 1
+    };
     enum NO_GPS_RTL_STATUS{
         NO_GPS_RTL_NONE = 0,
         NO_GPS_RTL_HEADING_ONLIN = 1,
         NO_GPS_RTL_HEADING_TRACK = 2,
-        NO_GPS_RTK_NEAR_HOME = 3
+        NO_GPS_RTL_NEAR_HOME = 3
     };
     enum NO_GPS_RTL_STATUS no_gps_rtl_home_flag;
     float distance_to_home;
     float heading_to_home;
     bool gcs_set_p900_id_flag;
     bool gcs_get_p900_id_flag;
+    bool gcs_set_p900_mode_flag;
     bool p900_read_mutex;
     bool p900_write_mutex;
+    bool p900_set_mode_mutex;
     uint8_t p900_id[20];
     uint8_t return_p900_id[20];
+    uint8_t p900_mode;
+    uint8_t p900_mac[40];
     bool emergency_return;
     uint8_t event_report;
     //plane indicator status
@@ -1203,6 +1211,7 @@ public:
 
     void get_p900_id();
     void set_p900_id();
+    void set_p900_mode();
 };
 
 #define MENU_FUNC(func) FUNCTOR_BIND(&plane, &Plane::func, int8_t, uint8_t, const Menu::arg *)

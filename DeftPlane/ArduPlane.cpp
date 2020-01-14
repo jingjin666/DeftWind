@@ -70,9 +70,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(log_perf_info,         0.2,    100),
     SCHED_TASK(compass_save,          0.1,    200),
 	SCHED_TASK(raw_data_update,		  100,	  200),
-    SCHED_TASK(Log_Write_Fast,         10,    300),
-    SCHED_TASK(update_logging1,        10,    300),
-    SCHED_TASK(update_logging2,        10,    300),
+    SCHED_TASK(Log_Write_Fast,         5,    300),
+    SCHED_TASK(update_logging1,        5,    300),
+    SCHED_TASK(update_logging2,        5,    300),
     SCHED_TASK(update_soaring,         50,    400),
     SCHED_TASK(parachute_check,        10,    200),
     SCHED_TASK(terrain_update,         10,    200),
@@ -94,7 +94,7 @@ void Plane::get_p900_id()
         return;
     }
 
-    if(p900_write_mutex){
+    if(p900_write_mutex || p900_set_mode_mutex){
         return;
     }
 
@@ -172,7 +172,7 @@ void Plane::set_p900_id()
         return;
     }
 
-    if(p900_read_mutex){
+    if(p900_read_mutex || p900_set_mode_mutex){
         return;
     }
 
@@ -209,6 +209,110 @@ void Plane::set_p900_id()
     gcs_set_p900_id_flag = false;
     p900_write_mutex = false;
 }
+
+
+void Plane::set_p900_mode()
+{
+    static uint8_t set_p900_mode_status = 0;
+
+    if(!gcs_set_p900_mode_flag){
+        return;
+    }
+
+    if(p900_read_mutex || p900_write_mutex){
+        return;
+    }
+
+    if(!p900_set_mode_mutex){
+        p900_set_mode_mutex = true;
+    }
+
+    if(set_p900_mode_status == 0){
+        set_p900_mode_status = 1;
+        //enter command mode
+        hal.uartF->write("+++");
+        return;
+    }
+
+    if(p900_mode == P900_P2P){
+        if(set_p900_mode_status == 1){
+            set_p900_mode_status = 2;
+            //set p2p mode
+            hal.uartF->write("AT&F11\r");
+            return;
+        }
+
+        if(set_p900_mode_status == 2){
+            set_p900_mode_status = 3;
+            //set p900 baud rate 115200
+            hal.uartF->write("ATS102=1\r");
+            return;
+        }
+
+        if(set_p900_mode_status == 3){
+            set_p900_mode_status = 4;
+            //set air baud rate 172800
+            hal.uartF->write("ATS103=0\r");
+            return;
+        }
+
+        if(set_p900_mode_status == 4){
+            set_p900_mode_status = 5;
+            hal.uartF->write("AT&W\r");
+            return;
+        }
+
+        if(set_p900_mode_status == 5){
+            set_p900_mode_status = 0;
+            hal.uartF->write("ATA\r");
+        }
+    }else if(p900_mode == P900_MESH){
+        if(set_p900_mode_status == 1){
+            set_p900_mode_status = 2;
+            //set p2p mode
+            hal.uartF->write("AT&F2\r");
+            return;
+        }
+
+        if(set_p900_mode_status == 2){
+            set_p900_mode_status = 3;
+            //set p900 baud rate 230400
+            hal.uartF->write("ATS102=0\r");
+            return;
+        }
+
+        if(set_p900_mode_status == 3){
+            set_p900_mode_status = 4;
+            //set air baud rate 230400
+            hal.uartF->write("ATS103=1\r");
+            return;
+        }
+
+        if(set_p900_mode_status == 4){
+            set_p900_mode_status = 5;
+            //set mac data
+            char tmp[40] = {0};
+            sprintf(tmp, "ATS140=%s\r", p900_mac);
+            hal.uartF->write(tmp);
+            return;
+        }
+
+        if(set_p900_mode_status == 5){
+            set_p900_mode_status = 6;
+            hal.uartF->write("AT&W\r");
+            return;
+        }
+
+        if(set_p900_mode_status == 6){
+            set_p900_mode_status = 0;
+            hal.uartF->write("ATA\r");
+        }
+    }
+
+    gcs_set_p900_mode_flag = false;
+    p900_set_mode_mutex = false;
+}
+
 
 
 void Plane::emergency_events(void)
@@ -329,21 +433,20 @@ void Plane::emergency_events(void)
         }else if(AP_HAL::millis() - get_gps_ms > 5000){
             if(mission.starts_check_misson_cmd()){
                 set_mode(AUTO, MODE_REASON_GPS_GLITCH);
+                camera.set_trigger_distance(0);
                 if(emergency_return && mission.get_current_nav_index() < mission.num_commands() - 6){
                     uint16_t seq = mission.num_commands() - 6;
-                    camera.set_trigger_distance(0);
                     mission.set_current_cmd(seq);
                     emergency_return = false;
                 }else if(mission.get_current_nav_index() < mission.num_commands() - 9){
                     uint16_t seq = mission.num_commands() - 9;
-                    camera.set_trigger_distance(0);
                     mission.set_current_cmd(seq);
                 }
             }else{
                 set_mode(RTL, MODE_REASON_GPS_GLITCH);
             }
 
-            if(emergency_return && no_gps_rtl_home_flag == NO_GPS_RTK_NEAR_HOME){
+            if(emergency_return && no_gps_rtl_home_flag == NO_GPS_RTL_NEAR_HOME){
                 emergency_return = false;
             }
         }
@@ -401,7 +504,7 @@ void Plane::setup()
 void Plane::loop()
 {
     uint32_t loop_us = 1000000UL / scheduler.get_loop_rate_hz();
-#if 1
+
     // wait for an INS sample
     ins.wait_for_sample();
 
@@ -424,9 +527,7 @@ void Plane::loop()
     perf.fast_loopTimer_us = timer;
 
     perf.mainLoop_count++;
-#else
-    hal.scheduler->delay_microseconds(2500);
-#endif
+
     // tell the scheduler one tick has passed
     scheduler.tick();
 
@@ -744,6 +845,7 @@ void Plane::one_second_loop()
     //config p900
     set_p900_id();
     get_p900_id();
+    set_p900_mode();
 
 	static bool reset_image_index_flag = true;
 	if(reset_image_index_flag && arming.is_armed()) {

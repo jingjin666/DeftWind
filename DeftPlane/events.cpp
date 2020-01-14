@@ -168,13 +168,12 @@ void Plane::low_battery_event(void)
     }
 
     if(control_mode == AUTO && arming.is_armed() && mission.starts_check_misson_cmd()){
+        camera.set_trigger_distance(0);
         if(mission.get_current_nav_index() <= 2){
             uint16_t seq = mission.num_commands() - 7;
-            camera.set_trigger_distance(0);
             mission.set_current_cmd(seq);
         }else if(mission.get_current_nav_index() < mission.num_commands() - 9){
             uint16_t seq = mission.num_commands() - 9;
-            camera.set_trigger_distance(0);
             mission.set_current_cmd(seq);
         }
     }else if(control_mode != NO_GPS_RTL){
@@ -208,8 +207,8 @@ void Plane::low_battery_event2(void)
 
     if(control_mode == AUTO && arming.is_armed() && mission.starts_check_misson_cmd()){
         if(mission.get_current_nav_index() < mission.num_commands() - 6){
-            uint16_t seq = mission.num_commands() - 6;
             camera.set_trigger_distance(0);
+            uint16_t seq = mission.num_commands() - 6;
             mission.set_current_cmd(seq);
         }
     }else if(control_mode != NO_GPS_RTL){

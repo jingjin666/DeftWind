@@ -425,7 +425,7 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
         distance_to_home = get_distance(cur_loc, home);
         heading_to_home = get_bearing_cd(cur_loc, home)*0.01;
         if(distance_to_home < 300){
-            no_gps_rtl_home_flag = NO_GPS_RTK_NEAR_HOME;
+            no_gps_rtl_home_flag = NO_GPS_RTL_NEAR_HOME;
             emergency_return = true;
         }else{
             no_gps_rtl_home_flag = NO_GPS_RTL_NONE;

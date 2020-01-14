@@ -394,10 +394,6 @@ void Plane::do_takeoff(const AP_Mission::Mission_Command& cmd)
 void Plane::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
     set_next_WP(cmd.content.location);
-
-    if(cmd.type >= MAV_POINT_LAND_EMERGENCY_WAYPOINT){
-        camera.set_trigger_distance(0);
-    }
 }
 
 void Plane::do_land(const AP_Mission::Mission_Command& cmd)
