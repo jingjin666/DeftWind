@@ -567,7 +567,7 @@ void Compass::_detect_backends(void)
         bool added;
         do {
 			printf("Creating AP_Compass_UAVCAN\n\r");
-            added = _add_backend(new AP_Compass_UAVCAN(*this), "UAVCAN", true);
+            added = _add_backend(AP_Compass_UAVCAN::probe(*this), "UAVCAN", true);
             if (_backend_count == COMPASS_MAX_BACKEND || _compass_count == COMPASS_MAX_INSTANCES) {
                 return;
             }

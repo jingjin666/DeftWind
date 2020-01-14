@@ -4,7 +4,6 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
 
-
 #include "RGBLed.h"
 
 #define UAVCAN_LED_BRIGHT  0xFF    // full brightness
@@ -26,7 +25,7 @@ private:
     struct {
         uint8_t r, g, b;
     } rgb;
+    AP_UAVCAN *_uavcan;
 };
-
 
 #endif

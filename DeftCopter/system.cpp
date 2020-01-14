@@ -128,6 +128,10 @@ void Copter::init_ardupilot()
     
     BoardConfig.init();
 
+#if HAL_WITH_UAVCAN
+    BoardConfig_CAN.init();
+#endif
+
     // init cargo gripper
 #if GRIPPER_ENABLED == ENABLED
     g2.gripper.init();

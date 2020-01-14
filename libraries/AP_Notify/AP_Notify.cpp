@@ -91,17 +91,15 @@ NotifyDevice *AP_Notify::_devices[] = {nullptr, nullptr, nullptr, nullptr, nullp
 // initialisation
 void AP_Notify::init(bool enable_external_leds)
 {
-
-// Notify devices for PX4 boards
+// Notify devices for UAVRS boards
 #if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
+#if HAL_WITH_UAVCAN
     #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_UAVRS_V1 // Has its own LED board
         _devices[0] = new UAVCANRGBLed();
     #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_UAVRS_V2 // Has its own LED board
         _devices[0] = new UAVCANRGBLed();
-    #else
-        _devices[0] = new AP_BoardLED();
-        _devices[1] = new ToshibaLED_I2C();
     #endif
+#endif
 #else
     _devices[0] = new AP_BoardLED();
     _devices[1] = new ToshibaLED_I2C();

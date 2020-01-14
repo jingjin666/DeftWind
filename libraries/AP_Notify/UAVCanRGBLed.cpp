@@ -4,21 +4,14 @@
 
 /* LED driver for UAVCANRGBLed */
 
-#include <AP_HAL/AP_HAL.h>
-
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
-
+#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL_UAVRS/CAN.h>
+#include <AP_UAVCAN/AP_UAVCAN.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 
 #include "UAVCanRGBLed.h"
-
-#include <utility>
-
-
-#if HAL_WITH_UAVCAN
-#include <AP_HAL_PX4/CAN.h>
-#include <AP_UAVCAN/AP_UAVCAN.h>
-#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -28,14 +21,20 @@ UAVCANRGBLed::UAVCANRGBLed():
     
 }
 
-
 bool UAVCANRGBLed::hw_init()
 {
-    bool ret = true;
+    bool ret = false;
 
-    //printf("UAVCANRGBLed::hw_init\n");
-    
-    return ret;
+    if (AP_BoardConfig_CAN::get_can_num_ifaces() >= 1) {
+        for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
+            if (hal.can_mgr[i] != nullptr) {
+                _uavcan = hal.can_mgr[i]->get_UAVCAN();
+                printf("UAVCANRGBLed::hw_init ok can_idx[%d]\n", i);
+                return true;
+            }
+        }
+   }
+   return ret;
 }
 
 // set_rgb - set color as a combination of red, green and blue values
@@ -43,15 +42,11 @@ bool UAVCANRGBLed::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 {
     rgb = {red, green, blue};
     _need_update = true;
-#if HAL_WITH_UAVCAN
-    if(hal.can_mgr != nullptr) {
-        if((hal.can_mgr)->is_initialized()) {
-            if ((hal.can_mgr)->get_UAVCAN() != nullptr) {
-                ((hal.can_mgr)->get_UAVCAN())->do_cyclic_rgbled(rgb.r, rgb.g, rgb.b);
-            }
-        }
+
+    if(_uavcan != nullptr) {
+        _uavcan->do_cyclic_rgbled(rgb.r, rgb.g, rgb.b);
     }
-#endif    
+    
     return true;
 }
 void UAVCANRGBLed::_timer(void)
@@ -62,6 +57,5 @@ void UAVCANRGBLed::_timer(void)
 
     _need_update = false;
 }
-
 
 #endif
