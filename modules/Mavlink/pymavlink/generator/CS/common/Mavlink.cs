@@ -409,7 +409,7 @@ namespace MavLink
     /// </summary>
     internal static class Mavlink_Crc
     {
-        const UInt16 X25_INIT_CRC = 0xffff;
+        const UInt16 X25_INIT_CRC = 0xfffe;
 
         public static UInt16 CrcAccumulate(byte b, UInt16 crc)
         {
