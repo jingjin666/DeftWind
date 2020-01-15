@@ -565,13 +565,15 @@ void Compass::_detect_backends(void)
 #if HAL_WITH_UAVCAN
     if (_driver_enabled(DRIVER_UAVCAN)) {
         bool added;
+        uint8_t n = 0;
         do {
+            n++;
 			printf("Creating AP_Compass_UAVCAN\n\r");
             added = _add_backend(AP_Compass_UAVCAN::probe(*this), "UAVCAN", true);
             if (_backend_count == COMPASS_MAX_BACKEND || _compass_count == COMPASS_MAX_INSTANCES) {
                 return;
             }
-        } while (!added);
+        } while (!added && n < 3);
     }
 #endif
 
