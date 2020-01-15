@@ -3,9 +3,10 @@
 */
 
 /* LED driver for UAVCANRGBLed */
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_UAVRS
-#include <AP_HAL/AP_HAL.h>
+
 #include <AP_HAL_UAVRS/CAN.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
