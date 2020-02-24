@@ -183,7 +183,7 @@ void Copter::set_p900_id()
     if(set_p900_status == 0){
         set_p900_status = 1;
         //enter command mode
-        hal.uartC->write("+++");
+        hal.uartF->write("+++");
         return;
     }
 
@@ -191,19 +191,19 @@ void Copter::set_p900_id()
         set_p900_status = 2;
         char tmp[30] = {0};
         sprintf(tmp, "ATS104=%s\r", p900_id);
-        hal.uartC->write(tmp);
+        hal.uartF->write(tmp);
         return;
     }
 
     if(set_p900_status == 2){
         set_p900_status = 3;
-        hal.uartC->write("AT&W\r");
+        hal.uartF->write("AT&W\r");
         return;
     }
 
     if(set_p900_status == 3){
         set_p900_status = 0;
-        hal.uartC->write("ATA\r");
+        hal.uartF->write("ATA\r");
     }
 
     gcs_set_p900_id_flag = false;
@@ -232,39 +232,39 @@ void Copter::get_p900_id()
     if(get_p900_status == 0){
         get_p900_status = 1;
         //enter command mode
-        hal.uartC->write("+++");
+        hal.uartF->write("+++");
         return;
     }
 
     if(get_p900_status == 1){
         get_p900_status = 2;
-        hal.uartC->write("ATE0\r");
+        hal.uartF->write("ATE0\r");
         return;
     }
 
     if(get_p900_status == 2){
         get_p900_status = 3;
         //clear uart
-        nbytes = hal.uartC->available();
+        nbytes = hal.uartF->available();
         for(uint16_t i=0; i<nbytes; i++){
-            uint8_t c = hal.uartC->read();
+            uint8_t c = hal.uartF->read();
             printf("%c", c);
         }
         //get id
-        hal.uartC->write("ATS104?\r");
+        hal.uartF->write("ATS104?\r");
         return;
     }
 
     
     memset(return_p900_id, 0, sizeof(return_p900_id));
-    nbytes = hal.uartC->available();
+    nbytes = hal.uartF->available();
 
     printf("----nbytes:%d\r\n", nbytes);
 
     uint8_t j = 0;
     bool start_flag = false;
     for(uint16_t i=0; i<nbytes; i++){
-        uint8_t c = hal.uartC->read();
+        uint8_t c = hal.uartF->read();
         if(c >= '0' && c <= '9')
         {
             start_flag = true;
@@ -283,7 +283,7 @@ void Copter::get_p900_id()
 
     if(get_p900_status == 3){
         get_p900_status = 0;
-        hal.uartC->write("ATA\r");
+        hal.uartF->write("ATA\r");
     }
     gcs_get_p900_id_flag = false;
     p900_read_mutex = false;
@@ -309,7 +309,7 @@ void Copter::set_p900_mode()
     if(set_p900_mode_status == 0){
         set_p900_mode_status = 1;
         //enter command mode
-        hal.uartC->write("+++");
+        hal.uartF->write("+++");
         return;
     }
 
@@ -317,53 +317,53 @@ void Copter::set_p900_mode()
         if(set_p900_mode_status == 1){
             set_p900_mode_status = 2;
             //set p2p mode
-            hal.uartC->write("AT&F11\r");
+            hal.uartF->write("AT&F11\r");
             return;
         }
 
         if(set_p900_mode_status == 2){
             set_p900_mode_status = 3;
             //set p900 baud rate 115200
-            hal.uartC->write("ATS102=1\r");
+            hal.uartF->write("ATS102=1\r");
             return;
         }
 
         if(set_p900_mode_status == 3){
             set_p900_mode_status = 4;
             //set air baud rate 172800
-            hal.uartC->write("ATS103=0\r");
+            hal.uartF->write("ATS103=0\r");
             return;
         }
 
         if(set_p900_mode_status == 4){
             set_p900_mode_status = 5;
-            hal.uartC->write("AT&W\r");
+            hal.uartF->write("AT&W\r");
             return;
         }
 
         if(set_p900_mode_status == 5){
             set_p900_mode_status = 0;
-            hal.uartC->write("ATA\r");
+            hal.uartF->write("ATA\r");
         }
     }else if(p900_mode == P900_MESH){
         if(set_p900_mode_status == 1){
             set_p900_mode_status = 2;
             //set p2p mode
-            hal.uartC->write("AT&F2\r");
+            hal.uartF->write("AT&F2\r");
             return;
         }
 
         if(set_p900_mode_status == 2){
             set_p900_mode_status = 3;
             //set p900 baud rate 230400
-            hal.uartC->write("ATS102=0\r");
+            hal.uartF->write("ATS102=0\r");
             return;
         }
 
         if(set_p900_mode_status == 3){
             set_p900_mode_status = 4;
             //set air baud rate 230400
-            hal.uartC->write("ATS103=1\r");
+            hal.uartF->write("ATS103=1\r");
             return;
         }
 
@@ -372,19 +372,19 @@ void Copter::set_p900_mode()
             //set mac data
             char tmp[40] = {0};
             sprintf(tmp, "ATS140=%s\r", p900_mac);
-            hal.uartC->write(tmp);
+            hal.uartF->write(tmp);
             return;
         }
 
         if(set_p900_mode_status == 5){
             set_p900_mode_status = 6;
-            hal.uartC->write("AT&W\r");
+            hal.uartF->write("AT&W\r");
             return;
         }
 
         if(set_p900_mode_status == 6){
             set_p900_mode_status = 0;
-            hal.uartC->write("ATA\r");
+            hal.uartF->write("ATA\r");
         }
     }
 
