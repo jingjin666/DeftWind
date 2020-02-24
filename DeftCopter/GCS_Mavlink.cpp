@@ -1196,7 +1196,32 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             break;
          #endif
             if(copter.control_mode == STABILIZE && copter.motors->armed()){
-                if(copter.mission.starts_with_takeoff_cmd()){
+
+
+                // param3 : horizontal navigation by pilot acceptable
+                // param4 : yaw angle   (not supported)
+                // param5 : latitude    (not supported)
+                // param6 : longitude   (not supported)
+                // param7 : altitude [metres]
+
+                float takeoff_alt = packet.param7 * 100;      // Convert m to cm
+
+                if(is_zero(packet.param3)) {
+                    if(copter.set_mode(GUIDED, MODE_REASON_GCS_COMMAND)){
+                        if(copter.do_user_takeoff(takeoff_alt, is_zero(packet.param3))) {
+                            result = MAV_RESULT_ACCEPTED;
+                            mavlink_msg_plane_event_report_send(chan, COPTER_EVENT_REPORT_TAKEOFF);
+                        }else{
+                            result = MAV_RESULT_FAILED;
+                            mavlink_msg_plane_event_report_send(chan, COPTER_EVENT_REPORT_TAKEOFF_REFUSE);
+                            GCS_MAVLINK::send_statustext_chan(MAV_SEVERITY_CRITICAL, chan, "do user takeoff failed!");
+                        }
+                    }else{
+                        result = MAV_RESULT_FAILED;
+                        mavlink_msg_plane_event_report_send(chan, COPTER_EVENT_REPORT_TAKEOFF_REFUSE);
+                        GCS_MAVLINK::send_statustext_chan(MAV_SEVERITY_CRITICAL, chan, "change to guided mode failed!");
+                    }
+                }else if(copter.mission.starts_with_takeoff_cmd()){
                     copter.mission.reset();
                     //Our first point is takeoff, so we can switch into the auto mode.
                     if(copter.set_mode(AUTO, MODE_REASON_GCS_COMMAND)){

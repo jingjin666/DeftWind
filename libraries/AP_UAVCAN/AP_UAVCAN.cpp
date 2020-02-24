@@ -92,7 +92,7 @@ static void gnss_fix_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::g
                     }
 
                     if (msg.gnss_time_standard == uavcan::equipment::gnss::Fix::GNSS_TIME_STANDARD_UTC) {
-                        uint64_t epoch_ms = msg.gnss_timestamp;
+                        uint64_t epoch_ms = uavcan::UtcTime(msg.gnss_timestamp).toUSec();
                         epoch_ms /= 1000;
                         uint64_t gps_ms = epoch_ms - UNIX_OFFSET_MSEC;
                         state->time_week = (uint16_t)(gps_ms / AP_MSEC_PER_WEEK);
@@ -107,7 +107,6 @@ static void gnss_fix_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::g
                     loc.alt = msg.height_msl_mm / 10;
                     state->location = loc;
                     state->location.options = 0;
-                    state->hdop = msg.hdop;
 
                     if (!uavcan::isNaN(msg.ned_velocity[0])) {
                         Vector3f vel(msg.ned_velocity[0], msg.ned_velocity[1], msg.ned_velocity[2]);
