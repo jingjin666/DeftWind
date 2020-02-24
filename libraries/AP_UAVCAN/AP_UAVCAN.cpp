@@ -92,7 +92,7 @@ static void gnss_fix_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::g
                     }
 
                     if (msg.gnss_time_standard == uavcan::equipment::gnss::Fix::GNSS_TIME_STANDARD_UTC) {
-                        uint64_t epoch_ms = uavcan::UtcTime(msg.gnss_timestamp).toUSec();
+                        uint64_t epoch_ms = msg.gnss_timestamp;
                         epoch_ms /= 1000;
                         uint64_t gps_ms = epoch_ms - UNIX_OFFSET_MSEC;
                         state->time_week = (uint16_t)(gps_ms / AP_MSEC_PER_WEEK);
@@ -107,6 +107,7 @@ static void gnss_fix_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::g
                     loc.alt = msg.height_msl_mm / 10;
                     state->location = loc;
                     state->location.options = 0;
+                    state->hdop = msg.hdop;
 
                     if (!uavcan::isNaN(msg.ned_velocity[0])) {
                         Vector3f vel(msg.ned_velocity[0], msg.ned_velocity[1], msg.ned_velocity[2]);
@@ -119,7 +120,7 @@ static void gnss_fix_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::g
                     }
 
                     float pos_cov[9];
-                    msg.position_covariance.unpackSquareMatrix(pos_cov);
+                    memcpy(pos_cov, &msg.position_covariance[0], sizeof(pos_cov));
                     if (!uavcan::isNaN(pos_cov[8])) {
                         if (pos_cov[8] > 0) {
                             state->vertical_accuracy = sqrtf(pos_cov[8]);
@@ -144,7 +145,7 @@ static void gnss_fix_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::g
                     }
 
                     float vel_cov[9];
-                    msg.velocity_covariance.unpackSquareMatrix(vel_cov);
+                    memcpy(vel_cov, &msg.velocity_covariance[0], sizeof(vel_cov));
                     if (!uavcan::isNaN(vel_cov[0])) {
                         state->speed_accuracy = sqrtf((vel_cov[0] + vel_cov[4] + vel_cov[8]) / 3.0);
                         state->have_speed_accuracy = true;
