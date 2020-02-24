@@ -158,11 +158,6 @@ void AP_Compass_UAVCAN::handle_mag_msg(Vector3f &mag)
     Vector3f raw_field = mag * _gain_scale;
 	//printf("raw_field [%.1f] [%.1f] [%.1f]\n", raw_field.x, raw_field.y, raw_field.z);
 
-	// rotate to the desired orientation
-    if (is_external(_instance)) {
-        raw_field.rotate(ROTATION_YAW_90);
-    }
-
     // rotate raw_field from sensor frame to body frame
     rotate_field(raw_field, _instance);
 
