@@ -137,9 +137,6 @@ static int nsh_archinitialize(void)
     cpuload_initialize_once();
 #endif
 
-	/* initial LED state */
-	drv_led_start();
-
 #ifdef CONFIG_IMXRT_USDHC
 	/* Initialize SDHC-base MMC/SD card support */
 	ret = uavrs_v2_usdhc_initialize();
@@ -208,8 +205,6 @@ static void board_gpio_init(const uint32_t list[], int count)
 
 __EXPORT void imxrt_boardinitialize(void)
 {
-    message("Peripheral power system enabled\n");
-
     message("Board initialize start\n");
 
     /* configure led */
