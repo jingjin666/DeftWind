@@ -10,8 +10,8 @@
 
 // once the logging code is all converted we will remove these from
 // this header
-#define HEAD_BYTE1  0x95    // Decimal 163
-#define HEAD_BYTE2  0x27    // Decimal 149
+#define HEAD_BYTE1  0xA3    // Decimal 163
+#define HEAD_BYTE2  0x95    // Decimal 149
 
 // structure used to define logging format
 struct LogStructure {
