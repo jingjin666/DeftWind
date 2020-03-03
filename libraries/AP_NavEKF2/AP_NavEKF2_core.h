@@ -73,7 +73,7 @@ public:
     void UpdateFilter(bool predict);
 
     // Check basic filter health metrics and return a consolidated health status
-    bool healthy(void) const;
+    bool healthy(void);
 
     // Return a consolidated error score where higher numbers are less healthy
     // Intended to be used by the front-end to determine which is the primary EKF
@@ -169,7 +169,7 @@ public:
 
     // return estimated height above ground level
     // return false if ground height is not being estimated.
-    bool getHAGL(float &HAGL) const;
+    bool getHAGL(float &HAGL);
 
     // return the Euler roll, pitch and yaw angle in radians
     void getEulerAngles(Vector3f &eulers) const;

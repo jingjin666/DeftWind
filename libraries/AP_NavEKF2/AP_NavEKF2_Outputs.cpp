@@ -6,6 +6,8 @@
 #include "AP_NavEKF2_core.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <GCS_MAVLink/GCS.h>
+
 
 #include <stdio.h>
 
@@ -13,7 +15,7 @@ extern const AP_HAL::HAL& hal;
 
 
 // Check basic filter health metrics and return a consolidated health status
-bool NavEKF2_core::healthy(void) const
+bool NavEKF2_core::healthy(void)
 {
     uint16_t faultInt;
     getFilterFaults(faultInt);
@@ -33,6 +35,17 @@ bool NavEKF2_core::healthy(void) const
     float horizErrSq = sq(innovVelPos[3]) + sq(innovVelPos[4]);
     if (onGround && (PV_AidingMode == AID_NONE) && ((horizErrSq > 1.0f) || (fabsf(hgtInnovFiltState) > 1.0f))) {
         return false;
+    }
+
+    if(onGround && (PV_AidingMode == AID_ABSOLUTE)){
+        // Read the GPS locaton in WGS-84 lat,long,height coordinates
+        const struct Location &gpsloc = _ahrs->get_gps().location();
+        //f the difference between current GPS and EKF source is more than 20 m, it is unhealthy
+        if(abs(gpsloc.alt - EKF_origin.alt) > 2000){
+            InitialiseFilterBootstrap();
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "gps.alt:%d,ekf_origin.alt:%d>20m,reset ekf", gpsloc.alt, EKF_origin.alt);
+            return false;
+        }
     }
 
     // all OK
@@ -292,7 +305,7 @@ bool NavEKF2_core::getPosD(float &posD) const
 
 }
 // return the estimated height of body frame origin above ground level
-bool NavEKF2_core::getHAGL(float &HAGL) const
+bool NavEKF2_core::getHAGL(float &HAGL)
 {
     HAGL = terrainState - outputDataNew.position.z - posOffsetNED.z;
     // If we know the terrain offset and altitude, then we have a valid height above ground estimate

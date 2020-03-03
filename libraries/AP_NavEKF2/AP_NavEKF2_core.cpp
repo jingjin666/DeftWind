@@ -331,12 +331,18 @@ void NavEKF2_core::InitialiseVariables()
 // This method can only be used when the vehicle is static
 bool NavEKF2_core::InitialiseFilterBootstrap(void)
 {
-    // If we are a plane and don't have GPS lock then don't initialise, make sure use rtk board to set ekf origion
-    if (assume_zero_sideslip() && _ahrs->get_gps().status() != AP_GPS::GPS_OK_FIX_3D_RTK_FIXED) {
+    // If we are a plane and don't have GPS lock then don't initialise
+    if (assume_zero_sideslip() && _ahrs->get_gps().status() < AP_GPS::GPS_OK_FIX_3D) {
         statesInitialised = false;
         return false;
     }
 
+#if 0
+    if(_ahrs->get_gps().status() < AP_GPS::GPS_OK_FIX_3D_RTK_FIXED){
+        statesInitialised = false;
+        return false;
+    }
+#endif
     // set re-used variables to zero
     InitialiseVariables();
 
