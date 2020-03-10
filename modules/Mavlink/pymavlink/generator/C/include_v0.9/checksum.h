@@ -18,7 +18,7 @@ extern "C" {
  *
  */
 
-#define X25_INIT_CRC 0xfffe
+#define X25_INIT_CRC 0xffff
 #define X25_VALIDATE_CRC 0xf0b8
 
 /**
