@@ -1,3 +1,13 @@
+Release 2.2.0beta2, 10th March 2020
+------------------------------------
+
+A small set of improvements over beta1:
+ - Fixed can't boot sometimes cause by configure the power control pin again after bootloader
+ - Fixed can't boot cause by using DEVICE_DEBUG in LED driver
+ - Sync latest code from dp100
+
+Happy flying!
+
 Release 2.2.0beta1, 6th January 2020
 ------------------------------------
 
