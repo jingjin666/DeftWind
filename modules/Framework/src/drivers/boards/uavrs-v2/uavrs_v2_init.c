@@ -137,6 +137,10 @@ static int nsh_archinitialize(void)
     cpuload_initialize_once();
 #endif
 
+    /* initial LED state */
+    drv_led_start();
+    led_on(LED_WORKSTATUS);
+
 #ifdef CONFIG_IMXRT_USDHC
 	/* Initialize SDHC-base MMC/SD card support */
 	ret = uavrs_v2_usdhc_initialize();
@@ -206,10 +210,6 @@ static void board_gpio_init(const uint32_t list[], int count)
 __EXPORT void imxrt_boardinitialize(void)
 {
     message("Board initialize start\n");
-
-    /* configure led */
-	led_init();
-	led_on(LED_WORKSTATUS);
 
 	/* configure pins */
 	const uint32_t gpio[] = DP_GPIO_INIT_LIST;
