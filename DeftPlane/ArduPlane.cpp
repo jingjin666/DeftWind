@@ -611,9 +611,10 @@ void Plane::one_second_loop()
     // send a heartbeat
     gcs().send_message(MSG_HEARTBEAT);
 
-#ifdef MEMSPACE_INFO
+#ifndef MEMSPACE_INFO
     printf("\nFree RAM: %u, Total RAM: %u\n", (unsigned)hal.util->available_memory(), (unsigned)hal.util->total_memory());
 #endif
+
 #ifdef CAMERA_TEST
     if(plane.arming.is_armed()) {
         plane.camera.take_picture();
