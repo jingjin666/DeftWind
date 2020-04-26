@@ -61,7 +61,6 @@ LED::~LED()
 int
 LED::init()
 {
-	DEVICE_DEBUG("LED::init");
 #ifdef __DP_NUTTX
 	CDev::init();
 #else
