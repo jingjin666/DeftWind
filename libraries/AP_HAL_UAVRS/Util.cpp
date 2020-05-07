@@ -105,8 +105,9 @@ bool UAVRSUtil::get_system_id(char buf[40])
 */
 uint32_t UAVRSUtil::available_memory(void) 
 {
-    struct mallinfo info = mallinfo();
-    return info.fordblks;
+    //struct mallinfo info = mallinfo();
+    //return info.fordblks;
+    return 160*1024;
 }
 
 /**
@@ -114,8 +115,9 @@ uint32_t UAVRSUtil::available_memory(void)
 */
 uint32_t UAVRSUtil::total_memory(void)
 {
-    struct mallinfo info = mallinfo();
-    return info.arena;
+    //struct mallinfo info = mallinfo();
+    //return info.arena;
+    return 300*1024;
 }
 
 /*

@@ -59,6 +59,7 @@
 
 int mm_mallinfo(FAR struct mm_heap_s *heap, FAR struct mallinfo *info)
 {
+#if 0
   FAR struct mm_allocnode_s *node;
   size_t mxordblk = 0;
   int    ordblks  = 0;  /* Number of non-inuse chunks */
@@ -126,5 +127,10 @@ int mm_mallinfo(FAR struct mm_heap_s *heap, FAR struct mallinfo *info)
   info->mxordblk = mxordblk;
   info->uordblks = uordblks;
   info->fordblks = fordblks;
+#else
+  //info->arena = heap->mm_heapsize;
+  //info->fordblks = 160*1024;
+  _info("_________mm_mallinfo__________\n");
+#endif
   return OK;
 }
