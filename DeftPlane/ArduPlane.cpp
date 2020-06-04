@@ -611,7 +611,7 @@ void Plane::one_second_loop()
     // send a heartbeat
     gcs().send_message(MSG_HEARTBEAT);
 
-#ifndef MEMSPACE_INFO
+#ifdef MEMSPACE_INFO
     printf("\nFree RAM: %u, Total RAM: %u\n", (unsigned)hal.util->available_memory(), (unsigned)hal.util->total_memory());
 #endif
 
