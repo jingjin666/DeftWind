@@ -820,7 +820,7 @@ void Plane::update_roll_no_gps_rtl(void)
     }
 
     if(no_gps_rtl_home_flag == NO_GPS_RTL_HEADING_TRACK && AP_HAL::millis() - track_time_ms > total_time * 1000){
-        no_gps_rtl_home_flag = NO_GPS_RTK_NEAR_HOME;
+        no_gps_rtl_home_flag = NO_GPS_RTL_NEAR_HOME;
         emergency_return = true;
         gcs().send_text(MAV_SEVERITY_CRITICAL, "near home");
     }
@@ -843,7 +843,7 @@ void Plane::update_roll_no_gps_rtl(void)
         }
         nav_roll_cd = (aparm.track_heading_kp * heading_error + integral) * 100;
         break;
-    case NO_GPS_RTK_NEAR_HOME:
+    case NO_GPS_RTL_NEAR_HOME:
         nav_roll_cd  = aparm.track_cirle_gain * roll_limit_cd;
         break;
     }

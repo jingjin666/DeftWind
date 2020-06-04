@@ -99,12 +99,15 @@ void Plane::send_indicator(mavlink_channel_t chan)
     struct indicator_status indicator;
     bool use_gps_head = gps.have_heading() && gps.heading_status() == AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
 
-    if(use_gps_head){
-        indicator.rtk_head_status = true;
-        rtk_heading = gps.get_heading();
-    }else{
-        indicator.rtk_head_status = false;
-        rtk_heading = -1.0f;
+    indicator.rtk_head_status = false;
+    rtk_heading = -1.0f;
+
+    for(uint8_t i=0; i<2; i++){
+        if(gps.get_gps_type(i) == AP_GPS_Backend::DEVTYPE_OEM719 && 
+            gps.heading_status(i) == AP_GPS::GPS_OK_FIX_3D_RTK_FIXED){
+            indicator.rtk_head_status = true;
+            rtk_heading = gps.get_heading(i);
+        }
     }
 
     if(compass.use_for_yaw()){
@@ -1110,8 +1113,8 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
 
             if(plane.control_mode == AUTO && plane.arming.is_armed() && plane.mission.starts_check_misson_cmd()){
                 uint16_t seq = plane.mission.num_commands() - 9;
-                plane.camera.set_trigger_distance(0);
                 if (plane.mission.set_current_cmd(seq)) {
+                    plane.camera.set_trigger_distance(0);
                     mavlink_msg_mission_current_send(chan, seq);
                     result = MAV_RESULT_ACCEPTED;
                     mavlink_msg_plane_event_report_send(chan, PLANE_EVENT_REPORT_RETURN);
@@ -1971,17 +1974,24 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         plane.adsb.handle_message(chan, msg);
         break;
 
-     case MAVLINK_MSG_ID_GCS_GET_PLANE_P900_ID:
+    case MAVLINK_MSG_ID_GCS_GET_PLANE_P900_ID:
         plane.gcs_get_p900_id_flag = true;
         break;
-     case MAVLINK_MSG_ID_GCS_SET_PLANE_P900_ID:
+    case MAVLINK_MSG_ID_GCS_SET_PLANE_P900_ID:
         mavlink_gcs_set_plane_p900_id_t need_id;
         mavlink_msg_gcs_set_plane_p900_id_decode(msg, &need_id);
         memset(plane.p900_id, 0, sizeof(plane.p900_id));
         memcpy(plane.p900_id, need_id.id, need_id.count);
         plane.gcs_set_p900_id_flag = true;
-        
         break;
+    case MAVLINK_MSG_ID_GCS_SET_PLANE_P900_MODE:
+       mavlink_gcs_set_plane_p900_mode_t need_mode;
+       mavlink_msg_gcs_set_plane_p900_mode_decode(msg, &need_mode);
+       plane.p900_mode = need_mode.type;
+       memset(plane.p900_mac, 0, sizeof(plane.p900_mac));
+       memcpy(plane.p900_mac, need_mode.mac, need_mode.count);
+       plane.gcs_set_p900_mode_flag = true;
+       break;
 
     default:
         handle_common_message(msg);

@@ -401,8 +401,11 @@ private:
         float       hgt;         // 2
         Vector3f    vel;         // 3..5
         float       hdg;         //6
-        uint32_t    time_ms;     // 7
-        uint8_t     sensor_idx;  // 8..9
+        uint8_t     stat;        //7
+        uint8_t     hstat;       //8
+        uint8_t     have_hdg;    //9
+        uint32_t    time_ms;     // 10
+        uint8_t     sensor_idx;  // 11
     };
 
     struct mag_elements {
@@ -1023,6 +1026,9 @@ private:
     float bcnPosOffsetMin;              // Vertical position offset of the beacon constellation origin relative to the EKF origin (m)
     float bcnPosOffsetMinVar;           // Variance of the bcnPosoffset state (m)
     float OffsetMinInnovFilt;           // Filtered magnitude of the range innovations using bcnPosOffsetLow
+
+    float offsetSwitchMage;
+    bool offsetSwitchMageFlag;
 
     // Range Beacon Fusion Debug Reporting
     uint8_t rngBcnFuseDataReportIndex;// index of range beacon fusion data last reported
