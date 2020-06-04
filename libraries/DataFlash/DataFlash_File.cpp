@@ -644,15 +644,20 @@ void DataFlash_File::Prep_MinSpace()
             printf("Removing (%s) for minimum-space requirements (%.2f%% < %.0f%%)\n",
                                 filename_to_remove, (double)avail, (double)min_avail_space_percent);
             if (unlink(filename_to_remove) == -1) {
-                printf("Failed to remove %s: %s\n", filename_to_remove, strerror(errno));
-                free(filename_to_remove);
-                if (errno == ENOENT) {
-                    // corruption - should always have a continuous
-                    // sequence of files...  however, there may be still
-                    // files out there, so keep going.
+                printf("Failed to remove %s: %s, Retry remove...\n", filename_to_remove, strerror(errno));
+                if (unlink(filename_to_remove) == -1) {
+                    printf("Failed to remove %s: %s again, Give up\n", filename_to_remove, strerror(errno));
+                    free(filename_to_remove);
+                    if (errno == ENOENT) {
+                        // corruption - should always have a continuous
+                        // sequence of files...  however, there may be still
+                        // files out there, so keep going.
+                    } else {
+                        // internal_error();
+                        break;
+                    }
                 } else {
-                    // internal_error();
-                    break;
+                    free(filename_to_remove);
                 }
             } else {
                 free(filename_to_remove);
@@ -664,6 +669,68 @@ void DataFlash_File::Prep_MinSpace()
         }
     } while (log_to_remove != first_log_to_remove);
 }
+
+void DataFlash_File::Prep_MinSpace_From_Rawdata()
+{
+    const uint16_t first_rawdata_to_remove = find_oldest_raw_data();
+    if (first_rawdata_to_remove == 0) {
+        // no files to remove
+        return;
+    }
+
+    _cached_oldest_raw_data = 0;
+
+    uint16_t rawdata_to_remove = first_rawdata_to_remove;
+
+    uint16_t count = 0;
+    do {
+        float avail = avail_space_percent();
+        if (is_equal(avail, -1.0f)) {
+            // internal_error()
+            break;
+        }
+        if (avail >= min_avail_space_percent) {
+            break;
+        }
+        if (count++ > MAX_RAW_DATA_FILES+10) {
+            // *way* too many deletions going on here.  Possible internal error.
+            // internal_error();
+            break;
+        }
+        char *filename_to_remove = _raw_data_file_name(rawdata_to_remove);
+        if (filename_to_remove == nullptr) {
+            // internal_error();
+            break;
+        }
+        if (file_exists(filename_to_remove)) {
+            printf("Removing (%s) for minimum-space requirements (%.2f%% < %.0f%%)\n",
+                                filename_to_remove, (double)avail, (double)min_avail_space_percent);
+            if (unlink(filename_to_remove) == -1) {
+                printf("Failed to remove %s: %s, Retry remove...\n", filename_to_remove, strerror(errno));
+                if (unlink(filename_to_remove) == -1) {
+                    printf("Failed to remove %s: %s again, Give up\n", filename_to_remove, strerror(errno));
+                    free(filename_to_remove);
+                    if (errno == ENOENT) {
+                        // corruption - should always have a continuous
+                        // sequence of files...  however, there may be still
+                        // files out there, so keep going.
+                    } else {
+                        // internal_error();
+                        break;
+                    }
+                } else {
+                    free(filename_to_remove);
+                }
+            } else {
+                free(filename_to_remove);
+            }
+        }
+        rawdata_to_remove++;
+        if (rawdata_to_remove > MAX_RAW_DATA_FILES) {
+            rawdata_to_remove = 1;
+        }
+    } while (rawdata_to_remove != first_rawdata_to_remove);
+}
 #endif
 
 void DataFlash_File::Prep() {
@@ -673,6 +740,7 @@ void DataFlash_File::Prep() {
     }
 #if !DATAFLASH_FILE_MINIMAL
     Prep_MinSpace();
+    Prep_MinSpace_From_Rawdata();
 #endif
 }
 
@@ -2637,21 +2705,21 @@ bool DataFlash_File::io_thread_alive() const
 {
     uint32_t tnow = AP_HAL::millis();
     // if the io thread hasn't had a heartbeat in a full second then it is dead
-    return _io_timer_heartbeat + 1000 > tnow;
+    return _io_timer_heartbeat + 3000 > tnow;
 }
 
 bool DataFlash_File::io_thread_raw_data_alive() const
 {
     uint32_t tnow = AP_HAL::millis();
     // if the io thread raw data hasn't had a heartbeat in a full second then it is dead
-    return _io_timer_raw_data_heartbeat + 1000 > tnow;
+    return _io_timer_raw_data_heartbeat + 3000 > tnow;
 }
 
 bool DataFlash_File::io_thread_pos_data_alive() const
 {
     uint32_t tnow = AP_HAL::millis();
     // if the io thread pos data hasn't had a heartbeat in a full second then it is dead
-    return _io_timer_pos_data_heartbeat + 1000 > tnow;
+    return _io_timer_pos_data_heartbeat + 3000 > tnow;
 }
 
 bool DataFlash_File::logging_failed() const

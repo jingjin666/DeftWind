@@ -157,6 +157,7 @@ private:
 
     // possibly time-consuming preparations handling
     void Prep_MinSpace();
+    void Prep_MinSpace_From_Rawdata();
     uint16_t find_oldest_log();
     uint16_t find_oldest_raw_data();
     uint16_t find_oldest_pos_data();
@@ -173,7 +174,7 @@ private:
     // I always seem to have less than 10% free space on my laptop:
     const float min_avail_space_percent = 0.1f;
 #else
-    const float min_avail_space_percent = 10.0f;
+    const float min_avail_space_percent = 20.0f;
 #endif
     // write buffer
     ByteBuffer _writebuf;
