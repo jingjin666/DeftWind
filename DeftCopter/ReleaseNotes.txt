@@ -1,3 +1,13 @@
+Release 2.2.1beta1, 10th June 2020
+------------------------------------
+
+This is a minor release with a number of important bug fixes and some small feature additions.
+ - Fixed system crash cause by mallinfo
+ - Optimized log system
+ - Fixed can't boot cause by using DEVICE_DEBUG in LED driver
+
+Happy flying!
+
 Release 2.2.0beta2, 28th February 2020
 ------------------------------------
 
